@@ -69,3 +69,13 @@ CREATE TABLE funcionario(
     FOREIGN KEY(id_contacto) REFERENCES contacto(id_contacto),
     FOREIGN KEY(id_cargo) REFERENCES cargo(id_cargo),
     FOREIGN KEY(id_endereco) REFERENCES endereco(id_endereco));
+
+CREATE TABLE cliente(
+    id_cliente BIGINT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(50) NULL,
+    dataRegisto DATE NOT NULL,
+    id_contacto BIGINT NULL,
+    id_endereco BIGINT NULL,
+    FOREIGN KEY(id_endereco) REFERENCES endereco(id_endereco),
+    FOREIGN KEY(id_contacto) REFERENCES contacto(id_contacto)
+);
