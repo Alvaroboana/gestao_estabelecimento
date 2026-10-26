@@ -79,3 +79,25 @@ CREATE TABLE cliente(
     FOREIGN KEY(id_endereco) REFERENCES endereco(id_endereco),
     FOREIGN KEY(id_contacto) REFERENCES contacto(id_contacto)
 );
+
+CREATE TABLE funcinario(
+    id_fornecedor BIGINT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(30) NOT NULL,
+    dataNascimento DATE NOT NULL,
+    nuit VARCHAR(15) NULL,
+    estado BOOLEAN NOT NULL,
+    id_contacto BIGINT NOT NULL,
+    id_endereco BIGINT NOT NULL,
+    dataRegisto DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(id_contacto) REFERENCES contacto(id_contacto),
+    FOREIGN KEY(id_endereco) REFERENCES endereco(id_endereco)
+);
+
+CREATE TABLE utilizador(
+    id_utilizador BIGINT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    passwordHash VARCHAR(50) UNIQUE NOT NULL,
+    id_funcionario BIGINT NOT NULL,
+    FOREIGN KEY(id_funcionario) REFERENCES funcionario(id_funcionario)
+);
+
