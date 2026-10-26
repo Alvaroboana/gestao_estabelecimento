@@ -15,10 +15,10 @@
             "server": "localhost",
             "port": 3307,
             "driver": "MySQL",
-            "name": "Gestao Docker",
+            "name": "Docker",
+            "group": "Docker",
             "database": "gestao",
-            "username": "gestao",
-            "group": "Gestao Docker"
+            "username": "gestao"
         }
     ]
 }
