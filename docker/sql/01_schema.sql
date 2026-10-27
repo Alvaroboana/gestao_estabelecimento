@@ -80,7 +80,7 @@ CREATE TABLE cliente(
     FOREIGN KEY(id_contacto) REFERENCES contacto(id_contacto)
 );
 
-CREATE TABLE funcinario(
+CREATE TABLE fornecedor(
     id_fornecedor BIGINT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(30) NOT NULL,
     dataNascimento DATE NOT NULL,
@@ -100,4 +100,44 @@ CREATE TABLE utilizador(
     id_funcionario BIGINT NOT NULL,
     FOREIGN KEY(id_funcionario) REFERENCES funcionario(id_funcionario)
 );
+
+CREATE TABLE itemvenda(
+    id_itemvenda BIGINT PRIMARY KEY AUTO_INCREMENT,
+    quantidade BIGINT NOT NULL CHECK(quantidade >= 0),
+    precounitario DECIMAL(10,2) NOT NULL CHECK(precounitario >= 0.00),
+    desconto DECIMAL NULL,
+    totallinha DECIMAL(10,2) NOT NULL,
+    id_venda BIGINT NOT NULL,
+    id_produto BIGINT NOT NULL,
+    FOREIGN KEY(id_venda) REFERENCES venda(id_venda),
+    Foreign Key (id_produto) REFERENCES produto(id_produto)
+);
+
+
+CREATE TABLE venda(
+    id_venda BIGINT PRIMARY KEY AUTO_INCREMENT,
+    datavenda DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    totalvenda DECIMAL(10,2) NOT NULL,
+    estadoVenda ENUM('PENDENTE','ANULADA','REEMBOLSADA','CONCLUIDA') NOT NULL DEFAULT 'PENDENTE',
+    id_funcionario BIGINT NOT NULL,
+    id_cliente BIGINT NOT NULL,
+    Foreign Key (id_funcionario) REFERENCES funcionario(id_funcionario),
+    Foreign Key (id_cliente) REFERENCES cliente(id_cliente)
+);
+
+
+CREATE TABLE produtofornecedor(
+    id_fornecedor BIGINT NOT NULL,
+    id_produto BIGINT NOT NULL,
+    FOREIGN KEY(id_fornecedor) REFERENCES fornecedor(id_fornecedor),
+    FOREIGN KEY(id_produto) REFERENCES produto(id_produto), 
+    custounitario DECIMAL(10,2) NOT NULL,
+    preferencial BOOLEAN NOT NULL,
+    descricao TEXT NULL,
+    PRIMARY KEY(id_fornecedor,id_produto)
+);
+
+
+
+
 
