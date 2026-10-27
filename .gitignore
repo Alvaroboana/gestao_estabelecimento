@@ -1,8 +1,11 @@
-# Arquivos compilados Java
+
 bin/
 *.class
 
-# Arquivos temporários e logs
+
 *.log
 .DS_Store
 Thumbs.db
+.agents/rules/
+.vscode/
+GEMINI.md
