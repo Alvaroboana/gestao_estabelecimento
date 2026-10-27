@@ -1,74 +1,74 @@
 <mxfile host="Electron" agent="Figma Make" compressed="false" pages="2">
   <diagram id="dominio" name="Domínio">
-    <mxGraphModel dx="2707" dy="3503" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4540" pageHeight="1580" background="#FFFFFF" math="0" shadow="0">
+    <mxGraphModel dx="776" dy="2290" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4540" pageHeight="1580" background="#FFFFFF" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="Pessoa" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;font-style:italic;&quot;&gt;Pessoa&lt;/div&gt;&lt;div&gt;{abstract}&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;#nome: String&lt;/div&gt;&lt;div&gt;#contactos: List&amp;lt;Contacto&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;+adicionarContacto(contacto: Contacto): void&lt;/span&gt;&lt;/div&gt;&lt;div&gt;+removerContacto(contacto: Contacto): void&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="180" width="240" x="2375" y="-1440" as="geometry" />
+          <mxGeometry height="180" width="240" x="2075" y="-950" as="geometry" />
         </mxCell>
-        <mxCell id="Cliente" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Cliente&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idCliente: Long&lt;/div&gt;&lt;div&gt;-vendas: List&amp;lt;Venda&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarVenda(venda: Venda): void&lt;br&gt;+removerVenda(venda: Venda): void&lt;br&gt;+calcularTotalCompras(): Decimal&lt;br&gt;+contarCompras(): int&lt;br&gt;+obterUltimaCompra(): Venda&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="250" width="210" x="3000" y="-1030" as="geometry" />
+        <mxCell id="Cliente" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Cliente&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idCliente: Long&lt;/div&gt;&lt;div&gt;-vendas: List&amp;lt;Venda&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarVenda(venda: Venda): void&lt;br/&gt;+removerVenda(): void&lt;br/&gt;+calcularTotalCompras(): Double&lt;br/&gt;+obterUltimaCompra(): Venda&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="210" width="210" x="2700" y="-540" as="geometry" />
         </mxCell>
-        <mxCell id="Fornecedor" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Fornecedor&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idFornecedor: Long&lt;/div&gt;&lt;div&gt;-endereco: Endereco&lt;/div&gt;&lt;div&gt;-produtos: Set&amp;lt;Produto&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarProduto(produto: Produto): void&lt;br&gt;+removerProduto(produto: Produto): void&lt;br&gt;+fornece(produto: Produto): boolean&lt;br&gt;+alterarEndereco(endereco: Endereco): void&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="270" width="230" x="1890" y="-1040" as="geometry" />
+        <mxCell id="Fornecedor" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Fornecedor&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idFornecedor: Long&lt;/div&gt;&lt;div&gt;-endereco: Endereco&lt;/div&gt;&lt;div&gt;-produtos: Set&amp;lt;Produto&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarProduto(produto: Produto): void&lt;br/&gt;+removerProduto(produto: Produto): void&lt;br/&gt;+fornece(produto: Produto): boolean&lt;br/&gt;+alterarEndereco(endereco: Endereco): void&lt;/div&gt;" vertex="1">
+          <mxGeometry height="250" width="230" x="1590" y="-550" as="geometry" />
         </mxCell>
         <mxCell id="Contacto" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Contacto&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idContacto: Long&lt;/div&gt;&lt;div&gt;-contacto: String&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="105" width="240" x="2850" y="-1400" as="geometry" />
+          <mxGeometry height="105" width="240" x="2550" y="-910" as="geometry" />
         </mxCell>
-        <mxCell id="Cargo" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Cargo&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idCargo: Long&lt;/div&gt;&lt;div&gt;-nome: String&lt;/div&gt;&lt;div&gt;-salarioBase: Decimal&lt;/div&gt;&lt;div&gt;-funcionarios: List&amp;lt;Funcionario&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarFuncionario(funcionario: Funcionario): void&lt;br&gt;+removerFuncionario(funcionario: Funcionario): void&lt;br&gt;+alterarSalarioBase(novoSalario: Decimal): void&lt;br&gt;+contarFuncionarios(): int&lt;br&gt;+podeSerRemovido(): boolean&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="280" width="290" x="3370" y="-1040" as="geometry" />
+        <mxCell id="Cargo" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Cargo&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;-idCargo: Long&lt;br&gt;-nome: String&lt;br&gt;-salarioBase: Double&lt;br&gt;-funcionario: List&amp;lt;Funcionario&amp;gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarFuncionario(funcionario: Funcionario): void&lt;br/&gt;+removerFuncionario(): void&lt;br/&gt;-alterarSalarioBase(): void&lt;br/&gt;+contarFuncionarios(): int&lt;br/&gt;+podeSerRemovido(): boolean&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="280" width="290" x="3070" y="-550" as="geometry" />
         </mxCell>
-        <mxCell id="Cidade" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Cidade&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idCidade: Long&lt;/div&gt;&lt;div&gt;-nome: String&lt;/div&gt;&lt;div&gt;-bairros: List&amp;lt;Bairro&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarBairro(bairro: Bairro): void&lt;br&gt;+removerBairro(bairro: Bairro): void&lt;br&gt;+buscarBairro(nome: String): Bairro +validar(): boolean&lt;/div&gt;" vertex="1">
-          <mxGeometry height="210" width="210" x="2035" y="-1440" as="geometry" />
+        <mxCell id="Cidade" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Cidade&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idCidade: Long&lt;/div&gt;&lt;div&gt;-nome: String&lt;/div&gt;&lt;div&gt;-bairros: List&amp;lt;Bairro&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarBairro(bairro: Bairro): void&lt;br/&gt;+removerBairro(bairro: Bairro): void&lt;br/&gt;+buscarBairro(nome: String): Bairro&lt;/div&gt;" vertex="1">
+          <mxGeometry height="210" width="210" x="1735" y="-950" as="geometry" />
         </mxCell>
-        <mxCell id="Bairro" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Bairro&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idBairro: Long&lt;/div&gt;&lt;div&gt;-nome: String&lt;/div&gt;&lt;div&gt;-cidade: Cidade&lt;/div&gt;&lt;div&gt;-enderecos: List&amp;lt;Endereco&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarEndereco(endereco: Endereco): void&lt;br&gt;+removerEndereco(endereco: Endereco): void&lt;br&gt;+obterNomeCompleto(): String&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="235" width="290" x="1400" y="-1455" as="geometry" />
+        <mxCell id="Bairro" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Bairro&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idBairro: Long&lt;/div&gt;&lt;div&gt;-nome: String&lt;/div&gt;&lt;div&gt;-cidade: Cidade&lt;/div&gt;&lt;div&gt;-enderecos: List&amp;lt;Endereco&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarEndereco(endereco: Endereco): void&lt;br/&gt;+removerEndereco(endereco: Endereco): void&lt;br/&gt;+obterNomeComple(): String&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="235" width="290" x="1100" y="-965" as="geometry" />
         </mxCell>
-        <mxCell id="Endereco" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Endereco&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idEndereco: Long&lt;/div&gt;&lt;div&gt;-quarteirao: String&lt;/div&gt;&lt;div&gt;-rua: String&lt;/div&gt;&lt;div&gt;-numeroCasa: String&lt;/div&gt;&lt;div&gt;-bairro: Bairro&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+montarEnderecoCompleto(): String&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="160" width="301" x="1470" y="-570" as="geometry" />
+        <mxCell id="Endereco" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Endereco&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;-idEndereco: Long&lt;br/&gt;-quarteirao: String&lt;br/&gt;-rua: String&lt;br/&gt;-bairro: Bairro&lt;br/&gt;-numeroCasa: String&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="160" width="301" x="1170" y="-80" as="geometry" />
         </mxCell>
         <mxCell id="EstadoFuncionario" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div&gt;«enumeration»&lt;/div&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;EstadoFuncionario&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;ATIVO&lt;/div&gt;&lt;div&gt;INATIVO&lt;/div&gt;&lt;div&gt;SUSPENSO&lt;/div&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="99" width="155" x="2070" y="-470" as="geometry" />
+          <mxGeometry height="99" width="155" x="1770" y="20" as="geometry" />
         </mxCell>
         <mxCell id="EstadoVenda" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div&gt;«enumeration»&lt;/div&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;EstadoVenda&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;PENDENTE&lt;/div&gt;&lt;div&gt;CONCLUIDA&lt;/div&gt;&lt;div&gt;ANULADA&lt;/div&gt;&lt;div&gt;REEMBOLSADA&lt;/div&gt;&lt;/div&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="130" width="130" x="3650" y="-650" as="geometry" />
+          <mxGeometry height="130" width="130" x="3350" y="-160" as="geometry" />
         </mxCell>
-        <mxCell id="Categoria" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Categoria&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idCategoria: Long&lt;/div&gt;&lt;div&gt;-nome: String&lt;/div&gt;&lt;div&gt;-produtos: List&amp;lt;Produto&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarProduto(produto: Produto): void&lt;br&gt;+removerProduto(produto: Produto): void&lt;br&gt;+contarProdutos(): int&lt;br&gt;+podeSerRemovida(): boolean&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="240" width="240" x="2540" y="-170" as="geometry" />
+        <mxCell id="Categoria" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Categoria&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idCategoria: Long&lt;/div&gt;&lt;div&gt;-nome: String&lt;/div&gt;&lt;div&gt;-produtos: List&amp;lt;Produto&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarProduto(produto: Produto): void&lt;br/&gt;+removerProduto(produto: Produto): void&lt;br/&gt;+contarProduto(): int&lt;br/&gt;+podeSerRemovida(): boolean&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="240" width="240" x="2240" y="320" as="geometry" />
         </mxCell>
-        <mxCell id="Produto" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Produto&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idProduto: Long&lt;/div&gt;&lt;div&gt;-nome: String&lt;/div&gt;&lt;div&gt;-preco: Decimal&lt;/div&gt;&lt;div&gt;-descricao: String&lt;/div&gt;&lt;div&gt;-unidade: String&lt;/div&gt;&lt;div&gt;-estado: EstadoProduto&lt;/div&gt;&lt;div&gt;-quantidadeMinima: int&lt;/div&gt;&lt;div&gt;-categoria: Categoria&lt;/div&gt;&lt;div&gt;-estoques: List&amp;lt;Estoque&amp;gt;&lt;/div&gt;&lt;div&gt;-fornecedores: Set&amp;lt;Fornecedor&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarEstoque(estoque: Estoque): void&lt;br&gt;+removerEstoque(estoque: Estoque): void&lt;br&gt;+adicionarFornecedor(fornecedor: Fornecedor): void&lt;br&gt;+removerFornecedor(fornecedor: Fornecedor): void&lt;br&gt;+atualizarPreco(novoPreco: Decimal): void&lt;br&gt;+mudarCategoria(categoria: Categoria): void&lt;br&gt;+descontinuar(): void&lt;br&gt;+reativar(): void&lt;br&gt;+darEntrada(quantidade: int, dataValidade: LocalDate): Estoque&lt;br&gt;+darBaixa(quantidade: int): void&lt;br&gt;+calcularQuantidadeEmEstoque(): int&lt;br&gt;+temStockSuficiente(quantidade: int): boolean&lt;br&gt;+estaAbaixoDoMinimo(): boolean&lt;br&gt;+podeSerVendido(): boolean&lt;br&gt;+obterLotesDisponiveis(): List&amp;lt;Estoque&amp;gt;&lt;br&gt;+obterProximaValidade(): LocalDate&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="570" width="320" x="2900" y="-90" as="geometry" />
+        <mxCell id="Produto" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Produto&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;-idProduto: Long&lt;br/&gt;-nome: String&lt;br/&gt;-preco: Double&lt;br/&gt;-descricao: String&lt;br/&gt;-unidade: String&lt;br/&gt;-quantidadeMinima: Integer&lt;br/&gt;-categoria: Categoria&lt;br/&gt;-estoque: List&amp;lt;Estoque&amp;gt;&lt;br/&gt;-fornecedor: Set&amp;lt;Fornecedor&amp;gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarEstoque(estoque: Estoque): void&lt;br/&gt;+removerEstoque(estoque: Estoque): void&lt;br/&gt;+adicionarFornecedor(fornecedor: Fornecedor): void&lt;br/&gt;+removerFuncionario(fornecedor: Fornecedor): void&lt;br/&gt;+atualizarPreco(novoPreco: Double): void&lt;br/&gt;+mudarCategoria(categoria: Categoria): void&lt;br/&gt;+descontinuar(): void&lt;br/&gt;+reativar(): void&lt;br/&gt;+darEntrada(quantidade: int, dataValidade: LocalDate): Estoque&lt;br/&gt;+darBaixa(quantidade: int): void&lt;br/&gt;+calcularQuantidadeEmEstoque(): int&lt;br/&gt;+itemStockSuficiente(quantidade: int): boolean&lt;br/&gt;+estaAbaixoDoMinimo(): boolean&lt;br/&gt;+podeSerVendido(): boolean&lt;br/&gt;+obterLotesDisponiveis(): List&amp;lt;Estoque&amp;gt;&lt;br/&gt;+obterProximaValidade(): LocalDate&lt;/div&gt;" vertex="1">
+          <mxGeometry height="570" width="320" x="2600" y="400" as="geometry" />
         </mxCell>
-        <mxCell id="Estoque" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Estoque&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idEstoque: Long&lt;/div&gt;&lt;div&gt;-quantidade: int&lt;/div&gt;&lt;div&gt;-dataEntrada: LocalDate&amp;nbsp;&lt;/div&gt;&lt;div&gt;-dataValidade: LocalDate&lt;/div&gt;&lt;div&gt;-produto: Produto&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+repor(quantidade: int): void&lt;br&gt;+retirar(quantidade: int): void&lt;br&gt;+estaVazio(): boolean&lt;br&gt;+isExpirado(): boolean&lt;br&gt;+calcularDiasParaExpirar(): int&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="270" width="270" x="2130" y="70" as="geometry" />
+        <mxCell id="Estoque" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Estoque&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;-idEstoque: Long&lt;br/&gt;-quantidade: Integer&lt;br/&gt;-dataEntrada: LocalDate&lt;br/&gt;-dataValidade: LocalDate&lt;br/&gt;-produto: Produto&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+repor(quantidade: Integer): void&lt;br/&gt;+retirar(quantidade: Integer): void&lt;br/&gt;+estaVazio(): boolean&lt;br/&gt;+isExpiredo(): boolean&lt;br/&gt;+calcularDiasParaExpirar(): int&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="270" width="270" x="1830" y="560" as="geometry" />
         </mxCell>
-        <mxCell id="Venda" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Venda&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idVenda: Long&lt;/div&gt;&lt;div&gt;-data: LocalDateTime&lt;/div&gt;&lt;div&gt;-estado: EstadoVenda&lt;/div&gt;&lt;div&gt;-cliente: Cliente&lt;/div&gt;&lt;div&gt;-funcionario: Funcionario&lt;/div&gt;&lt;div&gt;-itens: List&amp;lt;ItemVendido&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarItem(produto: Produto, quantidade: int, desconto: Decimal): ItemVendido&lt;br&gt;+removerItem(item: ItemVendido): void&lt;br&gt;+concluir(): void&lt;br&gt;+anular(): void&lt;br&gt;+reembolsarItem(item: ItemVendido, quantidade: int, motivo: String, funcionario: Funcionario): Reembolso&lt;br&gt;+podeSerAnulada(): boolean&lt;br&gt;+estaConcluida(): boolean&lt;br&gt;+calcularTotal(): Decimal&lt;br&gt;+calcularTotalDescontos(): Decimal&lt;br&gt;+calcularTotalReembolsado(): Decimal&lt;br&gt;+contarItens(): int&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="420" width="290" x="2990" y="-720" as="geometry" />
+        <mxCell id="Venda" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Venda&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;-idVenda: Long&lt;br/&gt;-data: LocalDateTime&lt;br/&gt;-estado: EstadoVenda&lt;br/&gt;-cliente: Cliente&lt;br/&gt;-funcionario: Funcionario&lt;br/&gt;-itemVendido: List&amp;lt;ItemVendido&amp;gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarItem(produto: Produto, quantidade: int, desconto: Double): ItemVendido&lt;br/&gt;+removerItem(item: ItemVendido): void&lt;br/&gt;+comcluir(): void&lt;br/&gt;+anular(): void&lt;br/&gt;+ReembolsarItem(item: ItemVendido, quantidade: int, motivo: String, funcionario: Funcionario): Reembolso&lt;br/&gt;+podeSerAnulado(): boolean&lt;br/&gt;+estaComcluida(): boolean&lt;br/&gt;+calcularTotal(): Double&lt;br/&gt;+calcularTotalDesconto(): Double&lt;br/&gt;+calclarTotalReembolsado(): Double&lt;br/&gt;+contarItens(): int&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="420" width="290" x="2690" y="-230" as="geometry" />
         </mxCell>
-        <mxCell id="ItemVendido" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;ItemVendido&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idItem: Long&lt;/div&gt;&lt;div&gt;-quantidade: int&lt;/div&gt;&lt;div&gt;-preco: Decimal&lt;/div&gt;&lt;div&gt;-desconto: Decimal&lt;/div&gt;&lt;div&gt;-venda: Venda&lt;/div&gt;&lt;div&gt;-produto: Produto&lt;/div&gt;&lt;div&gt;-reembolsos: List&amp;lt;Reembolso&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+alterarQuantidade(quantidade: int): void&lt;br&gt;+aplicarDesconto(desconto: Decimal): void&lt;br&gt;+trocarProduto(novoProduto: Produto): void&lt;br&gt;+reembolsar(quantidade: int, motivo: String, funcionario: Funcionario): Reembolso&lt;br&gt;+calcularSubtotal(): Decimal&lt;br&gt;+calcularValorDesconto(): Decimal&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="320" width="330" x="3535" y="-100" as="geometry" />
+        <mxCell id="ItemVendido" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;ItemVendido&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;-idItem: Long&lt;br/&gt;-quantidade: Integer&lt;br/&gt;-preco: Double&lt;br/&gt;-desconto: Double&lt;br/&gt;-venda: Venda&lt;br/&gt;-produto: Produto&lt;br/&gt;-reembolso: List&amp;lt;Reembolso&amp;gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+alterarQuantidade(quantidade: int): void&lt;br/&gt;+aplicarDesconto(desconto: Double): void&lt;br/&gt;+trocarProduto(produto: Produto): void&lt;br/&gt;+reembolsar(quantidade: int, motivo: String, funcionario: Funcionario): Reembolso&lt;br/&gt;+calcularSubtotal(): Double&lt;br/&gt;+calcularValorDesconto(): Double&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="320" width="330" x="3235" y="390" as="geometry" />
         </mxCell>
         <mxCell id="dominio-e7" edge="1" parent="1" source="Cliente" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=0;endSize=14;fontSize=14;labelBackgroundColor=#FFFFFF;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" target="Pessoa" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="3105.06" y="-1099.94" />
-              <mxPoint x="2495.06" y="-1099.94" />
+              <mxPoint x="2805.06" y="-609.94" />
+              <mxPoint x="2195.06" y="-609.94" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="dominio-e8" edge="1" parent="1" source="Funcionario" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=0;endSize=14;fontSize=14;labelBackgroundColor=#FFFFFF;fontFamily=Helvetica;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;fillColor=#eeeeee;strokeColor=#36393d;" target="Pessoa" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="2495" y="-849.91" />
+              <mxPoint x="2195" y="-359.90999999999997" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="dominio-e9" edge="1" parent="1" source="Fornecedor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=0;endSize=14;fontSize=14;labelBackgroundColor=#FFFFFF;fontFamily=Helvetica;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;fillColor=#eeeeee;strokeColor=#36393d;" target="Pessoa" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="2005" y="-1099.9" />
-              <mxPoint x="2495" y="-1099.9" />
+              <mxPoint x="1705" y="-609.9000000000001" />
+              <mxPoint x="2195" y="-609.9000000000001" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -76,8 +76,8 @@
           <mxGeometry relative="1" x="0.1264" y="-10" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="2800" y="-1360" />
-              <mxPoint x="2800" y="-1360" />
+              <mxPoint x="2410" y="-860" />
+              <mxPoint x="2410" y="-860" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -94,10 +94,10 @@
         <mxCell id="dominio-e11" edge="1" parent="1" source="Cargo" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=none;startArrow=none;fontSize=14;labelBackgroundColor=#FFFFFF;fontFamily=Helvetica;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;curved=0;fillColor=#eeeeee;strokeColor=#36393d;" target="Funcionario" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="3290.07" y="-949.93" />
-              <mxPoint x="3290.07" y="-739.93" />
-              <mxPoint x="2810.07" y="-739.93" />
-              <mxPoint x="2810.07" y="-835" />
+              <mxPoint x="2990.06" y="-410" />
+              <mxPoint x="2990.06" y="-249.88" />
+              <mxPoint x="2510.06" y="-249.88" />
+              <mxPoint x="2510.06" y="-360" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -114,8 +114,8 @@
         <mxCell id="dominio-e12" edge="1" parent="1" source="Cidade" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=diamondThin;startFill=1;startSize=16;endArrow=none;fontSize=14;labelBackgroundColor=#FFFFFF;fontFamily=Helvetica;exitX=0;exitY=0.5;exitDx=0;exitDy=0;curved=0;fillColor=#eeeeee;strokeColor=#36393d;" target="Bairro" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="1930.08" y="-1335" />
-              <mxPoint x="1930.08" y="-1304.92" />
+              <mxPoint x="1630.08" y="-845" />
+              <mxPoint x="1630.08" y="-814.9200000000001" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -132,9 +132,11 @@
         <mxCell id="dominio-e13" edge="1" parent="1" source="Bairro" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=diamondThin;startFill=0;startSize=16;endArrow=none;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;fontFamily=Helvetica;entryX=0;entryY=0.25;entryDx=0;entryDy=0;curved=0;fillColor=#eeeeee;strokeColor=#36393d;" target="Endereco" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="1545" y="-530" />
+              <mxPoint x="1245" y="-600" />
+              <mxPoint x="1070.08" y="-600" />
+              <mxPoint x="1070.08" y="-40" />
             </Array>
-            <mxPoint x="2090" y="440" as="sourcePoint" />
+            <mxPoint x="1790" y="930" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="dominio-e13-s" connectable="0" parent="dominio-e13" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=14;labelBackgroundColor=#FFFFFF;fontFamily=Helvetica;" value="1" vertex="1">
@@ -150,8 +152,8 @@
         <mxCell id="dominio-e14" edge="1" parent="1" source="Funcionario" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=open;endFill=0;startArrow=none;fontSize=14;labelBackgroundColor=#FFFFFF;fontFamily=Helvetica;entryX=0.5;entryY=1;entryDx=0;entryDy=0;curved=0;fillColor=#eeeeee;strokeColor=#36393d;" target="Endereco" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="2495" y="-260" />
-              <mxPoint x="1620.33" y="-260" />
+              <mxPoint x="2195" y="230" />
+              <mxPoint x="1320.33" y="230" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -168,7 +170,7 @@
         <mxCell id="dominio-e15" edge="1" parent="1" source="Fornecedor" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=open;endFill=0;startArrow=none;fontSize=14;labelBackgroundColor=#FFFFFF;fontFamily=Helvetica;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;curved=0;fillColor=#eeeeee;strokeColor=#36393d;" target="Endereco" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="1620.47" y="-905" />
+              <mxPoint x="1320.47" y="-415" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -198,11 +200,11 @@
         <mxCell id="dominio-e17" edge="1" parent="1" source="Fornecedor" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=none;startArrow=none;fontSize=14;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;fontFamily=Helvetica;curved=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;fillColor=#eeeeee;strokeColor=#36393d;" target="Produto" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="2005.14" y="-539.86" />
-              <mxPoint x="1910" y="-539.86" />
-              <mxPoint x="1910" y="599.86" />
-              <mxPoint x="2970" y="599.86" />
-              <mxPoint x="2970" y="479.86" />
+              <mxPoint x="1705.14" y="-49.860000000000014" />
+              <mxPoint x="1610" y="-49.860000000000014" />
+              <mxPoint x="1610" y="1089.8600000000001" />
+              <mxPoint x="2670" y="1089.8600000000001" />
+              <mxPoint x="2670" y="969.86" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -235,9 +237,9 @@
           <mxGeometry relative="1" x="-0.0006" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="2730.07" y="-732.47" />
-              <mxPoint x="2730.07" y="-489.93" />
-              <mxPoint x="2990.07" y="-489.93" />
+              <mxPoint x="2430.06" y="-270" />
+              <mxPoint x="2430.06" y="0.12" />
+              <mxPoint x="2690.06" y="0.12" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -280,9 +282,9 @@
         <mxCell id="dominio-e23" edge="1" parent="1" source="Funcionario" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=open;endFill=0;dashed=1;fontSize=14;labelBackgroundColor=#FFFFFF;fontFamily=Helvetica;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;curved=0;fillColor=#eeeeee;strokeColor=#36393d;" target="EstadoFuncionario" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="2150.08" y="-732.46" />
-              <mxPoint x="2150.08" y="-596.77" />
-              <mxPoint x="2147.46" y="-596.77" />
+              <mxPoint x="1850.08" y="-242.46000000000004" />
+              <mxPoint x="1850.08" y="-106.76999999999998" />
+              <mxPoint x="1847.46" y="-106.76999999999998" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -290,24 +292,24 @@
           <mxGeometry relative="1" x="0.0069" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="3530.09" y="-565" />
-              <mxPoint x="3530.09" y="-605" />
-              <mxPoint x="3650.09" y="-605" />
+              <mxPoint x="3230.09" y="-75" />
+              <mxPoint x="3230.09" y="-115" />
+              <mxPoint x="3350.09" y="-115" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="Funcionario" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Funcionario&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idFuncionario: Long&lt;/div&gt;&lt;div&gt;-dataNascimento: LocalDate&lt;/div&gt;&lt;div&gt;-dataInicio: LocalDate&lt;/div&gt;&lt;div&gt;-estado: EstadoFuncionario&lt;/div&gt;&lt;div&gt;-cargo: Cargo&lt;/div&gt;&lt;div&gt;-endereco: Endereco&lt;/div&gt;&lt;div&gt;-vendas: List&amp;lt;Venda&amp;gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarVenda(venda: Venda): void&lt;br&gt;+removerVenda(venda: Venda): void&lt;br&gt;+transferirCargo(novoCargo: Cargo): void&lt;br&gt;+alterarEndereco(endereco: Endereco): void&lt;br&gt;+ativar(): void&lt;br&gt;+inativar(): void&lt;br&gt;+suspender(): void&lt;br&gt;+estaAtivo(): boolean&lt;br&gt;+calcularIdade(): int&lt;br&gt;+calcularAntiguidadeAnos(): int&lt;br&gt;+calcularTotalVendasMes(mes: int, ano: int): Decimal&lt;br&gt;+calcularBonus(mes: int, ano: int): Decimal&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="410" width="301" x="2344.5" y="-1040" as="geometry" />
+        <mxCell id="Funcionario" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Funcionario&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;-idFuncionario: Long&lt;br&gt;-bi: String&lt;br&gt;-dataInicio: LocalDate&lt;br&gt;-estado: EstadoFuncionario&lt;br&gt;-cargo: Cargo&lt;br&gt;-endereco: Endereco&lt;br&gt;-venda: List&amp;lt;Venda&amp;gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+adicionarVenda(venda: Venda): void&lt;br/&gt;+removerVenda(venda: Venda): void&lt;br/&gt;+transferirCargo(novCargo: Cargo): void&lt;br/&gt;+alterarEndereco(endereco: Endereco): void&lt;br/&gt;+ativar(): void&lt;br/&gt;+inativar(): void&lt;br/&gt;+suspender(): void&lt;br/&gt;+estadoAtivo(): boolean&lt;br/&gt;+calcularAntiguidadeAnos(): int&lt;br/&gt;+calcularTotalVendasMes(mes: int, ano: int): int&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="360" width="301" x="2044.5" y="-540" as="geometry" />
         </mxCell>
         <mxCell id="YYs7SHEEd7f3Y_EMqIY3-6" edge="1" parent="1" source="Venda" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=none;startArrow=none;fontSize=14;labelBackgroundColor=#FFFFFF;fontFamily=Helvetica;entryX=0;entryY=0.25;entryDx=0;entryDy=0;exitX=0;exitY=0.25;exitDx=0;exitDy=0;curved=0;fillColor=#eeeeee;strokeColor=#36393d;" target="Cliente" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="2870" y="-615" />
-              <mxPoint x="2870" y="-970" />
-              <mxPoint x="3000" y="-970" />
+              <mxPoint x="2570" y="-125" />
+              <mxPoint x="2570" y="-480" />
+              <mxPoint x="2700" y="-480" />
             </Array>
-            <mxPoint x="4934" y="-900" as="sourcePoint" />
-            <mxPoint x="4210" y="-764" as="targetPoint" />
+            <mxPoint x="4634" y="-410" as="sourcePoint" />
+            <mxPoint x="3910" y="-274" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="YYs7SHEEd7f3Y_EMqIY3-7" connectable="0" parent="YYs7SHEEd7f3Y_EMqIY3-6" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=14;labelBackgroundColor=#FFFFFF;fontFamily=Helvetica;" value="1..*" vertex="1">
@@ -320,23 +322,23 @@
             <mxPoint y="-10" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="YYs7SHEEd7f3Y_EMqIY3-9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Utilizador&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idUtilizador: Long&lt;/div&gt;&lt;div&gt;-username: String&lt;/div&gt;&lt;div&gt;-passwordHash: String&lt;/div&gt;&lt;div&gt;-perfil: Perfil&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;-funcionario: Funcionario&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+autenticar(senha: String): boolean&lt;br&gt;+alterarSenha(senhaAtual: String, novaSenha: String): void&lt;br&gt;+alterarPerfil(novoPerfil: Perfil): void&lt;br&gt;+podeEntrar(): boolean&lt;br&gt;+isAdmin(): boolean&lt;br&gt;+podeGerirProdutos(): boolean&lt;br&gt;+podeAnularVendas(): boolean&lt;br&gt;+podeVerRelatorios(): boolean&lt;br&gt;+podeGerirFuncionarios(): boolean&lt;/div&gt;" vertex="1">
-          <mxGeometry height="320" width="270" x="3220" y="-1400" as="geometry" />
+        <mxCell id="YYs7SHEEd7f3Y_EMqIY3-9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Utilizador&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idUtilizador: Long&lt;/div&gt;&lt;div&gt;-username: String&lt;/div&gt;&lt;div&gt;-passwordHash: String&lt;/div&gt;&lt;div&gt;-perfil: Perfil&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;-funcionario: Funcionario&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+autenticar(senha: String): boolean&lt;br/&gt;+alterarSenha(senhaAtual: String, senhaNova: String): String&lt;br/&gt;+alterarPerfil(novoPerfil: Perfil): void&lt;br/&gt;+podeEntrar(): boolean&lt;br/&gt;+isAdmin(): boolean&lt;br/&gt;+podeGerirProdutos(): boolean&lt;br/&gt;+podeAnularVendas(): boolean&lt;br/&gt;+podeVerRelatorios(): boolean&lt;br/&gt;+podeGerirFuncionarios(): boolean&lt;/div&gt;" vertex="1">
+          <mxGeometry height="320" width="270" x="2920" y="-910" as="geometry" />
         </mxCell>
         <mxCell id="YYs7SHEEd7f3Y_EMqIY3-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div&gt;«enumeration»&lt;/div&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Perfil&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;ADMIN&lt;/div&gt;&lt;div&gt;GERENTE&lt;/div&gt;&lt;div&gt;VENDEDOR&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="100" width="120" x="3640" y="-1220" as="geometry" />
+          <mxGeometry height="100" width="120" x="3340" y="-730" as="geometry" />
         </mxCell>
         <mxCell id="YYs7SHEEd7f3Y_EMqIY3-11" edge="1" parent="1" source="Funcionario" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;fontSize=14;exitX=1;exitY=0.25;exitDx=0;exitDy=0;curved=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;fillColor=#eeeeee;strokeColor=#36393d;" target="YYs7SHEEd7f3Y_EMqIY3-9" value="1">
           <mxGeometry relative="1" x="-0.9775" y="18" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="2645.45" y="-939.91" />
-              <mxPoint x="2790.18" y="-939.91" />
-              <mxPoint x="2790.18" y="-1169.91" />
-              <mxPoint x="3180" y="-1169.91" />
-              <mxPoint x="3180" y="-1159.91" />
+              <mxPoint x="2345.45" y="-449.90999999999997" />
+              <mxPoint x="2490.18" y="-449.90999999999997" />
+              <mxPoint x="2490.18" y="-679.9100000000001" />
+              <mxPoint x="2880" y="-679.9100000000001" />
+              <mxPoint x="2880" y="-669.9100000000001" />
             </Array>
-            <mxPoint x="4170" y="-460" as="sourcePoint" />
+            <mxPoint x="3870" y="30" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="YYs7SHEEd7f3Y_EMqIY3-15" connectable="0" parent="YYs7SHEEd7f3Y_EMqIY3-11" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=14;" value="0..1" vertex="1">
@@ -348,32 +350,32 @@
           <mxGeometry relative="1" x="0.0069" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="3700" y="-1295" />
+              <mxPoint x="3400" y="-805" />
             </Array>
-            <mxPoint x="3820" y="-1250" as="sourcePoint" />
-            <mxPoint x="4190" y="-1310" as="targetPoint" />
+            <mxPoint x="3520" y="-760" as="sourcePoint" />
+            <mxPoint x="3890" y="-820" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="YYs7SHEEd7f3Y_EMqIY3-19" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;fillColor=#eeeeee;strokeColor=#36393d;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div&gt;«enumeration»&lt;/div&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;EstadoProduto&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;ATIVO&lt;/div&gt;&lt;div&gt;DESCUNTINUADO&lt;/div&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="90" width="155" x="3340" y="-200" as="geometry" />
+          <mxGeometry height="90" width="155" x="3040" y="290" as="geometry" />
         </mxCell>
         <mxCell id="YYs7SHEEd7f3Y_EMqIY3-20" edge="1" parent="1" source="Produto" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=open;endFill=0;dashed=1;fontSize=14;labelBackgroundColor=#FFFFFF;fontFamily=Helvetica;exitX=1;exitY=0.25;exitDx=0;exitDy=0;curved=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fillColor=#eeeeee;strokeColor=#36393d;" target="YYs7SHEEd7f3Y_EMqIY3-19" value="">
           <mxGeometry relative="1" x="0.0069" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="3300" y="15.03" />
-              <mxPoint x="3300" y="-154.97" />
+              <mxPoint x="3000" y="505.03" />
+              <mxPoint x="3000" y="335.03" />
             </Array>
-            <mxPoint x="3180" y="-65" as="sourcePoint" />
+            <mxPoint x="2880" y="425" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="YYs7SHEEd7f3Y_EMqIY3-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;fillColor=#eeeeee;strokeColor=#36393d;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Reembolso&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;&lt;div&gt;-idReembolso: Long&lt;/div&gt;&lt;div&gt;-quantidade: int&lt;/div&gt;&lt;div&gt;-valor: Decimal&lt;/div&gt;&lt;div&gt;-motivo: String&lt;/div&gt;&lt;div&gt;-data: LocalDateTime&lt;/div&gt;&lt;div&gt;-item: ItemVendido&lt;/div&gt;&lt;div&gt;-funcionario: Funcionario&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+isParcial(): boolean&lt;br&gt;+validar(): boolean&lt;/div&gt;" vertex="1">
-          <mxGeometry height="210" width="280" x="3850" y="-520" as="geometry" />
+        <mxCell id="YYs7SHEEd7f3Y_EMqIY3-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=0;overflow=fill;fillColor=#eeeeee;strokeColor=#36393d;strokeWidth=1.2;fontSize=14;fontFamily=Helvetica;" value="&lt;div style=&quot;text-align:center;padding:4px 8px;&quot;&gt;&lt;div style=&quot;font-weight:700;&quot;&gt;Reembolso&lt;/div&gt;&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;-idReembolso: Long&lt;br/&gt;-quantidade: Integer&lt;br/&gt;-valor: Double&lt;br/&gt;-motivo: String&lt;br/&gt;-data: LocalDateTime&lt;br/&gt;-item: ItemVendido&lt;br/&gt;-funcionario: Funcionario&lt;/div&gt;&lt;hr style=&quot;margin: 0px; border-width: 1px medium medium; border-style: solid none none; border-color: rgb(0, 0, 0) currentcolor currentcolor; border-image: none;&quot;&gt;&lt;div style=&quot;text-align: left; padding: 4px 8px;&quot;&gt;+isParcial(): boolean&lt;br&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="210" width="280" x="3550" y="-30" as="geometry" />
         </mxCell>
         <mxCell id="YYs7SHEEd7f3Y_EMqIY3-23" edge="1" parent="1" source="ItemVendido" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;strokeColor=#36393d;fontSize=14;exitX=1;exitY=0.25;exitDx=0;exitDy=0;curved=0;fillColor=#eeeeee;" target="YYs7SHEEd7f3Y_EMqIY3-22" value="0..*">
           <mxGeometry relative="1" x="0.88" y="20" as="geometry">
             <mxPoint as="offset" />
-            <mxPoint x="2759.75" y="-311" as="sourcePoint" />
+            <mxPoint x="2459.75" y="179" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="YYs7SHEEd7f3Y_EMqIY3-25" connectable="0" parent="YYs7SHEEd7f3Y_EMqIY3-23" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=14;" value="1" vertex="1">
@@ -385,10 +387,10 @@
           <mxGeometry relative="1" x="-0.9681" y="20" as="geometry">
             <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="2570.29" y="-250" />
-              <mxPoint x="3920" y="-250" />
+              <mxPoint x="2270.29" y="240" />
+              <mxPoint x="3620" y="240" />
             </Array>
-            <mxPoint x="1370" y="-690" as="sourcePoint" />
+            <mxPoint x="1070" y="-200" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="YYs7SHEEd7f3Y_EMqIY3-26" connectable="0" parent="YYs7SHEEd7f3Y_EMqIY3-24" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=14;" value="0..*" vertex="1">
