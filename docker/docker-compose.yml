@@ -12,13 +12,20 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
 
   adminer:
-    image: adminer
+    image: adminer:latest
     container_name: gestao_adminer
     restart: unless-stopped
     ports:
       - "8080:8080"
+    depends_on:
+      - db
 
 volumes:
   mysql_data:
