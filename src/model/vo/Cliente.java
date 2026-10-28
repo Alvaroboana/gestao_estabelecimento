@@ -2,59 +2,52 @@ package model.vo;
 
 import java.util.List;
 
-public class Cliente {
-private Long idCliente;
-private List<Venda> venda;
+public class Cliente extends Pessoa {
+    private Long idCliente;
+    private List<Venda> venda;
 
-public Cliente() {
-}
+    public Cliente() {
 
-public Cliente(List<Venda> venda) {
-    this.venda = venda;
-}
+    }
 
-public Cliente(Long idCliente, List<Venda> venda) {
-    this.idCliente = idCliente;
-    this.venda = venda;
-}
+    public Cliente(String nome, List<Contacto> contacto, List<Venda> venda) {
+        super(nome, contacto);
+        this.venda = venda;
+    }
 
-public Long getIdCliente() {
-    return idCliente;
-}
+    public Cliente(String nome, List<Contacto> contacto, Long idCliente, List<Venda> venda) {
+        super(nome, contacto);
+        this.idCliente = idCliente;
+        this.venda = venda;
+    }
 
-public void setIdCliente(Long idCliente) {
-    this.idCliente = idCliente;
-}
+    public void adicionarVenda(Venda venda) {
 
-public List<Venda> getVenda() {
-    return venda;
-}
+    }
 
-public void setVenda(List<Venda> venda) {
-    this.venda = venda;
-}
+    public void removerVenda() {
 
-public void adicionarVenda(Venda venda){
+    }
 
-}
+    public Double calcularTotalCompras() {
+        return 0.0;
+    }
 
-public void removerVenda(){
+    public Venda obterUltimaCompra() {
+        return null;
+    }
 
-}
+    public Long getIdCliente() {
+        return idCliente;
+    }
 
-public Double calcularTotalCompras(){
-    return 0.0;
-}
+    public List<Venda> getVenda() {
+        return venda;
+    }
 
-public Venda obterUltimaCompra(){
-    return null;
-}
-
-@Override
-public String toString() {
-    return "Cliente [venda=" + venda + "]";
-}
-
-
+    @Override
+    public String toString() {
+        return "Cliente [venda=" + venda + "]";
+    }
 
 }
