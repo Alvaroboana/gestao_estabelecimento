@@ -98,4 +98,9 @@ public class Cidade implements Serializable {
     public String toString() {
         return "Cidade [idCidade=" + idCidade + ", nome=" + nome + ", bairro=" + bairro + "]";
     }
+
+    public Bairro getEstado() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getEstado'");
+    }
 }

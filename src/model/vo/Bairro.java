@@ -109,4 +109,9 @@ public class Bairro implements Serializable {
     public String toString() {
         return "Bairro [idBairro=" + idBairro + ", nome=" + nome + ", cidade=" + cidade + "]";
     }
+
+    public String getCep() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getCep'");
+    }
 }
