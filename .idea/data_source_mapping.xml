@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/docker/sql/00_privileges.sql" value="6bfff3ce-d846-4073-96ea-59cf46978661" />
+    <file url="file://$PROJECT_DIR$/docker/sql/manual/consultas.sql" value="6bfff3ce-d846-4073-96ea-59cf46978661" />
+  </component>
+</project>
