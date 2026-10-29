@@ -1,26 +1,29 @@
 package model.vo;
 
-public class Utilizador {
+import java.io.Serializable;
+
+public class Utilizador implements Serializable {
     private Long idUtilizador;
     private String username;
-    private String password;
+    private String passwordHash;
     private Perfil perfil;
     private Funcionario funcionario;
-    
+
     public Utilizador() {
     }
 
-    public Utilizador(String username, String password, Perfil perfil, Funcionario funcionario) {
+    public Utilizador(String username, String passwordHash, Perfil perfil, Funcionario funcionario) {
         this.username = username;
-        this.password = password;
+        this.passwordHash = passwordHash;
         this.perfil = perfil;
         this.funcionario = funcionario;
     }
 
-    public Utilizador(Long idUtilizador, String username, String password, Perfil perfil, Funcionario funcionario) {
+    public Utilizador(Long idUtilizador, String username, String passwordHash, Perfil perfil,
+            Funcionario funcionario) {
         this.idUtilizador = idUtilizador;
         this.username = username;
-        this.password = password;
+        this.passwordHash = passwordHash;
         this.perfil = perfil;
         this.funcionario = funcionario;
     }
@@ -41,12 +44,20 @@ public class Utilizador {
         this.username = username;
     }
 
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
     public String getPassword() {
-        return password;
+        return passwordHash;
     }
 
     public void setPassword(String password) {
-        this.password = password;
+        this.passwordHash = password;
     }
 
     public Perfil getPerfil() {
@@ -65,46 +76,81 @@ public class Utilizador {
         this.funcionario = funcionario;
     }
 
-    public boolean autenticar(String senha){
+    public boolean autenticar(String senha) {
         return false;
     }
 
-    public String alterarSenha(String senhaAtual, String senhaNova){
+    public String alterarSenha(String senhaAtual, String senhaNova) {
         return null;
     }
 
-    public void alterarPerfil(Perfil novoPerfil){
+    public void alterarPerfil(Perfil novoPerfil) {
 
     }
 
-    public boolean podeEntrar(){
+    public boolean podeEntrar() {
         return false;
     }
 
-    public boolean isAdmin(){
+    public boolean isAdmin() {
         return false;
     }
 
-    public boolean podeGerirProdutos(){
+    public boolean podeGerirProdutos() {
         return false;
     }
 
-    public boolean podeAnularVendas(){
+    public boolean podeAnularVendas() {
         return false;
     }
 
-    public boolean podeVerRelatorios(){
+    public boolean podeVerRelatorios() {
         return false;
     }
-    public boolean podeGerirFuncionarios(){
+
+    public boolean podeGerirFuncionarios() {
         return false;
     }
 
     @Override
-    public String toString() {
-        return "Utilizador [username=" + username + ", password=" + password + ", perfil=" + perfil + ", funcionario="
-                + funcionario + "]";
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        Utilizador outro = (Utilizador) obj;
+        if (this.idUtilizador == null) {
+            if (outro.idUtilizador != null) {
+                return false;
+            }
+        } else {
+            if (!this.idUtilizador.equals(outro.idUtilizador)) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    
+    @Override
+    public int hashCode() {
+        int primo = 31;
+        int resultado = 1;
+        if (this.idUtilizador != null) {
+            resultado = primo * resultado + this.idUtilizador.hashCode();
+        } else {
+            resultado = primo * resultado + 0;
+        }
+        return resultado;
+    }
+
+    @Override
+    public String toString() {
+        return "Utilizador [idUtilizador=" + idUtilizador + ", username=" + username + ", perfil=" + perfil
+                + ", funcionario=" + funcionario + "]";
+    }
 }

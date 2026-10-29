@@ -1,11 +1,13 @@
 package model.vo;
 
+
 import java.time.LocalDate;
 import java.util.List;
 
 public class Funcionario extends Pessoa {
     private Long idFuncionario;
     private String bi;
+    private LocalDate dataNascimento;
     private LocalDate dataInicio;
     private EstadoFuncionario estado;
     private Cargo cargo;
@@ -15,10 +17,11 @@ public class Funcionario extends Pessoa {
     public Funcionario() {
     }
 
-    public Funcionario(String nome, List<Contacto> contacto, String bi, LocalDate dataInicio, EstadoFuncionario estado,
-            Cargo cargo, Endereco endereco, List<Venda> venda) {
+    public Funcionario(String nome, List<Contacto> contacto, String bi, LocalDate dataNascimento, LocalDate dataInicio,
+            EstadoFuncionario estado, Cargo cargo, Endereco endereco, List<Venda> venda) {
         super(nome, contacto);
         this.bi = bi;
+        this.dataNascimento = dataNascimento;
         this.dataInicio = dataInicio;
         this.estado = estado;
         this.cargo = cargo;
@@ -26,11 +29,12 @@ public class Funcionario extends Pessoa {
         this.venda = venda;
     }
 
-    public Funcionario(String nome, List<Contacto> contacto, Long idFuncionario, String bi, LocalDate dataInicio,
-            EstadoFuncionario estado, Cargo cargo, Endereco endereco, List<Venda> venda) {
+    public Funcionario(String nome, List<Contacto> contacto, Long idFuncionario, String bi, LocalDate dataNascimento,
+            LocalDate dataInicio, EstadoFuncionario estado, Cargo cargo, Endereco endereco, List<Venda> venda) {
         super(nome, contacto);
         this.idFuncionario = idFuncionario;
         this.bi = bi;
+        this.dataNascimento = dataNascimento;
         this.dataInicio = dataInicio;
         this.estado = estado;
         this.cargo = cargo;
@@ -46,7 +50,7 @@ public class Funcionario extends Pessoa {
 
     }
 
-    public void transferirCargo(Cargo novCargo) {
+    public void transferirCargo(Cargo novoCargo) {
 
     }
 
@@ -76,11 +80,14 @@ public class Funcionario extends Pessoa {
 
     public int calcularTotalVendasMes(int mes, int ano) {
         return 0;
-
     }
 
     public Long getIdFuncionario() {
         return idFuncionario;
+    }
+
+    public void setIdFuncionario(Long idFuncionario) {
+        this.idFuncionario = idFuncionario;
     }
 
     public String getBi() {
@@ -89,6 +96,14 @@ public class Funcionario extends Pessoa {
 
     public void setBi(String bi) {
         this.bi = bi;
+    }
+
+    public LocalDate getDataNascimento() {
+        return dataNascimento;
+    }
+
+    public void setDataNascimento(LocalDate dataNascimento) {
+        this.dataNascimento = dataNascimento;
     }
 
     public LocalDate getDataInicio() {
@@ -101,6 +116,10 @@ public class Funcionario extends Pessoa {
 
     public EstadoFuncionario getEstado() {
         return estado;
+    }
+
+    public void setEstado(EstadoFuncionario estado) {
+        this.estado = estado;
     }
 
     public Cargo getCargo() {
@@ -123,10 +142,49 @@ public class Funcionario extends Pessoa {
         return venda;
     }
 
-    @Override
-    public String toString() {
-        return "Funcionario [bi=" + bi + ", dataInicio=" + dataInicio + ", estado=" + estado + ", cargo=" + cargo
-                + ", endereco=" + endereco + ", venda=" + venda + "]";
+    public void setVenda(List<Venda> venda) {
+        this.venda = venda;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        Funcionario outro = (Funcionario) obj;
+        if (this.idFuncionario == null) {
+            if (outro.idFuncionario != null) {
+                return false;
+            }
+        } else {
+            if (!this.idFuncionario.equals(outro.idFuncionario)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int primo = 31;
+        int resultado = 1;
+        if (this.idFuncionario != null) {
+            resultado = primo * resultado + this.idFuncionario.hashCode();
+        } else {
+            resultado = primo * resultado + 0;
+        }
+        return resultado;
+    }
+
+    @Override
+    public String toString() {
+        return "Funcionario [idFuncionario=" + idFuncionario + ", nome=" + nome + ", bi=" + bi + ", dataNascimento="
+                + dataNascimento + ", dataInicio=" + dataInicio + ", estado=" + estado + ", cargo=" + cargo + "]";
+    }
 }
