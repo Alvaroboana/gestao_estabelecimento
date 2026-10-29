@@ -73,6 +73,27 @@ public class Endereco implements Serializable {
         this.numeroCasa = numeroCasa;
     }
 
+    public String getCidade() {
+        if (this.bairro != null && this.bairro.getCidade() != null) {
+            return this.bairro.getCidade().getNome();
+        }
+        return null;
+    }
+
+    public String getEstado() {
+        if (this.bairro != null && this.bairro.getCidade() != null && this.bairro.getCidade().getEstado() != null) {
+            return this.bairro.getCidade().getEstado().getNome();
+        }
+        return null;
+    }
+
+    public String getCep() {
+        if (this.bairro != null && this.bairro.getCidade() != null && this.bairro.getCidade().getEstado() != null) {
+            return this.bairro.getCidade().getEstado().getCep();
+        }
+        return null;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {

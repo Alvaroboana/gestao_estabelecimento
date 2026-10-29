@@ -138,6 +138,43 @@ public class Cliente extends Pessoa {
         return resultado;
     }
 
+    public String getTelefone() {
+        if (this.getContacto() != null && !this.getContacto().isEmpty()) {
+            return this.getContacto().get(0).getContacto();
+        }
+        return null;
+    }
+
+    public void setTelefone(String telefone) {
+        if (this.getContacto() == null) {
+            this.setContacto(new ArrayList<>());
+        }
+        if (this.getContacto().isEmpty()) {
+            this.getContacto().add(new Contacto(telefone));
+        } else {
+            this.getContacto().get(0).setContacto(telefone);
+        }
+    }
+
+    public String getEmail() {
+        if (this.getContacto() != null && this.getContacto().size() > 1) {
+            return this.getContacto().get(1).getContacto();
+        }
+        return null;
+    }
+
+    public void setEmail(String email) {
+        if (this.getContacto() == null) {
+            this.setContacto(new ArrayList<>());
+        }
+        if (this.getContacto().size() < 2) {
+            while (this.getContacto().size() < 2) {
+                this.getContacto().add(new Contacto(""));
+            }
+        }
+        this.getContacto().get(1).setContacto(email);
+    }
+
     @Override
     public String toString() {
         return "Cliente [idCliente=" + idCliente + ", nome=" + nome + ", venda=" + venda + "]";
