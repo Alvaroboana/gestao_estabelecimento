@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 CREATE DATABASE IF NOT EXISTS gestao CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE gestao;
 
@@ -165,3 +166,5 @@ CREATE TABLE IF NOT EXISTS reembolso (
     CONSTRAINT fk_reembolso_funcionario FOREIGN KEY (id_funcionario) 
         REFERENCES funcionario(id_funcionario) ON DELETE RESTRICT
 );
+=======
+>>>>>>> c006371c2d83ae84b851be01613fce4093092337
