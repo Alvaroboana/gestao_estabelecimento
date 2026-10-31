@@ -9,5 +9,4 @@ GEMINI.md
 Docker.session.sql
 gestao_estabelecimento/
 *.session.sql
-dao/
-testes/
+
