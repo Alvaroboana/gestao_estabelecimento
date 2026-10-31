@@ -1,6 +1,7 @@
 package model.vo;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Bairro implements Serializable {
@@ -58,15 +59,26 @@ public class Bairro implements Serializable {
     }
 
     public void adicionarEndereco(Endereco endereco) {
-
+        if (endereco != null) {
+            if (this.endereco == null) {
+                this.endereco = new ArrayList<Endereco>();
+            }
+            this.endereco.add(endereco);
+            endereco.setBairro(this);
+        }
     }
 
     public void removerEndereco(Endereco endereco) {
-
+        if (this.endereco != null && endereco != null) {
+            this.endereco.remove(endereco);
+        }
     }
 
     public String obterNomeCompleto() {
-        return null;
+        if (this.cidade != null && this.cidade.getNome() != null) {
+            return this.nome + ", " + this.cidade.getNome();
+        }
+        return this.nome;
     }
 
     @Override

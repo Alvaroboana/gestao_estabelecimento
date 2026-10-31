@@ -1,6 +1,7 @@
 package model.vo;
 
 import java.io.Serializable;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class Utilizador implements Serializable {
     private Long idUtilizador;
@@ -77,38 +78,81 @@ public class Utilizador implements Serializable {
     }
 
     public boolean autenticar(String senha) {
-        return false;
+        if (senha == null || this.passwordHash == null) {
+            return false;
+        }
+        try {
+            if (this.passwordHash.startsWith("$2a$") || this.passwordHash.startsWith("$2b$") || this.passwordHash.startsWith("$2y$")) {
+                return BCrypt.checkpw(senha, this.passwordHash);
+            }
+        } catch (Exception e) {
+        }
+        return this.passwordHash.equals(senha);
     }
 
     public String alterarSenha(String senhaAtual, String senhaNova) {
+        if (autenticar(senhaAtual)) {
+            if (senhaNova != null && !senhaNova.trim().isEmpty()) {
+                String novoHash;
+                try {
+                    novoHash = BCrypt.hashpw(senhaNova, BCrypt.gensalt());
+                } catch (Exception e) {
+                    novoHash = senhaNova;
+                }
+                this.passwordHash = novoHash;
+                return novoHash;
+            }
+        }
         return null;
     }
 
     public void alterarPerfil(Perfil novoPerfil) {
-
+        if (novoPerfil != null) {
+            this.perfil = novoPerfil;
+        }
     }
 
     public boolean podeEntrar() {
+        if (this.funcionario != null) {
+            if (this.funcionario.getEstado() == EstadoFuncionario.ATIVO) {
+                return true;
+            }
+        }
         return false;
     }
 
     public boolean isAdmin() {
+        if (this.perfil == Perfil.ADMIN) {
+            return true;
+        }
         return false;
     }
 
     public boolean podeGerirProdutos() {
+        if (this.perfil == Perfil.ADMIN || this.perfil == Perfil.GERENTE) {
+            return true;
+        }
         return false;
     }
 
     public boolean podeAnularVendas() {
+        if (this.perfil == Perfil.ADMIN || this.perfil == Perfil.GERENTE) {
+            return true;
+        }
         return false;
     }
 
     public boolean podeVerRelatorios() {
+        if (this.perfil == Perfil.ADMIN || this.perfil == Perfil.GERENTE) {
+            return true;
+        }
         return false;
     }
 
     public boolean podeGerirFuncionarios() {
+        if (this.perfil == Perfil.ADMIN) {
+            return true;
+        }
         return false;
     }
 

@@ -2,6 +2,7 @@ package model.vo;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 public class Estoque implements Serializable {
     private Long idEstoque;
@@ -82,18 +83,35 @@ public class Estoque implements Serializable {
     }
 
     public void repor(Integer quantidade) {
-
+        if (quantidade != null && quantidade > 0) {
+            if (this.quantidade == null) {
+                this.quantidade = 0;
+            }
+            this.quantidade = this.quantidade + quantidade;
+        }
     }
 
     public void retirar(Integer quantidade) {
-
+        if (quantidade != null && quantidade > 0 && this.quantidade != null) {
+            if (this.quantidade >= quantidade) {
+                this.quantidade = this.quantidade - quantidade;
+            }
+        }
     }
 
     public boolean estaVazio() {
+        if (this.quantidade == null || this.quantidade <= 0) {
+            return true;
+        }
         return false;
     }
 
     public boolean isExpirado() {
+        if (this.dataValidade != null) {
+            if (this.dataValidade.isBefore(LocalDate.now())) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -102,6 +120,10 @@ public class Estoque implements Serializable {
     }
 
     public int calcularDiasParaExpirar() {
+        if (this.dataValidade != null) {
+            long dias = ChronoUnit.DAYS.between(LocalDate.now(), this.dataValidade);
+            return (int) dias;
+        }
         return 0;
     }
 

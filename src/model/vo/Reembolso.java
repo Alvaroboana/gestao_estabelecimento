@@ -93,6 +93,11 @@ public class Reembolso implements Serializable {
     }
 
     public boolean isParcial() {
+        if (this.item != null && this.quantidade != null) {
+            if (this.item.getQuantidade() != null && this.quantidade < this.item.getQuantidade()) {
+                return true;
+            }
+        }
         return false;
     }
 

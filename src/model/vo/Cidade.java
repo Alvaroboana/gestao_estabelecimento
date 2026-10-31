@@ -1,6 +1,7 @@
 package model.vo;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Cidade implements Serializable {
@@ -47,14 +48,30 @@ public class Cidade implements Serializable {
     }
 
     public void adicionarBairro(Bairro bairro) {
-
+        if (bairro != null) {
+            if (this.bairro == null) {
+                this.bairro = new ArrayList<Bairro>();
+            }
+            this.bairro.add(bairro);
+            bairro.setCidade(this);
+        }
     }
 
     public void removerBairro(Bairro bairro) {
-
+        if (this.bairro != null && bairro != null) {
+            this.bairro.remove(bairro);
+        }
     }
 
     public Bairro buscarBairro(String nome) {
+        if (this.bairro != null && nome != null) {
+            for (int i = 0; i < this.bairro.size(); i++) {
+                Bairro b = this.bairro.get(i);
+                if (b != null && b.getNome() != null && b.getNome().equalsIgnoreCase(nome.trim())) {
+                    return b;
+                }
+            }
+        }
         return null;
     }
 
@@ -69,13 +86,13 @@ public class Cidade implements Serializable {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        Cidade outra = (Cidade) obj;
+        Cidade outro = (Cidade) obj;
         if (this.idCidade == null) {
-            if (outra.idCidade != null) {
+            if (outro.idCidade != null) {
                 return false;
             }
         } else {
-            if (!this.idCidade.equals(outra.idCidade)) {
+            if (!this.idCidade.equals(outro.idCidade)) {
                 return false;
             }
         }
