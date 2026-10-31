@@ -18,14 +18,14 @@ public class ConexaoDB {
     public static Connection getConnection() {
         try {
             Class.forName(DRIVER);
-            if (connection == null) {
+            if (connection == null || connection.isClosed()) {
                 connection = DriverManager.getConnection(URL, USUARIO, SENHA);
             }
             return connection;
         } catch (SQLException e) {
-            throw new DBException("Erro ao conectar o banco de dados.");
+            throw new DBException("Erro ao conectar o banco de dados: " + e.getMessage(), e);
         } catch (ClassNotFoundException a) {
-            throw new DBException("Driver JDBC do MySQL não encontrado");
+            throw new DBException("Driver JDBC do MySQL não encontrado", a);
         }
     }
 
@@ -34,7 +34,7 @@ public class ConexaoDB {
             try {
                 connection.close();
             } catch (SQLException e) {
-                throw new DBException("Erro ao fechar a conexao com o banco de dados.");
+                throw new DBException("Erro ao fechar a conexao com o banco de dados.", e);
             }
         }
     }
@@ -44,7 +44,7 @@ public class ConexaoDB {
             try {
                 st.close();
             } catch (SQLException e) {
-                throw new DBException("Erro ao fechar o Statement.");
+                throw new DBException("Erro ao fechar o Statement.", e);
             }
         }
     }
@@ -54,7 +54,7 @@ public class ConexaoDB {
             try {
                 pst.close();
             } catch (SQLException e) {
-                throw new DBException("Erro ao fechar o PreparedStatement.");
+                throw new DBException("Erro ao fechar o PreparedStatement.", e);
             }
         }
     }
@@ -64,7 +64,7 @@ public class ConexaoDB {
             try {
                 rs.close();
             } catch (SQLException e) {
-                throw new DBException("Erro ao fecha o resuntSet.");
+                throw new DBException("Erro ao fecha o resuntSet.", e);
             }
         }
     }
