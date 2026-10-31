@@ -13,30 +13,24 @@ public class ConexaoDB {
     private static final String USUARIO = "gestao";
     private static final String SENHA = "gestao";
 
-    private static Connection connection = null;
+    static {
+        try {
+            Class.forName(DRIVER);
+        } catch (ClassNotFoundException e) {
+            throw new DBException("Driver JDBC do MySQL não encontrado", e);
+        }
+    }
 
     public static Connection getConnection() {
         try {
-            Class.forName(DRIVER);
-            if (connection == null || connection.isClosed()) {
-                connection = DriverManager.getConnection(URL, USUARIO, SENHA);
-            }
-            return connection;
+            return DriverManager.getConnection(URL, USUARIO, SENHA);
         } catch (SQLException e) {
             throw new DBException("Erro ao conectar o banco de dados: " + e.getMessage(), e);
-        } catch (ClassNotFoundException a) {
-            throw new DBException("Driver JDBC do MySQL não encontrado", a);
         }
     }
 
     public static void closeConnection() {
-        if (connection != null) {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                throw new DBException("Erro ao fechar a conexao com o banco de dados.", e);
-            }
-        }
+        // Mantido para compatibilidade de chamadas legadas
     }
 
     public static void closeStatement(Statement st) {
