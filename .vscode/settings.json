@@ -10,9 +10,11 @@
             "server": "localhost",
             "port": 3306,
             "driver": "MySQL",
-            "name": "Gest",
+            "name": "Gestao",
+            "group": "Gestao",
             "database": "gestao",
-            "username": "root"
+            "username": "root",
+            "password": "root"
         }
     ]
 }
