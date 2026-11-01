@@ -1,6 +1,8 @@
 package model.vo;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ItemVendido implements Serializable {
@@ -93,26 +95,65 @@ public class ItemVendido implements Serializable {
     }
 
     public void alterarQuantidade(int quantidade) {
-
+        if (quantidade > 0) {
+            this.quantidade = quantidade;
+        }
     }
 
     public void aplicarDesconto(Double desconto) {
-
+        if (desconto != null && desconto >= 0) {
+            this.desconto = desconto;
+        }
     }
 
     public void trocarProduto(Produto produto) {
-
+        if (produto != null) {
+            this.produto = produto;
+            if (produto.getPreco() != null) {
+                this.preco = produto.getPreco();
+            }
+        }
     }
 
     public Reembolso reembolsar(int quantidade, String motivo, Funcionario funcionario) {
+        if (quantidade > 0 && this.quantidade != null && quantidade <= this.quantidade) {
+            double valorReembolso = 0.0;
+            if (this.preco != null) {
+                valorReembolso = quantidade * this.preco;
+                if (this.desconto != null && this.desconto > 0 && this.quantidade > 0) {
+                    valorReembolso = valorReembolso - ((this.desconto / this.quantidade) * quantidade);
+                }
+            }
+            if (valorReembolso < 0) {
+                valorReembolso = 0.0;
+            }
+            Reembolso r = new Reembolso(quantidade, valorReembolso, motivo, LocalDateTime.now(), this, funcionario);
+            if (this.reembolso == null) {
+                this.reembolso = new ArrayList<Reembolso>();
+            }
+            this.reembolso.add(r);
+            return r;
+        }
         return null;
     }
 
     public Double calcularSubtotal() {
-        return 0.0;
+        double total = 0.0;
+        if (this.quantidade != null && this.preco != null) {
+            total = this.quantidade * this.preco;
+        }
+        double desc = calcularValorDesconto();
+        total = total - desc;
+        if (total < 0) {
+            total = 0.0;
+        }
+        return total;
     }
 
     public Double calcularValorDesconto() {
+        if (this.desconto != null && this.desconto > 0) {
+            return this.desconto;
+        }
         return 0.0;
     }
 

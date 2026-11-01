@@ -1,6 +1,7 @@
 package model.vo;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Categoria implements Serializable {
@@ -47,18 +48,32 @@ public class Categoria implements Serializable {
     }
 
     public void adicionarProduto(Produto produto) {
-
+        if (produto != null) {
+            if (this.produto == null) {
+                this.produto = new ArrayList<Produto>();
+            }
+            this.produto.add(produto);
+            produto.setCategoria(this);
+        }
     }
 
     public void removerProduto(Produto produto) {
-
+        if (this.produto != null && produto != null) {
+            this.produto.remove(produto);
+        }
     }
 
     public int contarProduto() {
+        if (this.produto != null) {
+            return this.produto.size();
+        }
         return 0;
     }
 
     public boolean podeSerRemovida() {
+        if (this.produto == null || this.produto.isEmpty()) {
+            return true;
+        }
         return false;
     }
 
@@ -73,13 +88,13 @@ public class Categoria implements Serializable {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        Categoria outra = (Categoria) obj;
+        Categoria outro = (Categoria) obj;
         if (this.idCategoria == null) {
-            if (outra.idCategoria != null) {
+            if (outro.idCategoria != null) {
                 return false;
             }
         } else {
-            if (!this.idCategoria.equals(outra.idCategoria)) {
+            if (!this.idCategoria.equals(outro.idCategoria)) {
                 return false;
             }
         }

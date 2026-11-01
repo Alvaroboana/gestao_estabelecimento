@@ -1,6 +1,6 @@
 package model.vo;
 
-
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -27,19 +27,29 @@ public class Fornecedor extends Pessoa {
     }
 
     public void adicionarProduto(Produto produto) {
-
+        if (produto != null) {
+            if (this.produto == null) {
+                this.produto = new HashSet<Produto>();
+            }
+            this.produto.add(produto);
+        }
     }
 
     public void removerProduto(Produto produto) {
-
+        if (this.produto != null && produto != null) {
+            this.produto.remove(produto);
+        }
     }
 
     public boolean fornece(Produto produto) {
+        if (this.produto != null && produto != null) {
+            return this.produto.contains(produto);
+        }
         return false;
     }
 
     public void alterarEndereco(Endereco endereco) {
-
+        this.endereco = endereco;
     }
 
     public Long getIdFornecedor() {

@@ -1,6 +1,7 @@
 package model.vo;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Cargo implements Serializable {
@@ -58,22 +59,38 @@ public class Cargo implements Serializable {
     }
 
     public void adicionarFuncionario(Funcionario funcionario) {
-
+        if (funcionario != null) {
+            if (this.funcionario == null) {
+                this.funcionario = new ArrayList<Funcionario>();
+            }
+            this.funcionario.add(funcionario);
+            funcionario.setCargo(this);
+        }
     }
 
     public void removerFuncionario(Funcionario funcionario) {
-
+        if (this.funcionario != null && funcionario != null) {
+            this.funcionario.remove(funcionario);
+        }
     }
 
     public void alterarSalarioBase(Double novoSalario) {
-
+        if (novoSalario != null && novoSalario >= 0) {
+            this.salarioBase = novoSalario;
+        }
     }
 
     public int contarFuncionarios() {
+        if (this.funcionario != null) {
+            return this.funcionario.size();
+        }
         return 0;
     }
 
     public boolean podeSerRemovido() {
+        if (this.funcionario == null || this.funcionario.isEmpty()) {
+            return true;
+        }
         return false;
     }
 

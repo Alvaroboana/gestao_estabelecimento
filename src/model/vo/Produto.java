@@ -2,6 +2,8 @@ package model.vo;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -128,67 +130,161 @@ public class Produto implements Serializable {
     }
 
     public void adicionarEstoque(Estoque estoque) {
-
+        if (estoque != null) {
+            if (this.estoque == null) {
+                this.estoque = new ArrayList<Estoque>();
+            }
+            this.estoque.add(estoque);
+            estoque.setProduto(this);
+        }
     }
 
     public void removerEstoque(Estoque estoque) {
-
+        if (this.estoque != null && estoque != null) {
+            this.estoque.remove(estoque);
+        }
     }
 
     public void adicionarFornecedor(Fornecedor fornecedor) {
-
+        if (fornecedor != null) {
+            if (this.fornecedor == null) {
+                this.fornecedor = new HashSet<Fornecedor>();
+            }
+            this.fornecedor.add(fornecedor);
+        }
     }
 
     public void removerFornecedor(Fornecedor fornecedor) {
-
+        if (this.fornecedor != null && fornecedor != null) {
+            this.fornecedor.remove(fornecedor);
+        }
     }
 
     public void atualizarPreco(Double novoPreco) {
-
+        if (novoPreco != null && novoPreco >= 0) {
+            this.preco = novoPreco;
+        }
     }
 
     public void mudarCategoria(Categoria categoria) {
-
+        if (categoria != null) {
+            if (this.categoria != null) {
+                this.categoria.removerProduto(this);
+            }
+            this.categoria = categoria;
+            categoria.adicionarProduto(this);
+        }
     }
 
     public void descontinuar() {
-
+        this.estado = EstadoProduto.DESCONTINUADO;
     }
 
     public void reativar() {
-
+        this.estado = EstadoProduto.ATIVO;
     }
 
     public Estoque darEntrada(int quantidade, LocalDate dataValidade) {
+        if (quantidade > 0) {
+            if (this.estoque == null) {
+                this.estoque = new ArrayList<Estoque>();
+            }
+            Estoque novoEstoque = new Estoque(quantidade, LocalDate.now(), dataValidade, this, null);
+            this.estoque.add(novoEstoque);
+            return novoEstoque;
+        }
         return null;
     }
 
     public void darBaixa(int quantidade) {
-
+        if (quantidade > 0 && this.estoque != null) {
+            int restante = quantidade;
+            for (int i = 0; i < this.estoque.size(); i++) {
+                Estoque lote = this.estoque.get(i);
+                if (lote != null && lote.getQuantidade() != null && lote.getQuantidade() > 0) {
+                    if (lote.getQuantidade() <= restante) {
+                        restante = restante - lote.getQuantidade();
+                        lote.setQuantidade(0);
+                    } else {
+                        lote.setQuantidade(lote.getQuantidade() - restante);
+                        restante = 0;
+                    }
+                    if (restante == 0) {
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     public int calcularQuantidadeEmEstoque() {
-        return 0;
+        int total = 0;
+        if (this.estoque != null) {
+            for (int i = 0; i < this.estoque.size(); i++) {
+                Estoque lote = this.estoque.get(i);
+                if (lote != null && lote.getQuantidade() != null && lote.getQuantidade() > 0) {
+                    total = total + lote.getQuantidade();
+                }
+            }
+        }
+        return total;
     }
 
     public boolean itemStockSuficiente(int quantidade) {
+        if (quantidade > 0 && calcularQuantidadeEmEstoque() >= quantidade) {
+            return true;
+        }
         return false;
     }
 
     public boolean estaAbaixoDoMinimo() {
+        if (this.quantidadeMinima != null) {
+            if (calcularQuantidadeEmEstoque() < this.quantidadeMinima) {
+                return true;
+            }
+        }
         return false;
     }
 
     public boolean podeSerVendido() {
+        if (this.estado == EstadoProduto.ATIVO && calcularQuantidadeEmEstoque() > 0) {
+            return true;
+        }
         return false;
     }
 
     public List<Estoque> obterLotesDisponiveis() {
-        return null;
+        List<Estoque> disponiveis = new ArrayList<Estoque>();
+        if (this.estoque != null) {
+            for (int i = 0; i < this.estoque.size(); i++) {
+                Estoque lote = this.estoque.get(i);
+                if (lote != null && lote.getQuantidade() != null && lote.getQuantidade() > 0) {
+                    if (!lote.isExpirado()) {
+                        disponiveis.add(lote);
+                    }
+                }
+            }
+        }
+        return disponiveis;
     }
 
     public LocalDate obterProximaValidade() {
-        return null;
+        LocalDate proxima = null;
+        if (this.estoque != null) {
+            for (int i = 0; i < this.estoque.size(); i++) {
+                Estoque lote = this.estoque.get(i);
+                if (lote != null && lote.getDataValidade() != null && lote.getQuantidade() != null && lote.getQuantidade() > 0) {
+                    if (proxima == null) {
+                        proxima = lote.getDataValidade();
+                    } else {
+                        if (lote.getDataValidade().isBefore(proxima)) {
+                            proxima = lote.getDataValidade();
+                        }
+                    }
+                }
+            }
+        }
+        return proxima;
     }
 
     @Override

@@ -1,7 +1,8 @@
 package model.vo;
 
-
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Funcionario extends Pessoa {
@@ -43,43 +44,75 @@ public class Funcionario extends Pessoa {
     }
 
     public void adicionarVenda(Venda venda) {
-
+        if (venda != null) {
+            if (this.venda == null) {
+                this.venda = new ArrayList<Venda>();
+            }
+            this.venda.add(venda);
+            venda.setFuncionario(this);
+        }
     }
 
     public void removerVenda(Venda venda) {
-
+        if (this.venda != null && venda != null) {
+            this.venda.remove(venda);
+        }
     }
 
     public void transferirCargo(Cargo novoCargo) {
-
+        if (novoCargo != null) {
+            if (this.cargo != null) {
+                this.cargo.removerFuncionario(this);
+            }
+            this.cargo = novoCargo;
+            novoCargo.adicionarFuncionario(this);
+        }
     }
 
     public void alterarEndereco(Endereco endereco) {
-
+        this.endereco = endereco;
     }
 
     public void ativar() {
-
+        this.estado = EstadoFuncionario.ATIVO;
     }
 
     public void inativar() {
-
+        this.estado = EstadoFuncionario.INATIVO;
     }
 
     public void suspender() {
-
+        this.estado = EstadoFuncionario.SUSPENSO;
     }
 
     public boolean estadoAtivo() {
+        if (this.estado == EstadoFuncionario.ATIVO) {
+            return true;
+        }
         return false;
     }
 
     public int calcularAntiguidadeAnos() {
+        if (this.dataInicio != null) {
+            long anos = ChronoUnit.YEARS.between(this.dataInicio, LocalDate.now());
+            return (int) anos;
+        }
         return 0;
     }
 
     public int calcularTotalVendasMes(int mes, int ano) {
-        return 0;
+        int total = 0;
+        if (this.venda != null) {
+            for (int i = 0; i < this.venda.size(); i++) {
+                Venda v = this.venda.get(i);
+                if (v != null && v.getData() != null) {
+                    if (v.getData().getMonthValue() == mes && v.getData().getYear() == ano) {
+                        total = total + 1;
+                    }
+                }
+            }
+        }
+        return total;
     }
 
     public Long getIdFuncionario() {
