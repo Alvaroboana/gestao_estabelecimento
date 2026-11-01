@@ -1,15 +1,14 @@
 package model.dao;
 
-import java.sql.SQLException;
 import java.util.List;
 
 public interface GenericoDAO <T, ID> {
     
-   void salvar(T objecto) throws SQLException;
+   void salvar(T objecto);
 
-   void eliminar(ID id) throws SQLException;
+   void eliminar(ID id);
 
-   void atualizar(T objecto) throws SQLException;
+   void atualizar(T objecto);
 
    List<T> listarTodos();
    
