@@ -4,102 +4,181 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 import infra.ConexaoDB;
+import infra.DBException;
 import model.vo.Cliente;
+import model.vo.Contacto;
 
-public class ClienteDAO implements GenericoDAO<Cliente,Long>{
+public class ClienteDAO implements GenericoDAO<Cliente, Long> {
 
     @Override
     public void salvar(Cliente objecto) {
-        String sql = "INSERT INTO cliente (nomeCliente, telefoneCliente, emailCliente) VALUES (?, ?, ?)";
-        try(Connection conn = ConexaoDB.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)){
-            stmt.setString(1, objecto.getNome());
-            stmt.setString(2, objecto.getTelefone());
-            stmt.setString(3, objecto.getEmail());
-            stmt.executeUpdate();
+        String sqlPessoa = "INSERT INTO pessoa (nome) VALUES (?)";
+        String sqlCliente = "INSERT INTO cliente (id_pessoa) VALUES (?)";
+        String sqlContacto = "INSERT INTO contacto (contacto, id_pessoa) VALUES (?, ?)";
 
-            try(ResultSet rs = stmt.getGeneratedKeys()){
-                if(rs.next()){
-                    objecto.setIdCliente(rs.getLong(1));
+        Connection conn = null;
+        try {
+            conn = ConexaoDB.getConnection();
+            conn.setAutoCommit(false);
+
+            long idPessoa = 0L;
+            try (PreparedStatement stmtPessoa = conn.prepareStatement(sqlPessoa, Statement.RETURN_GENERATED_KEYS)) {
+                stmtPessoa.setString(1, objecto.getNome());
+                stmtPessoa.executeUpdate();
+                try (ResultSet rs = stmtPessoa.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        idPessoa = rs.getLong(1);
+                        objecto.setIdPessoa(idPessoa);
+                    }
                 }
             }
+
+            try (PreparedStatement stmtCliente = conn.prepareStatement(sqlCliente, Statement.RETURN_GENERATED_KEYS)) {
+                stmtCliente.setLong(1, idPessoa);
+                stmtCliente.executeUpdate();
+                try (ResultSet rs = stmtCliente.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        objecto.setIdCliente(rs.getLong(1));
+                    }
+                }
+            }
+
+            if (objecto.getContacto() != null && !objecto.getContacto().isEmpty()) {
+                try (PreparedStatement stmtContacto = conn.prepareStatement(sqlContacto, Statement.RETURN_GENERATED_KEYS)) {
+                    for (int i = 0; i < objecto.getContacto().size(); i++) {
+                        Contacto c = objecto.getContacto().get(i);
+                        if (c != null && c.getContacto() != null) {
+                            stmtContacto.setString(1, c.getContacto());
+                            stmtContacto.setLong(2, idPessoa);
+                            stmtContacto.executeUpdate();
+                            try (ResultSet rs = stmtContacto.getGeneratedKeys()) {
+                                if (rs.next()) {
+                                    c.setIdContacto(rs.getLong(1));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            conn.commit();
         } catch (SQLException e) {
-            e.printStackTrace();
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                }
+            }
+            throw new DBException("Erro ao salvar cliente: ", e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException ex) {
+                }
+            }
         }
     }
 
     @Override
     public void eliminar(Long id) {
-        String sql = "DELETE FROM cliente WHERE idCliente = ?";
-        try(Connection conn = ConexaoDB.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)){
+        String sql = "DELETE FROM pessoa WHERE id_pessoa = (SELECT id_pessoa FROM cliente WHERE id_cliente = ?)";
+        try (Connection conn = ConexaoDB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, id);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DBException("Erro ao eliminar cliente: " + e.getMessage(), e);
         }
     }
 
     @Override
     public void atualizar(Cliente objecto) {
-        String sql = "UPDATE cliente SET nomeCliente = ?, telefoneCliente = ?, emailCliente = ? WHERE idCliente = ?";
-        try(Connection conn = ConexaoDB.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)){
+        String sql = "UPDATE pessoa SET nome = ? WHERE id_pessoa = (SELECT id_pessoa FROM cliente WHERE id_cliente = ?)";
+        try (Connection conn = ConexaoDB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, objecto.getNome());
-            stmt.setString(2, objecto.getTelefone());
-            stmt.setString(3, objecto.getEmail());
-            stmt.setLong(4, objecto.getIdCliente());
+            stmt.setLong(2, objecto.getIdCliente());
             stmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DBException("Erro ao atualizar cliente: " + e.getMessage(), e);
         }
     }
 
     @Override
     public List<Cliente> listarTodos() {
-        String sql = "SELECT * FROM cliente";
-        List<Cliente> clientes = new ArrayList<>();
-        try(Connection conn = ConexaoDB.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery()){
-            while(rs.next()){
+        String sql = "SELECT c.id_cliente, p.id_pessoa, p.nome " +
+                     "FROM cliente c " +
+                     "INNER JOIN pessoa p ON c.id_pessoa = p.id_pessoa " +
+                     "ORDER BY p.nome";
+        List<Cliente> clientes = new ArrayList<Cliente>();
+        try (Connection conn = ConexaoDB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
                 Cliente cliente = new Cliente();
-                cliente.setIdCliente(rs.getLong("idCliente"));
-                cliente.setNome(rs.getString("nomeCliente"));
-                cliente.setTelefone(rs.getString("telefoneCliente"));
-                cliente.setEmail(rs.getString("emailCliente"));
+                cliente.setIdCliente(rs.getLong("id_cliente"));
+                cliente.setIdPessoa(rs.getLong("id_pessoa"));
+                cliente.setNome(rs.getString("nome"));
+                carregarContactos(conn, cliente);
                 clientes.add(cliente);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DBException("Erro ao listar clientes: " + e.getMessage(), e);
         }
         return clientes;
     }
 
     @Override
     public Cliente buscarPorId(Long id) {
-        String sql = "SELECT * FROM cliente WHERE idCliente = ?";
+        String sql = "SELECT c.id_cliente, p.id_pessoa, p.nome " +
+                     "FROM cliente c " +
+                     "INNER JOIN pessoa p ON c.id_pessoa = p.id_pessoa " +
+                     "WHERE c.id_cliente = ?";
         Cliente cliente = null;
-        try(Connection conn = ConexaoDB.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)){
+        try (Connection conn = ConexaoDB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, id);
-            try(ResultSet rs = stmt.executeQuery()){
-                if(rs.next()){
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
                     cliente = new Cliente();
-                    cliente.setIdCliente(rs.getLong("idCliente"));
-                    cliente.setNome(rs.getString("nomeCliente"));
-                    cliente.setTelefone(rs.getString("telefoneCliente"));
-                    cliente.setEmail(rs.getString("emailCliente"));
+                    cliente.setIdCliente(rs.getLong("id_cliente"));
+                    cliente.setIdPessoa(rs.getLong("id_pessoa"));
+                    cliente.setNome(rs.getString("nome"));
+                    carregarContactos(conn, cliente);
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DBException("Erro ao buscar cliente por ID: " + e.getMessage(), e);
         }
         return cliente;
     }
-     
+
+    private void carregarContactos(Connection conn, Cliente cliente) {
+        if (cliente == null || cliente.getIdPessoa() == null) {
+            return;
+        }
+        String sql = "SELECT id_contacto, contacto FROM contacto WHERE id_pessoa = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, cliente.getIdPessoa());
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<Contacto> lista = new ArrayList<Contacto>();
+                while (rs.next()) {
+                    Contacto c = new Contacto();
+                    c.setIdContacto(rs.getLong("id_contacto"));
+                    c.setContacto(rs.getString("contacto"));
+                    lista.add(c);
+                }
+                cliente.setContacto(lista);
+            }
+        } catch (SQLException e) {
+        }
+    }
+
 }
