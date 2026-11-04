@@ -190,6 +190,10 @@ public class MainFrame extends JFrame {
         painelCentral.add(painel, id);
     }
 
+    public JPanel getPainelPorId(String id) {
+        return mapaPaineis.get(id);
+    }
+
     public void fazerLoginSucesso(Utilizador utilizador) {
         this.utilizadorLogado = utilizador;
         SessaoUtilizador.iniciarSessao(utilizador);

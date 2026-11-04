@@ -40,8 +40,15 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import java.util.Arrays;
+import java.util.Locale;
+import model.dao.CargoDAO;
+import model.dao.ContactoDAO;
+import model.vo.Cargo;
+import model.vo.Contacto;
 import model.vo.Perfil;
 import model.vo.Utilizador;
+import util.AsyncTask;
 
 /**
  * Painel Utilizadores / Tabelas auxiliares (Cargos e Contactos) em Java Swing fiel aos designs HTML:
@@ -192,6 +199,11 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private JButton botaoCancelarEditarContacto;
     private JButton botaoEliminarEditarContacto;
 
+    private final CargoDAO cargoDAO;
+    private final ContactoDAO contactoDAO;
+    private List<Object[]> dadosCargosCarregados = null;
+    private List<Object[]> dadosContactosCarregados = null;
+
     private ModoVisao modoVisao;
     private String abaAuxiliarAtiva = "Cargos";
     private ModoPainelLateral modoLateral;
@@ -221,6 +233,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
 
     public UtilizadoresPanel(ModoVisao visaoInicial, AbaAuxiliar abaInicial, ModoPainelLateral modoLateralInicial) {
         UiStyle.instalarTemaEscuro();
+        this.cargoDAO = new CargoDAO();
+        this.contactoDAO = new ContactoDAO();
         this.modoVisao = visaoInicial != null ? visaoInicial : ModoVisao.TABELAS_AUXILIARES;
         this.abaAuxiliarAtiva = abaInicial != null ? abaInicial.getRotulo() : AbaAuxiliar.CARGOS.getRotulo();
         this.modoLateral = modoLateralInicial != null ? modoLateralInicial : ModoPainelLateral.NOVO_CONTACTO;
@@ -1350,8 +1364,9 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private void atualizarTabelaCargosFiltrada() {
         String termo = campoBuscarCargo.getTextoReal().trim().toLowerCase();
         modeloTabelaCargosAux.setRowCount(0);
+        List<Object[]> fonteDados = (dadosCargosCarregados != null) ? dadosCargosCarregados : Arrays.asList(DADOS_TABELA_CARGOS_AUX);
 
-        for (Object[] linha : DADOS_TABELA_CARGOS_AUX) {
+        for (Object[] linha : fonteDados) {
             String nome = String.valueOf(linha[1]).toLowerCase();
             if (termo.isEmpty() || nome.contains(termo)) {
                 modeloTabelaCargosAux.addRow(linha);
@@ -1362,8 +1377,9 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private void atualizarTabelaContactosFiltrada() {
         String termo = campoBuscarContacto.getTextoReal().trim().toLowerCase();
         modeloTabelaContactosAux.setRowCount(0);
+        List<Object[]> fonteDados = (dadosContactosCarregados != null) ? dadosContactosCarregados : Arrays.asList(DADOS_TABELA_CONTACTOS_AUX);
 
-        for (Object[] linha : DADOS_TABELA_CONTACTOS_AUX) {
+        for (Object[] linha : fonteDados) {
             String valor = String.valueOf(linha[1]).toLowerCase();
             String pessoa = String.valueOf(linha[2]).toLowerCase();
             String tipo = String.valueOf(linha[3]).toLowerCase();
@@ -1916,8 +1932,47 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        atualizarTabelaCargosFiltrada();
-        atualizarTabelaContactosFiltrada();
+        AsyncTask.executar(
+            () -> cargoDAO.listarTodos(),
+            cargos -> {
+                if (cargos != null && !cargos.isEmpty()) {
+                    List<Object[]> linhas = new ArrayList<>();
+                    for (Cargo c : cargos) {
+                        String idStr = String.valueOf(c.getIdCargo());
+                        String nomeStr = c.getNome() != null ? c.getNome() : "";
+                        String salStr = String.format(Locale.GERMANY, "%,.2f MT", c.getSalarioBase() != null ? c.getSalarioBase() : 0.0);
+                        String funcStr = "1";
+                        linhas.add(new Object[] {idStr, nomeStr, salStr, funcStr});
+                    }
+                    this.dadosCargosCarregados = linhas;
+                }
+                atualizarTabelaCargosFiltrada();
+            },
+            erro -> {
+                atualizarTabelaCargosFiltrada();
+            }
+        );
+
+        AsyncTask.executar(
+            () -> contactoDAO.listarTodos(),
+            contactos -> {
+                if (contactos != null && !contactos.isEmpty()) {
+                    List<Object[]> linhas = new ArrayList<>();
+                    for (Contacto c : contactos) {
+                        String idStr = String.valueOf(c.getIdContacto());
+                        String valStr = c.getContacto() != null ? c.getContacto() : "";
+                        String pessStr = "-";
+                        String tipoStr = "Geral";
+                        linhas.add(new Object[] {idStr, valStr, pessStr, tipoStr});
+                    }
+                    this.dadosContactosCarregados = linhas;
+                }
+                atualizarTabelaContactosFiltrada();
+            },
+            erro -> {
+                atualizarTabelaContactosFiltrada();
+            }
+        );
     }
 
     @Override

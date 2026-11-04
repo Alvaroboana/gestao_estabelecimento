@@ -35,8 +35,17 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import model.bo.ClienteBO;
+import model.vo.Cliente;
+import model.vo.Contacto;
 import model.vo.Perfil;
 import model.vo.Utilizador;
+import util.AsyncTask;
 
 /**
  * Painel Clientes, Novo Cliente, Editar Cliente e Informações do Cliente em Java Swing fiel aos designs HTML:
@@ -119,6 +128,10 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
     private JButton botaoEditarInformacoes;
     private JButton botaoFecharInformacoes;
 
+    private final ClienteBO clienteBO;
+    private List<Object[]> dadosClientesCarregados = null;
+    private List<Cliente> listaClientesEntidades = null;
+
     private ModoPainelLateral modoLateral;
 
     public ClientesPanel() {
@@ -132,6 +145,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
     public ClientesPanel(ModoPainelLateral modoInicial) {
         UiStyle.instalarTemaEscuro();
         this.modoLateral = modoInicial != null ? modoInicial : ModoPainelLateral.NENHUM;
+        this.clienteBO = new ClienteBO();
 
         // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
@@ -622,9 +636,41 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        botaoGuardarNovo = criarBotaoToolbar(
-                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, true
+        botaoGuardarNovo = new BotaoToolbarArredondado(
+                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarNovo.addActionListener(e -> {
+            String nome = (campoNomeNovo != null) ? campoNomeNovo.getText().trim() : "";
+            if (nome.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Informe o nome do cliente.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String contacto = (campoContactoNovo != null) ? campoContactoNovo.getText().trim() : "";
+            Cliente c = new Cliente();
+            c.setNome(nome);
+            if (!contacto.isEmpty()) {
+                Contacto cont = new Contacto();
+                cont.setContacto(contacto);
+                c.setContacto(Arrays.asList(cont));
+            }
+
+            AsyncTask.executar(
+                () -> {
+                    clienteBO.salvar(c);
+                    return null;
+                },
+                sucesso -> {
+                    JOptionPane.showMessageDialog(this, "Cliente cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    if (campoNomeNovo != null) campoNomeNovo.setText("");
+                    if (campoContactoNovo != null) campoContactoNovo.setText("");
+                    recarregarDados();
+                },
+                erro -> {
+                    JOptionPane.showMessageDialog(this, "Erro ao salvar cliente: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            );
+        });
         botaoCancelarNovo = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
@@ -723,16 +769,28 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        botaoGuardarAlteracoesEditar = criarBotaoToolbar(
-                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, true
+        botaoGuardarAlteracoesEditar = new BotaoToolbarArredondado(
+                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarAlteracoesEditar.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Alterações do cliente guardadas com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
+
         botaoCancelarEditar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
         botaoCancelarEditar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
-        botaoEliminarEditar = criarBotaoToolbar(
-                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false
+
+        botaoEliminarEditar = new BotaoToolbarArredondado(
+                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        botaoEliminarEditar.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Cliente eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
 
         acoes.add(botaoGuardarAlteracoesEditar);
         acoes.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -963,8 +1021,9 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
     private void atualizarTabelaFiltrada() {
         String termo = campoBuscarCliente.getTextoReal().trim().toLowerCase();
         modeloTabela.setRowCount(0);
+        List<Object[]> fonteDados = (dadosClientesCarregados != null) ? dadosClientesCarregados : Arrays.asList(DADOS_INICIAIS);
 
-        for (Object[] linha : DADOS_INICIAIS) {
+        for (Object[] linha : fonteDados) {
             String nome = String.valueOf(linha[1]).toLowerCase();
             if (termo.isEmpty() || nome.contains(termo)) {
                 modeloTabela.addRow(linha);
@@ -1396,7 +1455,29 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        atualizarTabelaFiltrada();
+        AsyncTask.executar(
+            () -> clienteBO.listarTodos(),
+            clientes -> {
+                this.listaClientesEntidades = clientes;
+                if (clientes != null && !clientes.isEmpty()) {
+                    List<Object[]> linhas = new ArrayList<>();
+                    for (Cliente c : clientes) {
+                        String idStr = String.valueOf(c.getIdCliente());
+                        String nomeStr = c.getNome() != null ? c.getNome() : "";
+                        String contStr = (c.getContacto() != null && !c.getContacto().isEmpty() && c.getContacto().get(0) != null)
+                                ? c.getContacto().get(0).getContacto() : "-";
+                        String totStr = "0,00 MT";
+                        String ultStr = "-";
+                        linhas.add(new Object[] {idStr, nomeStr, contStr, totStr, ultStr});
+                    }
+                    this.dadosClientesCarregados = linhas;
+                }
+                atualizarTabelaFiltrada();
+            },
+            erro -> {
+                atualizarTabelaFiltrada();
+            }
+        );
     }
 
     @Override

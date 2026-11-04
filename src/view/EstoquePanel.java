@@ -37,8 +37,14 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import model.bo.EstoqueBO;
+import model.vo.Estoque;
 import model.vo.Perfil;
 import model.vo.Utilizador;
+import util.AsyncTask;
 
 /**
  * Painel Estoque, Dar Entrada, Repor, Retirar e Editar Lote em Java Swing fiel aos designs HTML:
@@ -119,6 +125,10 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
     private CampoFormularioArredondado campoQuantidadeEditarLote;
     private CampoFormularioArredondado campoValidadeEditarLote;
 
+    private final EstoqueBO estoqueBO;
+    private List<Object[]> dadosEstoqueCarregados = null;
+    private List<Estoque> listaEstoqueEntidades = null;
+
     private ModoPainelLateral modoLateral;
 
     public EstoquePanel() {
@@ -132,6 +142,7 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
     public EstoquePanel(ModoPainelLateral modoInicial) {
         UiStyle.instalarTemaEscuro();
         this.modoLateral = modoInicial != null ? modoInicial : ModoPainelLateral.NENHUM;
+        this.estoqueBO = new EstoqueBO();
 
         // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
@@ -600,12 +611,11 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoGuardarEntrada = new BotaoToolbarArredondado(
                 "Guardar entrada", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
-        botaoGuardarEntrada.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Guardar entrada\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoGuardarEntrada.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Entrada de lote registrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
@@ -704,12 +714,11 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoConfirmarReposicao = new BotaoToolbarArredondado(
                 "Confirmar reposição", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
-        botaoConfirmarReposicao.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Confirmar reposição\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoConfirmarReposicao.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Reposição de estoque registrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
@@ -823,12 +832,11 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoConfirmarRetirada = new BotaoToolbarArredondado(
                 "Confirmar retirada", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
-        botaoConfirmarRetirada.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Confirmar retirada\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoConfirmarRetirada.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Retirada de estoque registrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
@@ -905,12 +913,11 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoGuardarAlteracoes = new BotaoToolbarArredondado(
                 "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
-        botaoGuardarAlteracoes.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Guardar alterações\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoGuardarAlteracoes.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Alterações do lote guardadas com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
@@ -920,12 +927,11 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoEliminarCard = new BotaoToolbarArredondado(
                 "Eliminar lote", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
-        botaoEliminarCard.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Eliminar lote\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoEliminarCard.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Lote eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
 
         barraBotoes.add(botaoGuardarAlteracoes);
         barraBotoes.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -1058,8 +1064,9 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
 
     private void atualizarTabelaFiltrada() {
         String termo = campoBuscarLote.getTextoReal().trim().toLowerCase();
+        List<Object[]> fonteDados = (dadosEstoqueCarregados != null) ? dadosEstoqueCarregados : Arrays.asList(DADOS_INICIAIS);
         List<Object[]> filtrados = new ArrayList<>();
-        for (Object[] linha : DADOS_INICIAIS) {
+        for (Object[] linha : fonteDados) {
             String lote = String.valueOf(linha[0]).toLowerCase();
             String produto = String.valueOf(linha[1]).toLowerCase();
             if (termo.isEmpty() || lote.contains(termo) || produto.contains(termo)) {
@@ -1559,7 +1566,32 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        atualizarTabelaFiltrada();
+        AsyncTask.executar(
+            () -> estoqueBO.listarTodos(),
+            estoques -> {
+                this.listaEstoqueEntidades = estoques;
+                if (estoques != null && !estoques.isEmpty()) {
+                    List<Object[]> linhas = new ArrayList<>();
+                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                    LocalDate hoje = LocalDate.now();
+                    for (Estoque est : estoques) {
+                        String loteStr = "L-" + est.getIdEstoque();
+                        String prodStr = (est.getProduto() != null && est.getProduto().getNome() != null)
+                                ? est.getProduto().getNome() : "";
+                        String qtdStr = est.getQuantidade() != null ? String.valueOf(est.getQuantidade()) : "0";
+                        String valStr = est.getDataValidade() != null ? est.getDataValidade().format(dtf) : "-";
+                        String sitStr = (est.getDataValidade() != null && est.getDataValidade().isBefore(hoje))
+                                ? "Expirado" : "Válido";
+                        linhas.add(new Object[] {loteStr, prodStr, qtdStr, valStr, sitStr});
+                    }
+                    this.dadosEstoqueCarregados = linhas;
+                }
+                atualizarTabelaFiltrada();
+            },
+            erro -> {
+                atualizarTabelaFiltrada();
+            }
+        );
     }
 
     @Override

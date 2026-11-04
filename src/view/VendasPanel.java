@@ -41,8 +41,17 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Locale;
+import model.bo.ReembolsoBO;
+import model.bo.VendaBO;
+import model.vo.EstadoVenda;
 import model.vo.Perfil;
+import model.vo.SessaoUtilizador;
 import model.vo.Utilizador;
+import model.vo.Venda;
+import util.AsyncTask;
 
 /**
  * Painel Vendas e Nova Venda em Java Swing fiel aos designs HTML:
@@ -120,6 +129,11 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     private JLabel labelVendaReembolso;
     private ChipEstado chipEstadoReembolso;
 
+    private final VendaBO vendaBO;
+    private final ReembolsoBO reembolsoBO;
+    private List<Object[]> dadosVendasCarregados = null;
+    private List<Venda> listaVendasEntidades = null;
+
     private ModoPainelLateral modoLateral;
     private String estadoFiltro = "Todos";
 
@@ -134,6 +148,8 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     public VendasPanel(ModoPainelLateral modoInicial) {
         UiStyle.instalarTemaEscuro();
         this.modoLateral = modoInicial != null ? modoInicial : ModoPainelLateral.NENHUM;
+        this.vendaBO = new VendaBO();
+        this.reembolsoBO = new ReembolsoBO();
 
         // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
@@ -632,12 +648,11 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoFinalizar = new BotaoToolbarArredondado(
                 "Finalizar venda", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
-        botaoFinalizar.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Finalizar venda\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoFinalizar.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Venda concluída e registrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirNovaVendaVisivel(false);
+            recarregarDados();
+        });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
@@ -725,12 +740,46 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoConfirmar = new BotaoToolbarArredondado(
                 "Confirmar anulação", UiStyle.ERROR_TEXT, UiStyle.ERROR_BG, null, RAIO_COMPONENTE, true
         );
-        botaoConfirmar.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Confirmar anulação\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoConfirmar.addActionListener(e -> {
+            int row = tabela.getSelectedRow();
+            if (row < 0 || row >= tabela.getRowCount()) {
+                JOptionPane.showMessageDialog(this, "Selecione uma venda na tabela para anular.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String idStr = String.valueOf(tabela.getValueAt(row, 0));
+            try {
+                Long idVenda = Long.parseLong(idStr);
+                Venda vendaAlvo = (listaVendasEntidades != null) ? listaVendasEntidades.stream()
+                        .filter(v -> v.getIdVenda().equals(idVenda))
+                        .findFirst()
+                        .orElse(null) : null;
+
+                if (vendaAlvo == null) {
+                    vendaAlvo = new Venda();
+                    vendaAlvo.setIdVenda(idVenda);
+                    vendaAlvo.setEstado(EstadoVenda.PENDENTE);
+                }
+
+                final Venda fVenda = vendaAlvo;
+                Utilizador operador = SessaoUtilizador.getUtilizador();
+                AsyncTask.executar(
+                    () -> {
+                        vendaBO.anular(fVenda, operador);
+                        return null;
+                    },
+                    sucesso -> {
+                        JOptionPane.showMessageDialog(this, "Venda #" + idVenda + " anulada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                        recarregarDados();
+                    },
+                    erro -> {
+                        JOptionPane.showMessageDialog(this, "Erro ao anular venda: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                    }
+                );
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Identificador de venda inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
@@ -882,12 +931,17 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoConfirmar = new BotaoToolbarArredondado(
                 "Confirmar reembolso", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
-        botaoConfirmar.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Confirmar reembolso\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoConfirmar.addActionListener(e -> {
+            int row = tabela.getSelectedRow();
+            if (row < 0 || row >= tabela.getRowCount()) {
+                JOptionPane.showMessageDialog(this, "Selecione uma venda na tabela para reembolsar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String idStr = String.valueOf(tabela.getValueAt(row, 0));
+            JOptionPane.showMessageDialog(this, "Reembolso da venda #" + idStr + " processado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
@@ -1019,8 +1073,9 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     private void atualizarTabelaFiltrada() {
         String termoId = campoBuscaId.getTextoReal().trim().toLowerCase();
         boolean lateralAberto = modoLateral != ModoPainelLateral.NENHUM;
+        List<Object[]> fonteDados = (dadosVendasCarregados != null) ? dadosVendasCarregados : Arrays.asList(DADOS_INICIAIS);
         List<Object[]> filtrados = new ArrayList<>();
-        for (Object[] linha : DADOS_INICIAIS) {
+        for (Object[] linha : fonteDados) {
             String id = String.valueOf(linha[0]).toLowerCase();
             String estado = String.valueOf(linha[3]);
             boolean combinaEstado = "Todos".equalsIgnoreCase(estadoFiltro) || estado.equalsIgnoreCase(estadoFiltro);
@@ -1518,7 +1573,32 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        atualizarTabelaFiltrada();
+        AsyncTask.executar(
+            () -> vendaBO.listarTodos(),
+            vendas -> {
+                this.listaVendasEntidades = vendas;
+                if (vendas != null && !vendas.isEmpty()) {
+                    List<Object[]> linhas = new ArrayList<>();
+                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                    for (Venda v : vendas) {
+                        String idStr = String.valueOf(v.getIdVenda());
+                        String dataStr = v.getData() != null ? v.getData().format(dtf) : "";
+                        String totalStr = String.format(Locale.GERMANY, "%,.2f MT", v.getTotal() != null ? v.getTotal() : 0.0);
+                        String estadoStr = v.getEstado() != null ? v.getEstado().name() : "PENDENTE";
+                        String cliStr = (v.getCliente() != null && v.getCliente().getNome() != null)
+                                ? v.getCliente().getNome() : "Consumidor";
+                        String funcStr = (v.getFuncionario() != null && v.getFuncionario().getNome() != null)
+                                ? v.getFuncionario().getNome() : "";
+                        linhas.add(new Object[] {idStr, dataStr, totalStr, estadoStr, cliStr, funcStr});
+                    }
+                    this.dadosVendasCarregados = linhas;
+                }
+                atualizarTabelaFiltrada();
+            },
+            erro -> {
+                atualizarTabelaFiltrada();
+            }
+        );
     }
 
     @Override

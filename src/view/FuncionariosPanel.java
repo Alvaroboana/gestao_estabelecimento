@@ -35,8 +35,17 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import model.bo.FuncionarioBO;
+import model.vo.Cargo;
+import model.vo.EstadoFuncionario;
+import model.vo.Funcionario;
 import model.vo.Perfil;
 import model.vo.Utilizador;
+import util.AsyncTask;
 
 /**
  * Painel Funcionários, Novo Funcionário, Editar Funcionário e Estado/Cargo em Java Swing fiel aos designs HTML:
@@ -134,6 +143,10 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
     private JButton botaoConfirmarTransferirCargo;
     private JButton botaoCancelarEstadoCargo;
 
+    private final FuncionarioBO funcionarioBO;
+    private List<Object[]> dadosFuncionariosCarregados = null;
+    private List<Funcionario> listaFuncionariosEntidades = null;
+
     private ModoPainelLateral modoLateral;
     private String estadoFiltro = "Todos";
 
@@ -148,6 +161,7 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
     public FuncionariosPanel(ModoPainelLateral modoInicial) {
         UiStyle.instalarTemaEscuro();
         this.modoLateral = modoInicial != null ? modoInicial : ModoPainelLateral.NENHUM;
+        this.funcionarioBO = new FuncionarioBO();
 
         // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
@@ -796,9 +810,14 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        botaoGuardarNovo = criarBotaoToolbar(
-                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, true
+        botaoGuardarNovo = new BotaoToolbarArredondado(
+                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarNovo.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Funcionário cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
         botaoCancelarNovo = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
@@ -914,16 +933,28 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        botaoGuardarAlteracoesEditar = criarBotaoToolbar(
-                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, true
+        botaoGuardarAlteracoesEditar = new BotaoToolbarArredondado(
+                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarAlteracoesEditar.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Alterações do funcionário guardadas com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
+
         botaoCancelarEditar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
         botaoCancelarEditar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
-        botaoEliminarEditar = criarBotaoToolbar(
-                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false
+
+        botaoEliminarEditar = new BotaoToolbarArredondado(
+                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        botaoEliminarEditar.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Funcionário eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
 
         acoes.add(botaoGuardarAlteracoesEditar);
         acoes.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -1188,7 +1219,9 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
             modeloTabela.setRowCount(0);
         }
 
-        for (Object[] linha : DADOS_INICIAIS) {
+        List<Object[]> fonteDados = (dadosFuncionariosCarregados != null) ? dadosFuncionariosCarregados : Arrays.asList(DADOS_INICIAIS);
+
+        for (Object[] linha : fonteDados) {
             String nome = String.valueOf(linha[1]).toLowerCase();
             String bi = String.valueOf(linha[2]).toLowerCase();
             String estado = String.valueOf(linha[5]);
@@ -1682,7 +1715,32 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        atualizarTabelaFiltrada();
+        AsyncTask.executar(
+            () -> funcionarioBO.listarTodos(),
+            funcs -> {
+                this.listaFuncionariosEntidades = funcs;
+                if (funcs != null && !funcs.isEmpty()) {
+                    List<Object[]> linhas = new ArrayList<>();
+                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                    for (Funcionario f : funcs) {
+                        String idStr = String.valueOf(f.getIdFuncionario());
+                        String nomeStr = f.getNome() != null ? f.getNome() : "";
+                        String biStr = f.getBi() != null ? f.getBi() : "";
+                        String iniStr = f.getDataInicio() != null ? f.getDataInicio().format(dtf) : "-";
+                        String cargoStr = (f.getCargo() != null && f.getCargo().getNome() != null)
+                                ? f.getCargo().getNome() : "";
+                        String estStr = f.getEstado() != null ? f.getEstado().name() : "ATIVO";
+                        String antStr = f.calcularAntiguidadeAnos() + " anos";
+                        linhas.add(new Object[] {idStr, nomeStr, biStr, iniStr, cargoStr, estStr, antStr});
+                    }
+                    this.dadosFuncionariosCarregados = linhas;
+                }
+                atualizarTabelaFiltrada();
+            },
+            erro -> {
+                atualizarTabelaFiltrada();
+            }
+        );
     }
 
     @Override

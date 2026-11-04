@@ -130,8 +130,8 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
             MainFrame mf = (MainFrame) root;
             mf.mostrarPainel(idPainel);
 
-            JPanel destino = mf.getPainelCentral();
-            for (Component c : destino.getComponents()) {
+            JPanel c = mf.getPainelPorId(idPainel);
+            if (c != null) {
                 if (idPainel.equals(MainFrame.PAINEL_VENDAS) && c instanceof VendasPanel && parametro instanceof VendasPanel.ModoPainelLateral) {
                     ((VendasPanel) c).abrirModoLateral((VendasPanel.ModoPainelLateral) parametro);
                 } else if (idPainel.equals(MainFrame.PAINEL_ESTOQUE) && c instanceof EstoquePanel && parametro instanceof EstoquePanel.ModoPainelLateral) {

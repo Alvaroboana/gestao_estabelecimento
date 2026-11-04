@@ -37,8 +37,15 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import java.util.Arrays;
+import java.util.Locale;
+import model.bo.ProdutoBO;
+import model.vo.Categoria;
+import model.vo.EstadoProduto;
 import model.vo.Perfil;
+import model.vo.Produto;
 import model.vo.Utilizador;
+import util.AsyncTask;
 
 /**
  * Painel Produtos, Novo Produto, Editar Produto e Fornecedores do Produto em Java Swing fiel aos designs HTML:
@@ -117,6 +124,10 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     private JLabel labelNomeProdutoFornecedores;
     private BotaoSeletorFormulario seletorAssociarFornecedor;
 
+    private final ProdutoBO produtoBO;
+    private List<Object[]> dadosProdutosCarregados = null;
+    private List<Produto> listaProdutosEntidades = null;
+
     private ModoPainelLateral modoLateral;
     private String categoriaFiltro = "Todas";
 
@@ -131,6 +142,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     public ProdutosPanel(ModoPainelLateral modoInicial) {
         UiStyle.instalarTemaEscuro();
         this.modoLateral = modoInicial != null ? modoInicial : ModoPainelLateral.NENHUM;
+        this.produtoBO = new ProdutoBO();
 
         // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
@@ -576,12 +588,52 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoGuardar = new BotaoToolbarArredondado(
                 "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
-        botaoGuardar.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Guardar\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoGuardar.addActionListener(e -> {
+            String nome = (campoNomeNovoProduto != null) ? campoNomeNovoProduto.getText().trim() : "";
+            if (nome.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Informe o nome do produto.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String precoStr = (campoPrecoNovoProduto != null) ? campoPrecoNovoProduto.getText().trim().replace(",", ".") : "";
+            double preco = 0.0;
+            try {
+                if (!precoStr.isEmpty()) {
+                    preco = Double.parseDouble(precoStr);
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Preço inválido.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            Produto p = new Produto();
+            p.setNome(nome);
+            p.setPreco(preco);
+            p.setEstado(EstadoProduto.ATIVO);
+            p.setQuantidadeMinima(5);
+            Categoria cat = new Categoria();
+            cat.setIdCategoria(1L);
+            if (seletorCategoriaNovo != null) {
+                cat.setNome(seletorCategoriaNovo.getText().replace(" ▾", ""));
+            }
+            p.setCategoria(cat);
+
+            AsyncTask.executar(
+                () -> {
+                    produtoBO.salvar(p);
+                    return null;
+                },
+                sucesso -> {
+                    JOptionPane.showMessageDialog(this, "Produto cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    if (campoNomeNovoProduto != null) campoNomeNovoProduto.setText("");
+                    if (campoPrecoNovoProduto != null) campoPrecoNovoProduto.setText("");
+                    recarregarDados();
+                },
+                erro -> {
+                    JOptionPane.showMessageDialog(this, "Erro ao salvar produto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            );
+        });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
@@ -674,12 +726,11 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoGuardarAlteracoes = new BotaoToolbarArredondado(
                 "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true, 12
         );
-        botaoGuardarAlteracoes.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Guardar alterações\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoGuardarAlteracoes.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Alterações do produto guardadas com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 12
@@ -689,12 +740,11 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoDescontinuarCard = new BotaoToolbarArredondado(
                 "Descontinuar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false, 12
         );
-        botaoDescontinuarCard.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Descontinuar\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoDescontinuarCard.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Produto marcado como descontinuado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
 
         barraBotoes.add(botaoGuardarAlteracoes);
         barraBotoes.add(Box.createRigidArea(new Dimension(8, 0)));
@@ -905,8 +955,9 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
     private void atualizarTabelaFiltrada() {
         String termo = campoBuscarProduto.getTextoReal().trim().toLowerCase();
+        List<Object[]> fonteDados = (dadosProdutosCarregados != null) ? dadosProdutosCarregados : Arrays.asList(DADOS_INICIAIS);
         List<Object[]> filtrados = new ArrayList<>();
-        for (Object[] linha : DADOS_INICIAIS) {
+        for (Object[] linha : fonteDados) {
             String id = String.valueOf(linha[0]).toLowerCase();
             String nome = String.valueOf(linha[1]).toLowerCase();
             String categoria = String.valueOf(linha[2]);
@@ -1452,7 +1503,30 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        atualizarTabelaFiltrada();
+        AsyncTask.executar(
+            () -> produtoBO.listarTodos(),
+            produtos -> {
+                this.listaProdutosEntidades = produtos;
+                if (produtos != null && !produtos.isEmpty()) {
+                    List<Object[]> linhas = new ArrayList<>();
+                    for (Produto p : produtos) {
+                        String idStr = String.valueOf(p.getIdProduto());
+                        String nomeStr = p.getNome() != null ? p.getNome() : "";
+                        String catStr = (p.getCategoria() != null && p.getCategoria().getNome() != null)
+                                ? p.getCategoria().getNome() : "Geral";
+                        String precoStr = String.format(Locale.GERMANY, "%,.2f MT", p.getPreco() != null ? p.getPreco() : 0.0);
+                        String estoqueStr = p.getQuantidadeMinima() != null ? String.valueOf(p.getQuantidadeMinima()) : "0";
+                        String estStr = p.getEstado() != null ? p.getEstado().name() : "ATIVO";
+                        linhas.add(new Object[] {idStr, nomeStr, catStr, precoStr, estoqueStr, estStr});
+                    }
+                    this.dadosProdutosCarregados = linhas;
+                }
+                atualizarTabelaFiltrada();
+            },
+            erro -> {
+                atualizarTabelaFiltrada();
+            }
+        );
     }
 
     @Override

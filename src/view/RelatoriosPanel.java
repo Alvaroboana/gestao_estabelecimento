@@ -34,8 +34,10 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
+import model.bo.RelatorioBO;
 import model.vo.Perfil;
 import model.vo.Utilizador;
+import util.AsyncTask;
 
 /**
  * Painel Relatórios em Java Swing fiel aos designs HTML:
@@ -189,6 +191,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
     private final JTable tabelaMenosVendidos;
     private final JTable tabelaReembolsos;
     private final JTable tabelaAuditoria;
+    private final RelatorioBO relatorioBO;
     private boolean detalheVendaVisivel = true;
     private String abaAtiva = "Completo";
 
@@ -198,6 +201,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
 
     public RelatoriosPanel(AbaRelatorio abaInicial) {
         UiStyle.instalarTemaEscuro();
+        this.relatorioBO = new RelatorioBO();
         // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
         setBackground(UiStyle.BACKGROUND);

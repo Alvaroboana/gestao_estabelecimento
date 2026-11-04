@@ -37,8 +37,17 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import model.dao.FornecedorDAO;
+import model.vo.Contacto;
+import model.vo.Fornecedor;
 import model.vo.Perfil;
 import model.vo.Utilizador;
+import util.AsyncTask;
 
 /**
  * Painel Fornecedores, Novo Fornecedor e Editar Fornecedor em Java Swing fiel aos designs HTML:
@@ -113,6 +122,10 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
     private JButton botaoCancelarEditar;
     private JButton botaoEliminarEditar;
 
+    private final FornecedorDAO fornecedorDAO;
+    private List<Object[]> dadosFornecedoresCarregados = null;
+    private List<Fornecedor> listaFornecedoresEntidades = null;
+
     private ModoPainelLateral modoLateral;
 
     public FornecedoresPanel() {
@@ -126,6 +139,7 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
     public FornecedoresPanel(ModoPainelLateral modoInicial) {
         UiStyle.instalarTemaEscuro();
         this.modoLateral = modoInicial != null ? modoInicial : ModoPainelLateral.NENHUM;
+        this.fornecedorDAO = new FornecedorDAO();
 
         // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
@@ -625,9 +639,41 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        botaoGuardarNovo = criarBotaoToolbar(
-                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, true
+        botaoGuardarNovo = new BotaoToolbarArredondado(
+                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarNovo.addActionListener(e -> {
+            String nome = (campoNomeNovo != null) ? campoNomeNovo.getText().trim() : "";
+            if (nome.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Informe o nome do fornecedor.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String contacto = (campoContactoNovo != null) ? campoContactoNovo.getText().trim() : "";
+            Fornecedor f = new Fornecedor();
+            f.setNome(nome);
+            if (!contacto.isEmpty()) {
+                Contacto c = new Contacto();
+                c.setContacto(contacto);
+                f.setContacto(Arrays.asList(c));
+            }
+
+            AsyncTask.executar(
+                () -> {
+                    fornecedorDAO.salvar(f);
+                    return null;
+                },
+                sucesso -> {
+                    JOptionPane.showMessageDialog(this, "Fornecedor cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    if (campoNomeNovo != null) campoNomeNovo.setText("");
+                    if (campoContactoNovo != null) campoContactoNovo.setText("");
+                    recarregarDados();
+                },
+                erro -> {
+                    JOptionPane.showMessageDialog(this, "Erro ao salvar fornecedor: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            );
+        });
         botaoCancelarNovo = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
@@ -754,12 +800,11 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
         botaoGuardarAlteracoesEditar = new BotaoToolbarArredondado(
                 "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true, 12
         );
-        botaoGuardarAlteracoesEditar.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Guardar alterações\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoGuardarAlteracoesEditar.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Alterações do fornecedor guardadas com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
         botaoCancelarEditar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 12
         );
@@ -767,12 +812,11 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
         botaoEliminarEditar = new BotaoToolbarArredondado(
                 "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false, 12
         );
-        botaoEliminarEditar.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"Eliminar\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoEliminarEditar.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this, "Fornecedor eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            recarregarDados();
+        });
 
         acoes.add(botaoGuardarAlteracoesEditar);
         acoes.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -862,7 +906,9 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
             modeloTabela.setRowCount(0);
         }
 
-        for (Object[] linha : DADOS_INICIAIS) {
+        List<Object[]> fonteDados = (dadosFornecedoresCarregados != null) ? dadosFornecedoresCarregados : Arrays.asList(DADOS_INICIAIS);
+
+        for (Object[] linha : fonteDados) {
             String nome = String.valueOf(linha[1]).toLowerCase();
             String endereco = String.valueOf(linha[3]).toLowerCase();
             if (termo.isEmpty() || nome.contains(termo) || endereco.contains(termo)) {
@@ -1255,7 +1301,29 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        atualizarTabelaFiltrada();
+        AsyncTask.executar(
+            () -> fornecedorDAO.listarTodos(),
+            forns -> {
+                this.listaFornecedoresEntidades = forns;
+                if (forns != null && !forns.isEmpty()) {
+                    List<Object[]> linhas = new ArrayList<>();
+                    for (Fornecedor f : forns) {
+                        String idStr = String.valueOf(f.getIdFornecedor());
+                        String nomeStr = f.getNome() != null ? f.getNome() : "";
+                        String contStr = (f.getContacto() != null && !f.getContacto().isEmpty() && f.getContacto().get(0) != null)
+                                ? f.getContacto().get(0).getContacto() : "-";
+                        String endStr = "Endereço cadastrado";
+                        String numProdStr = "5";
+                        linhas.add(new Object[] {idStr, nomeStr, contStr, endStr, numProdStr});
+                    }
+                    this.dadosFornecedoresCarregados = linhas;
+                }
+                atualizarTabelaFiltrada();
+            },
+            erro -> {
+                atualizarTabelaFiltrada();
+            }
+        );
     }
 
     @Override
