@@ -15,7 +15,11 @@ public class testeConexao {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            ConexaoDB.closeConnection();
+            try {
+                conn.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }

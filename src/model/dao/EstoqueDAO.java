@@ -6,12 +6,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
 import model.vo.Estoque;
 import model.vo.Funcionario;
 import model.vo.Produto;
@@ -31,9 +33,9 @@ public class EstoqueDAO implements GenericoDAO<Estoque, Long> {
             stmt.setInt(1, qtd);
 
             if (objecto.getDataEntrada() != null) {
-                stmt.setDate(2, Date.valueOf(objecto.getDataEntrada()));
+                stmt.setTimestamp(2, Timestamp.valueOf(objecto.getDataEntrada().atStartOfDay()));
             } else {
-                stmt.setDate(2, Date.valueOf(LocalDate.now()));
+                stmt.setTimestamp(2, Timestamp.valueOf(LocalDate.now().atStartOfDay()));
             }
 
             if (objecto.getDataValidade() != null) {
@@ -42,17 +44,12 @@ public class EstoqueDAO implements GenericoDAO<Estoque, Long> {
                 stmt.setNull(3, java.sql.Types.DATE);
             }
 
-            long idProd = 0L;
-            if (objecto.getProduto() != null && objecto.getProduto().getIdProduto() != null) {
-                idProd = objecto.getProduto().getIdProduto();
-            }
-            stmt.setLong(4, idProd);
-
-            long idFunc = 0L;
-            if (objecto.getFuncionario() != null && objecto.getFuncionario().getIdFuncionario() != null) {
-                idFunc = objecto.getFuncionario().getIdFuncionario();
-            }
-            stmt.setLong(5, idFunc);
+            stmt.setLong(4, JdbcValidation.requireId(
+                    objecto.getProduto() == null ? null : objecto.getProduto().getIdProduto(),
+                    "produto.idProduto"));
+            stmt.setLong(5, JdbcValidation.requireId(
+                    objecto.getFuncionario() == null ? null : objecto.getFuncionario().getIdFuncionario(),
+                    "funcionario.idFuncionario"));
 
             stmt.executeUpdate();
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -179,9 +176,9 @@ public class EstoqueDAO implements GenericoDAO<Estoque, Long> {
         est.setIdEstoque(rs.getLong("id_estoque"));
         est.setQuantidade(rs.getInt("quantidade"));
 
-        Date ent = rs.getDate("data_entrada");
+        Timestamp ent = rs.getTimestamp("data_entrada");
         if (ent != null) {
-            est.setDataEntrada(ent.toLocalDate());
+            est.setDataEntrada(ent.toLocalDateTime().toLocalDate());
         }
 
         Date val = rs.getDate("data_validade");

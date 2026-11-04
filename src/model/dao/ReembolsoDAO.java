@@ -12,6 +12,7 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
 import model.vo.Funcionario;
 import model.vo.ItemVendido;
 import model.vo.Produto;
@@ -35,17 +36,12 @@ public class ReembolsoDAO implements GenericoDAO<Reembolso, Long> {
                 stmt.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
             }
 
-            long idItem = 0L;
-            if (objecto.getItem() != null && objecto.getItem().getIdItem() != null) {
-                idItem = objecto.getItem().getIdItem();
-            }
-            stmt.setLong(5, idItem);
-
-            long idFuncionario = 0L;
-            if (objecto.getFuncionario() != null && objecto.getFuncionario().getIdFuncionario() != null) {
-                idFuncionario = objecto.getFuncionario().getIdFuncionario();
-            }
-            stmt.setLong(6, idFuncionario);
+            stmt.setLong(5, JdbcValidation.requireId(
+                    objecto.getItem() == null ? null : objecto.getItem().getIdItem(),
+                    "item.idItem"));
+            stmt.setLong(6, JdbcValidation.requireId(
+                    objecto.getFuncionario() == null ? null : objecto.getFuncionario().getIdFuncionario(),
+                    "funcionario.idFuncionario"));
 
             stmt.executeUpdate();
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -86,17 +82,12 @@ public class ReembolsoDAO implements GenericoDAO<Reembolso, Long> {
                 stmt.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
             }
 
-            long idItem = 0L;
-            if (objecto.getItem() != null && objecto.getItem().getIdItem() != null) {
-                idItem = objecto.getItem().getIdItem();
-            }
-            stmt.setLong(5, idItem);
-
-            long idFuncionario = 0L;
-            if (objecto.getFuncionario() != null && objecto.getFuncionario().getIdFuncionario() != null) {
-                idFuncionario = objecto.getFuncionario().getIdFuncionario();
-            }
-            stmt.setLong(6, idFuncionario);
+            stmt.setLong(5, JdbcValidation.requireId(
+                    objecto.getItem() == null ? null : objecto.getItem().getIdItem(),
+                    "item.idItem"));
+            stmt.setLong(6, JdbcValidation.requireId(
+                    objecto.getFuncionario() == null ? null : objecto.getFuncionario().getIdFuncionario(),
+                    "funcionario.idFuncionario"));
             stmt.setLong(7, objecto.getIdReembolso());
 
             stmt.executeUpdate();

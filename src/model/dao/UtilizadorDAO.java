@@ -10,6 +10,7 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
 import model.vo.Funcionario;
 import model.vo.Perfil;
 import model.vo.Utilizador;
@@ -30,11 +31,9 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
             }
             stmt.setString(3, perfilNome);
 
-            long idFunc = 0L;
-            if (objecto.getFuncionario() != null && objecto.getFuncionario().getIdFuncionario() != null) {
-                idFunc = objecto.getFuncionario().getIdFuncionario();
-            }
-            stmt.setLong(4, idFunc);
+            stmt.setLong(4, JdbcValidation.requireId(
+                    objecto.getFuncionario() == null ? null : objecto.getFuncionario().getIdFuncionario(),
+                    "funcionario.idFuncionario"));
 
             stmt.executeUpdate();
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -73,11 +72,9 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
             }
             stmt.setString(3, perfilNome);
 
-            long idFunc = 0L;
-            if (objecto.getFuncionario() != null && objecto.getFuncionario().getIdFuncionario() != null) {
-                idFunc = objecto.getFuncionario().getIdFuncionario();
-            }
-            stmt.setLong(4, idFunc);
+            stmt.setLong(4, JdbcValidation.requireId(
+                    objecto.getFuncionario() == null ? null : objecto.getFuncionario().getIdFuncionario(),
+                    "funcionario.idFuncionario"));
             stmt.setLong(5, objecto.getIdUtilizador());
 
             stmt.executeUpdate();

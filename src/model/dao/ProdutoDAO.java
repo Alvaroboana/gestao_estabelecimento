@@ -10,6 +10,7 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
 import model.vo.Categoria;
 import model.vo.EstadoProduto;
 import model.vo.Produto;
@@ -44,11 +45,9 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
             }
             stmt.setInt(6, qtdMin);
 
-            long idCat = 0L;
-            if (objecto.getCategoria() != null && objecto.getCategoria().getIdCategoria() != null) {
-                idCat = objecto.getCategoria().getIdCategoria();
-            }
-            stmt.setLong(7, idCat);
+            stmt.setLong(7, JdbcValidation.requireId(
+                    objecto.getCategoria() == null ? null : objecto.getCategoria().getIdCategoria(),
+                    "categoria.idCategoria"));
 
             stmt.executeUpdate();
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -101,11 +100,9 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
             }
             stmt.setInt(6, qtdMin);
 
-            long idCat = 0L;
-            if (objecto.getCategoria() != null && objecto.getCategoria().getIdCategoria() != null) {
-                idCat = objecto.getCategoria().getIdCategoria();
-            }
-            stmt.setLong(7, idCat);
+            stmt.setLong(7, JdbcValidation.requireId(
+                    objecto.getCategoria() == null ? null : objecto.getCategoria().getIdCategoria(),
+                    "categoria.idCategoria"));
             stmt.setLong(8, objecto.getIdProduto());
 
             stmt.executeUpdate();

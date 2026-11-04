@@ -10,6 +10,7 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
 import model.vo.Cliente;
 import model.vo.Contacto;
 
@@ -22,11 +23,11 @@ public class ClienteDAO implements GenericoDAO<Cliente, Long> {
         String sqlContacto = "INSERT INTO contacto (contacto, id_pessoa) VALUES (?, ?)";
 
         Connection conn = null;
-        try {
-            conn = ConexaoDB.getConnection();
+        try (Connection resource = ConexaoDB.getConnection()) {
+            conn = resource;
             conn.setAutoCommit(false);
 
-            long idPessoa = 0L;
+            Long idPessoa = null;
             try (PreparedStatement stmtPessoa = conn.prepareStatement(sqlPessoa, Statement.RETURN_GENERATED_KEYS)) {
                 stmtPessoa.setString(1, objecto.getNome());
                 stmtPessoa.executeUpdate();
@@ -39,7 +40,7 @@ public class ClienteDAO implements GenericoDAO<Cliente, Long> {
             }
 
             try (PreparedStatement stmtCliente = conn.prepareStatement(sqlCliente, Statement.RETURN_GENERATED_KEYS)) {
-                stmtCliente.setLong(1, idPessoa);
+                stmtCliente.setLong(1, JdbcValidation.requireId(idPessoa, "pessoa.idPessoa"));
                 stmtCliente.executeUpdate();
                 try (ResultSet rs = stmtCliente.getGeneratedKeys()) {
                     if (rs.next()) {
@@ -54,7 +55,7 @@ public class ClienteDAO implements GenericoDAO<Cliente, Long> {
                         Contacto c = objecto.getContacto().get(i);
                         if (c != null && c.getContacto() != null) {
                             stmtContacto.setString(1, c.getContacto());
-                            stmtContacto.setLong(2, idPessoa);
+                            stmtContacto.setLong(2, JdbcValidation.requireId(idPessoa, "pessoa.idPessoa"));
                             stmtContacto.executeUpdate();
                             try (ResultSet rs = stmtContacto.getGeneratedKeys()) {
                                 if (rs.next()) {
@@ -68,21 +69,9 @@ public class ClienteDAO implements GenericoDAO<Cliente, Long> {
 
             conn.commit();
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                }
-            }
-            throw new DBException("Erro ao salvar cliente: ", e);
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException ex) {
-                }
-            }
+            DBException failure = new DBException("Erro ao salvar cliente.", e);
+            ConexaoDB.rollback(conn, failure);
+            throw failure;
         }
     }
 
@@ -178,6 +167,7 @@ public class ClienteDAO implements GenericoDAO<Cliente, Long> {
                 cliente.setContacto(lista);
             }
         } catch (SQLException e) {
+            throw new DBException("Erro ao carregar contactos do cliente.", e);
         }
     }
 

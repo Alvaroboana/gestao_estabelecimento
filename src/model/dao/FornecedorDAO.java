@@ -10,6 +10,7 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
 import model.vo.Contacto;
 import model.vo.Fornecedor;
 
@@ -22,11 +23,11 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
         String sqlContacto = "INSERT INTO contacto (contacto, id_pessoa) VALUES (?, ?)";
 
         Connection conn = null;
-        try {
-            conn = ConexaoDB.getConnection();
+        try (Connection resource = ConexaoDB.getConnection()) {
+            conn = resource;
             conn.setAutoCommit(false);
 
-            long idPessoa = 0L;
+            Long idPessoa = null;
             try (PreparedStatement stmtP = conn.prepareStatement(sqlPessoa, Statement.RETURN_GENERATED_KEYS)) {
                 stmtP.setString(1, objecto.getNome());
                 stmtP.executeUpdate();
@@ -39,7 +40,7 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
             }
 
             try (PreparedStatement stmtF = conn.prepareStatement(sqlForn, Statement.RETURN_GENERATED_KEYS)) {
-                stmtF.setLong(1, idPessoa);
+                stmtF.setLong(1, JdbcValidation.requireId(idPessoa, "pessoa.idPessoa"));
                 stmtF.executeUpdate();
                 try (ResultSet rs = stmtF.getGeneratedKeys()) {
                     if (rs.next()) {
@@ -54,7 +55,7 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
                         Contacto c = objecto.getContacto().get(i);
                         if (c != null && c.getContacto() != null) {
                             stmtC.setString(1, c.getContacto());
-                            stmtC.setLong(2, idPessoa);
+                            stmtC.setLong(2, JdbcValidation.requireId(idPessoa, "pessoa.idPessoa"));
                             stmtC.executeUpdate();
                             try (ResultSet rs = stmtC.getGeneratedKeys()) {
                                 if (rs.next()) {
@@ -68,21 +69,9 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
 
             conn.commit();
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                }
-            }
-            throw new DBException("Erro ao salvar fornecedor: " + e.getMessage(), e);
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException ex) {
-                }
-            }
+            DBException failure = new DBException("Erro ao salvar fornecedor.", e);
+            ConexaoDB.rollback(conn, failure);
+            throw failure;
         }
     }
 
@@ -178,6 +167,7 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
                 fornecedor.setContacto(lista);
             }
         } catch (SQLException e) {
+            throw new DBException("Erro ao carregar contactos do fornecedor.", e);
         }
     }
 

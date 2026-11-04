@@ -12,6 +12,7 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
 import model.vo.Cliente;
 import model.vo.EstadoVenda;
 import model.vo.Funcionario;
@@ -27,11 +28,11 @@ public class VendaDAO implements GenericoDAO<Venda, Long> {
         String sqlItem = "INSERT INTO item_vendido (quantidade, preco, desconto, id_venda, id_produto) VALUES (?, ?, ?, ?, ?)";
 
         Connection conn = null;
-        try {
-            conn = ConexaoDB.getConnection();
+        try (Connection resource = ConexaoDB.getConnection()) {
+            conn = resource;
             conn.setAutoCommit(false);
 
-            long idVenda = 0L;
+            Long idVenda = null;
             try (PreparedStatement stmtV = conn.prepareStatement(sqlVenda, Statement.RETURN_GENERATED_KEYS)) {
                 if (objecto.getData() != null) {
                     stmtV.setTimestamp(1, Timestamp.valueOf(objecto.getData()));
@@ -51,17 +52,12 @@ public class VendaDAO implements GenericoDAO<Venda, Long> {
                 }
                 stmtV.setString(3, estNome);
 
-                long idCli = 0L;
-                if (objecto.getCliente() != null && objecto.getCliente().getIdCliente() != null) {
-                    idCli = objecto.getCliente().getIdCliente();
-                }
-                stmtV.setLong(4, idCli);
-
-                long idFunc = 0L;
-                if (objecto.getFuncionario() != null && objecto.getFuncionario().getIdFuncionario() != null) {
-                    idFunc = objecto.getFuncionario().getIdFuncionario();
-                }
-                stmtV.setLong(5, idFunc);
+                stmtV.setLong(4, JdbcValidation.requireId(
+                        objecto.getCliente() == null ? null : objecto.getCliente().getIdCliente(),
+                        "cliente.idCliente"));
+                stmtV.setLong(5, JdbcValidation.requireId(
+                        objecto.getFuncionario() == null ? null : objecto.getFuncionario().getIdFuncionario(),
+                        "funcionario.idFuncionario"));
 
                 stmtV.executeUpdate();
                 try (ResultSet rs = stmtV.getGeneratedKeys()) {
@@ -95,13 +91,11 @@ public class VendaDAO implements GenericoDAO<Venda, Long> {
                             }
                             stmtI.setDouble(3, desc);
 
-                            stmtI.setLong(4, idVenda);
+                            stmtI.setLong(4, JdbcValidation.requireId(idVenda, "venda.idVenda"));
 
-                            long idProd = 0L;
-                            if (item.getProduto() != null && item.getProduto().getIdProduto() != null) {
-                                idProd = item.getProduto().getIdProduto();
-                            }
-                            stmtI.setLong(5, idProd);
+                            stmtI.setLong(5, JdbcValidation.requireId(
+                                    item.getProduto() == null ? null : item.getProduto().getIdProduto(),
+                                    "produto.idProduto"));
 
                             stmtI.executeUpdate();
                             try (ResultSet rs = stmtI.getGeneratedKeys()) {
@@ -116,21 +110,9 @@ public class VendaDAO implements GenericoDAO<Venda, Long> {
 
             conn.commit();
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                }
-            }
-            throw new DBException("Erro ao salvar venda: " + e.getMessage(), e);
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException ex) {
-                }
-            }
+            DBException failure = new DBException("Erro ao salvar venda.", e);
+            ConexaoDB.rollback(conn, failure);
+            throw failure;
         }
     }
 
@@ -280,6 +262,7 @@ public class VendaDAO implements GenericoDAO<Venda, Long> {
                 venda.setItemVendido(itens);
             }
         } catch (SQLException e) {
+            throw new DBException("Erro ao carregar itens da venda.", e);
         }
     }
 

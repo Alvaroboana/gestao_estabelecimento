@@ -25,11 +25,11 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
         String sqlContacto = "INSERT INTO contacto (contacto, id_pessoa) VALUES (?, ?)";
 
         Connection conn = null;
-        try {
-            conn = ConexaoDB.getConnection();
+        try (Connection resource = ConexaoDB.getConnection()) {
+            conn = resource;
             conn.setAutoCommit(false);
 
-            long idPessoa = 0L;
+            Long idPessoa = null;
             try (PreparedStatement stmtPessoa = conn.prepareStatement(sqlPessoa, Statement.RETURN_GENERATED_KEYS)) {
                 stmtPessoa.setString(1, objecto.getNome());
                 stmtPessoa.executeUpdate();
@@ -42,7 +42,7 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
             }
 
             try (PreparedStatement stmtFunc = conn.prepareStatement(sqlFunc, Statement.RETURN_GENERATED_KEYS)) {
-                stmtFunc.setLong(1, idPessoa);
+                stmtFunc.setLong(1, infra.JdbcValidation.requireId(idPessoa, "pessoa.idPessoa"));
                 stmtFunc.setString(2, objecto.getBi());
                 stmtFunc.setDate(3, Date.valueOf(objecto.getDataNascimento()));
                 stmtFunc.setDate(4, Date.valueOf(objecto.getDataInicio()));
@@ -53,11 +53,9 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
                 }
                 stmtFunc.setString(5, estadoNome);
 
-                long idCargo = 0L;
-                if (objecto.getCargo() != null && objecto.getCargo().getIdCargo() != null) {
-                    idCargo = objecto.getCargo().getIdCargo();
-                }
-                stmtFunc.setLong(6, idCargo);
+                stmtFunc.setLong(6, infra.JdbcValidation.requireId(
+                        objecto.getCargo() == null ? null : objecto.getCargo().getIdCargo(),
+                        "cargo.idCargo"));
 
                 stmtFunc.executeUpdate();
                 try (ResultSet rs = stmtFunc.getGeneratedKeys()) {
@@ -73,7 +71,7 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
                         Contacto c = objecto.getContacto().get(i);
                         if (c != null && c.getContacto() != null) {
                             stmtContacto.setString(1, c.getContacto());
-                            stmtContacto.setLong(2, idPessoa);
+                            stmtContacto.setLong(2, infra.JdbcValidation.requireId(idPessoa, "pessoa.idPessoa"));
                             stmtContacto.executeUpdate();
                             try (ResultSet rs = stmtContacto.getGeneratedKeys()) {
                                 if (rs.next()) {
@@ -87,21 +85,9 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
 
             conn.commit();
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                }
-            }
-            throw new DBException("Erro ao salvar funcionario: " + e.getMessage(), e);
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException ex) {
-                }
-            }
+            DBException failure = new DBException("Erro ao salvar funcionario.", e);
+            ConexaoDB.rollback(conn, failure);
+            throw failure;
         }
     }
 
@@ -122,8 +108,8 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
         String sqlPessoa = "UPDATE pessoa SET nome = ? WHERE id_pessoa = (SELECT id_pessoa FROM funcionario WHERE id_funcionario = ?)";
         String sqlFunc = "UPDATE funcionario SET bi = ?, data_nascimento = ?, data_inicio = ?, estado = ?, id_cargo = ? WHERE id_funcionario = ?";
         Connection conn = null;
-        try {
-            conn = ConexaoDB.getConnection();
+        try (Connection resource = ConexaoDB.getConnection()) {
+            conn = resource;
             conn.setAutoCommit(false);
 
             try (PreparedStatement stmtP = conn.prepareStatement(sqlPessoa)) {
@@ -143,11 +129,9 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
                 }
                 stmtF.setString(4, estadoNome);
 
-                long idCargo = 0L;
-                if (objecto.getCargo() != null && objecto.getCargo().getIdCargo() != null) {
-                    idCargo = objecto.getCargo().getIdCargo();
-                }
-                stmtF.setLong(5, idCargo);
+                stmtF.setLong(5, infra.JdbcValidation.requireId(
+                        objecto.getCargo() == null ? null : objecto.getCargo().getIdCargo(),
+                        "cargo.idCargo"));
                 stmtF.setLong(6, objecto.getIdFuncionario());
 
                 stmtF.executeUpdate();
@@ -155,21 +139,9 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
 
             conn.commit();
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                }
-            }
-            throw new DBException("Erro ao atualizar funcionario: " + e.getMessage(), e);
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException ex) {
-                }
-            }
+            DBException failure = new DBException("Erro ao atualizar funcionario.", e);
+            ConexaoDB.rollback(conn, failure);
+            throw failure;
         }
     }
 
@@ -269,6 +241,7 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
                 funcionario.setContacto(lista);
             }
         } catch (SQLException e) {
+            throw new DBException("Erro ao carregar contactos do funcionario.", e);
         }
     }
 

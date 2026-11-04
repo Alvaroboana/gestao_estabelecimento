@@ -2,6 +2,7 @@ package model.vo;
 
 import java.io.Serializable;
 import org.mindrot.jbcrypt.BCrypt;
+import model.exception.DadoInvalidoException;
 
 public class Utilizador implements Serializable {
     private Long idUtilizador;
@@ -85,7 +86,8 @@ public class Utilizador implements Serializable {
             if (this.passwordHash.startsWith("$2a$") || this.passwordHash.startsWith("$2b$") || this.passwordHash.startsWith("$2y$")) {
                 return BCrypt.checkpw(senha, this.passwordHash);
             }
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            return false;
         }
         return this.passwordHash.equals(senha);
     }
@@ -96,8 +98,8 @@ public class Utilizador implements Serializable {
                 String novoHash;
                 try {
                     novoHash = BCrypt.hashpw(senhaNova, BCrypt.gensalt());
-                } catch (Exception e) {
-                    novoHash = senhaNova;
+                } catch (IllegalArgumentException e) {
+                    throw new DadoInvalidoException("Nao foi possivel gerar o hash da nova senha.");
                 }
                 this.passwordHash = novoHash;
                 return novoHash;

@@ -77,6 +77,20 @@ CREATE TABLE IF NOT EXISTS utilizador (
         REFERENCES funcionario(id_funcionario) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS auditoria (
+    id_auditoria BIGINT PRIMARY KEY AUTO_INCREMENT,
+    tabela_afetada VARCHAR(64) NOT NULL,
+    id_registro BIGINT NOT NULL,
+    operacao ENUM('INSERT', 'UPDATE', 'DELETE') NOT NULL,
+    dados_antes JSON NULL,
+    dados_depois JSON NULL,
+    id_utilizador BIGINT NULL,
+    data_operacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_auditoria_id_registro CHECK (id_registro > 0),
+    CONSTRAINT fk_auditoria_utilizador FOREIGN KEY (id_utilizador)
+        REFERENCES utilizador(id_utilizador) ON DELETE SET NULL
+);
+
 CREATE TABLE IF NOT EXISTS fornecedor (
     id_fornecedor BIGINT PRIMARY KEY AUTO_INCREMENT,
     id_pessoa BIGINT NOT NULL UNIQUE,

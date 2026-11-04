@@ -11,6 +11,7 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
 import model.vo.ItemVendido;
 import model.vo.Produto;
 import model.vo.Venda;
@@ -26,17 +27,12 @@ public class ItemVendidoDAO implements GenericoDAO<ItemVendido, Long> {
             stmt.setDouble(2, objecto.getPreco() != null ? objecto.getPreco() : 0.0);
             stmt.setDouble(3, objecto.getDesconto() != null ? objecto.getDesconto() : 0.0);
 
-            long idVenda = 0L;
-            if (objecto.getVenda() != null && objecto.getVenda().getIdVenda() != null) {
-                idVenda = objecto.getVenda().getIdVenda();
-            }
-            stmt.setLong(4, idVenda);
-
-            long idProduto = 0L;
-            if (objecto.getProduto() != null && objecto.getProduto().getIdProduto() != null) {
-                idProduto = objecto.getProduto().getIdProduto();
-            }
-            stmt.setLong(5, idProduto);
+            stmt.setLong(4, JdbcValidation.requireId(
+                    objecto.getVenda() == null ? null : objecto.getVenda().getIdVenda(),
+                    "venda.idVenda"));
+            stmt.setLong(5, JdbcValidation.requireId(
+                    objecto.getProduto() == null ? null : objecto.getProduto().getIdProduto(),
+                    "produto.idProduto"));
 
             stmt.executeUpdate();
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -70,17 +66,12 @@ public class ItemVendidoDAO implements GenericoDAO<ItemVendido, Long> {
             stmt.setDouble(2, objecto.getPreco() != null ? objecto.getPreco() : 0.0);
             stmt.setDouble(3, objecto.getDesconto() != null ? objecto.getDesconto() : 0.0);
 
-            long idVenda = 0L;
-            if (objecto.getVenda() != null && objecto.getVenda().getIdVenda() != null) {
-                idVenda = objecto.getVenda().getIdVenda();
-            }
-            stmt.setLong(4, idVenda);
-
-            long idProduto = 0L;
-            if (objecto.getProduto() != null && objecto.getProduto().getIdProduto() != null) {
-                idProduto = objecto.getProduto().getIdProduto();
-            }
-            stmt.setLong(5, idProduto);
+            stmt.setLong(4, JdbcValidation.requireId(
+                    objecto.getVenda() == null ? null : objecto.getVenda().getIdVenda(),
+                    "venda.idVenda"));
+            stmt.setLong(5, JdbcValidation.requireId(
+                    objecto.getProduto() == null ? null : objecto.getProduto().getIdProduto(),
+                    "produto.idProduto"));
             stmt.setLong(6, objecto.getIdItem());
 
             stmt.executeUpdate();
