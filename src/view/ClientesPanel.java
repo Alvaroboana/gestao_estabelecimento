@@ -158,6 +158,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         this.botaoHistorico = criarBotaoInformacoesOuHistorico("Histórico");
         this.botaoInformacoes = criarBotaoInformacoesOuHistorico("Informações");
         this.botaoEliminar = criarBotaoToolbar(
+
                 "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false
         );
         this.containerBotoesToolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -770,12 +771,60 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         botaoGuardarAlteracoesEditar = new BotaoToolbarArredondado(
-                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+                "Guardar alteraÃ§Ãµes", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
         botaoGuardarAlteracoesEditar.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Alterações do cliente guardadas com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
+            int row = tabela.getSelectedRow();
+            if (row < 0 || row >= tabela.getRowCount()) {
+                JOptionPane.showMessageDialog(this, "Selecione um cliente para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String idStr = String.valueOf(tabela.getValueAt(row, 0));
+            try {
+                Long idCliente = Long.parseLong(idStr);
+                String nome = (campoNomeEditar != null) ? campoNomeEditar.getText().trim() : "";
+                if (nome.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Informe o nome do cliente.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                Cliente c = (listaClientesEntidades != null) ? listaClientesEntidades.stream()
+                    .filter(item -> item.getIdCliente() != null && item.getIdCliente().equals(idCliente))
+                    .findFirst().orElse(null) : null;
+                if (c == null) {
+                    c = new Cliente();
+                    c.setIdCliente(idCliente);
+                }
+                c.setNome(nome);
+                String c1 = (campoContacto1Editar != null) ? campoContacto1Editar.getText().trim() : "";
+                List<Contacto> listaCont = new ArrayList<>();
+                if (!c1.isEmpty()) {
+                    Contacto cont1 = new Contacto();
+                    cont1.setContacto(c1);
+                    listaCont.add(cont1);
+                }
+                c.setContacto(listaCont);
+
+                final Cliente fCli = c;
+                botaoGuardarAlteracoesEditar.setEnabled(false);
+                AsyncTask.executar(
+                    () -> {
+                        clienteBO.atualizar(fCli);
+                        return true;
+                    },
+                    res -> {
+                        JOptionPane.showMessageDialog(this, "Cliente atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                        recarregarDados();
+                        botaoGuardarAlteracoesEditar.setEnabled(true);
+                    },
+                    erro -> {
+                        JOptionPane.showMessageDialog(this, "Erro ao atualizar cliente: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                        botaoGuardarAlteracoesEditar.setEnabled(true);
+                    }
+                );
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Identificador de cliente invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         botaoCancelarEditar = new BotaoToolbarArredondado(
@@ -786,12 +835,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         botaoEliminarEditar = new BotaoToolbarArredondado(
                 "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
-        botaoEliminarEditar.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Cliente eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
-        });
-
+        botaoEliminarEditar.addActionListener(e -> eliminarClienteSelecionado());
         acoes.add(botaoGuardarAlteracoesEditar);
         acoes.add(Box.createRigidArea(new Dimension(10, 0)));
         acoes.add(botaoCancelarEditar);
@@ -943,6 +987,36 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         }
 
         return miniTabela;
+    }
+
+    private void eliminarClienteSelecionado() {
+        int row = tabela.getSelectedRow();
+        if (row < 0 || row >= tabela.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione um cliente na tabela para eliminar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String idStr = String.valueOf(tabela.getValueAt(row, 0));
+        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar o cliente #" + idStr + "?", "Confirmar ExclusÃ£o", JOptionPane.YES_NO_OPTION);
+        if (opt != JOptionPane.YES_OPTION) return;
+        try {
+            Long idCliente = Long.parseLong(idStr);
+            AsyncTask.executar(
+                () -> {
+                    clienteBO.eliminar(idCliente);
+                    return true;
+                },
+                res -> {
+                    JOptionPane.showMessageDialog(this, "Cliente #" + idStr + " eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                erro -> {
+                    JOptionPane.showMessageDialog(this, "Erro ao eliminar cliente: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            );
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Identificador de cliente invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void sincronizarDadosClienteParaInformacoes() {

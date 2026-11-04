@@ -798,12 +798,60 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         botaoGuardarAlteracoesEditar = new BotaoToolbarArredondado(
-                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true, 12
+                "Guardar alteraÃ§Ãµes", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true, 12
         );
         botaoGuardarAlteracoesEditar.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Alterações do fornecedor guardadas com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
+            int row = tabela.getSelectedRow();
+            if (row < 0 || row >= tabela.getRowCount()) {
+                JOptionPane.showMessageDialog(this, "Selecione um fornecedor para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String idStr = String.valueOf(tabela.getValueAt(row, 0));
+            try {
+                Long idFornecedor = Long.parseLong(idStr);
+                String nome = (campoNomeEditar != null) ? campoNomeEditar.getText().trim() : "";
+                if (nome.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Informe o nome do fornecedor.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                Fornecedor f = (listaFornecedoresEntidades != null) ? listaFornecedoresEntidades.stream()
+                    .filter(item -> item.getIdFornecedor() != null && item.getIdFornecedor().equals(idFornecedor))
+                    .findFirst().orElse(null) : null;
+                if (f == null) {
+                    f = new Fornecedor();
+                    f.setIdFornecedor(idFornecedor);
+                }
+                f.setNome(nome);
+                String cont = (campoContactoEditar != null) ? campoContactoEditar.getText().trim() : "";
+                List<Contacto> contList = new ArrayList<>();
+                if (!cont.isEmpty()) {
+                    Contacto c = new Contacto();
+                    c.setContacto(cont);
+                    contList.add(c);
+                }
+                f.setContacto(contList);
+
+                final Fornecedor fFornec = f;
+                botaoGuardarAlteracoesEditar.setEnabled(false);
+                AsyncTask.executar(
+                    () -> {
+                        fornecedorDAO.atualizar(fFornec);
+                        return true;
+                    },
+                    res -> {
+                        JOptionPane.showMessageDialog(this, "Fornecedor atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                        recarregarDados();
+                        botaoGuardarAlteracoesEditar.setEnabled(true);
+                    },
+                    erro -> {
+                        JOptionPane.showMessageDialog(this, "Erro ao atualizar fornecedor: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                        botaoGuardarAlteracoesEditar.setEnabled(true);
+                    }
+                );
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Identificador de fornecedor invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
         });
         botaoCancelarEditar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 12
@@ -812,12 +860,7 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
         botaoEliminarEditar = new BotaoToolbarArredondado(
                 "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false, 12
         );
-        botaoEliminarEditar.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Fornecedor eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
-        });
-
+        botaoEliminarEditar.addActionListener(e -> eliminarFornecedorSelecionado());
         acoes.add(botaoGuardarAlteracoesEditar);
         acoes.add(Box.createRigidArea(new Dimension(10, 0)));
         acoes.add(botaoCancelarEditar);
@@ -826,6 +869,36 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
         card.add(acoes);
 
         return card;
+    }
+
+    private void eliminarFornecedorSelecionado() {
+        int row = tabela.getSelectedRow();
+        if (row < 0 || row >= tabela.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione um fornecedor na tabela para eliminar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String idStr = String.valueOf(tabela.getValueAt(row, 0));
+        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar o fornecedor #" + idStr + "?", "Confirmar ExclusÃ£o", JOptionPane.YES_NO_OPTION);
+        if (opt != JOptionPane.YES_OPTION) return;
+        try {
+            Long idFornecedor = Long.parseLong(idStr);
+            AsyncTask.executar(
+                () -> {
+                    fornecedorDAO.eliminar(idFornecedor);
+                    return true;
+                },
+                res -> {
+                    JOptionPane.showMessageDialog(this, "Fornecedor #" + idStr + " eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                erro -> {
+                    JOptionPane.showMessageDialog(this, "Erro ao eliminar fornecedor: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            );
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Identificador de fornecedor invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void sincronizarDadosFornecedorParaEdicao() {

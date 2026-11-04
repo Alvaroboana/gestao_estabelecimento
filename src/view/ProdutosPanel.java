@@ -155,6 +155,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         this.botaoEditar = criarBotaoEditarProduto();
         this.botaoFornecedores = criarBotaoFornecedoresProduto();
         this.botaoDescontinuar = criarBotaoToolbar("Descontinuar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false);
+        this.botaoDescontinuar.addActionListener(e -> descontinuarProdutoSelecionado());
 
         this.modeloTabela = criarModeloTabela();
         this.tabela = criarTabela(this.modeloTabela);
@@ -724,12 +725,55 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         barraBotoes.setOpaque(false);
 
         BotaoToolbarArredondado botaoGuardarAlteracoes = new BotaoToolbarArredondado(
-                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true, 12
+                "Guardar alteraÃ§Ãµes", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true, 12
         );
         botaoGuardarAlteracoes.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Alterações do produto guardadas com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
+            int row = tabela.getSelectedRow();
+            if (row < 0 || row >= tabela.getRowCount()) {
+                JOptionPane.showMessageDialog(this, "Selecione um produto para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String idStr = String.valueOf(tabela.getValueAt(row, 0));
+            try {
+                Long idProduto = Long.parseLong(idStr);
+                Produto p = (listaProdutosEntidades != null) ? listaProdutosEntidades.stream()
+                    .filter(item -> item.getIdProduto() != null && item.getIdProduto().equals(idProduto))
+                    .findFirst().orElse(null) : null;
+                if (p == null) {
+                    p = new Produto();
+                    p.setIdProduto(idProduto);
+                }
+                p.setNome(campoNomeEditarProduto.getText().trim());
+                try {
+                    String prcStr = campoPrecoEditarProduto.getText().trim().replace(" MT", "").replace(".", "").replace(",", ".");
+                    p.setPreco(Double.parseDouble(prcStr));
+                } catch (NumberFormatException ignored) {}
+                String estadoStr = seletorEstadoEditar.getText().replace(" â–¾", "").trim();
+                try {
+                    p.setEstado(EstadoProduto.valueOf(estadoStr));
+                } catch (Exception ignored) {}
+
+                final Produto fProd = p;
+                botaoGuardarAlteracoes.setEnabled(false);
+                AsyncTask.executar(
+                    () -> {
+                        produtoBO.atualizar(fProd);
+                        return true;
+                    },
+                    res -> {
+                        JOptionPane.showMessageDialog(this, "Produto atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                        recarregarDados();
+                        botaoGuardarAlteracoes.setEnabled(true);
+                    },
+                    erro -> {
+                        JOptionPane.showMessageDialog(this, "Erro ao atualizar produto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                        botaoGuardarAlteracoes.setEnabled(true);
+                    }
+                );
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Identificador de produto invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
@@ -740,12 +784,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoDescontinuarCard = new BotaoToolbarArredondado(
                 "Descontinuar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false, 12
         );
-        botaoDescontinuarCard.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Produto marcado como descontinuado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
-        });
-
+        botaoDescontinuarCard.addActionListener(e -> descontinuarProdutoSelecionado());
         barraBotoes.add(botaoGuardarAlteracoes);
         barraBotoes.add(Box.createRigidArea(new Dimension(8, 0)));
         barraBotoes.add(botaoCancelar);
@@ -890,6 +929,45 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         int alturaTotal = 29 + (DADOS_FORNECEDORES_PRODUTO.length * 29);
         fixarLargura(container, larguraInterna, alturaTotal);
         return container;
+    }
+
+    private void descontinuarProdutoSelecionado() {
+        int row = tabela.getSelectedRow();
+        if (row < 0 || row >= tabela.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione um produto na tabela para descontinuar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String idStr = String.valueOf(tabela.getValueAt(row, 0));
+        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja descontinuar o produto #" + idStr + "?", "Confirmar Descontinuação", JOptionPane.YES_NO_OPTION);
+        if (opt != JOptionPane.YES_OPTION) return;
+        try {
+            Long idProduto = Long.parseLong(idStr);
+            Produto p = (listaProdutosEntidades != null) ? listaProdutosEntidades.stream()
+                .filter(item -> item.getIdProduto() != null && item.getIdProduto().equals(idProduto))
+                .findFirst().orElse(null) : null;
+            if (p == null) {
+                p = new Produto();
+                p.setIdProduto(idProduto);
+            }
+            p.setEstado(EstadoProduto.DESCONTINUADO);
+            final Produto fProd = p;
+            AsyncTask.executar(
+                () -> {
+                    produtoBO.atualizar(fProd);
+                    return true;
+                },
+                res -> {
+                    JOptionPane.showMessageDialog(this, "Produto #" + idStr + " descontinuado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                erro -> {
+                    JOptionPane.showMessageDialog(this, "Erro ao descontinuar produto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            );
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Identificador de produto inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void sincronizarDadosProdutoParaEdicao() {

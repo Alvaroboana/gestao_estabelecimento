@@ -42,6 +42,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import model.bo.EstoqueBO;
 import model.vo.Estoque;
+import model.vo.Produto;
+import model.vo.SessaoUtilizador;
 import model.vo.Perfil;
 import model.vo.Utilizador;
 import util.AsyncTask;
@@ -155,6 +157,7 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         this.botaoRetirar = criarBotaoRetirarEstoque();
         this.botaoEditar = criarBotaoEditarLote();
         this.botaoEliminarLote = criarBotaoToolbar("Eliminar lote", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false);
+        this.botaoEliminarLote.addActionListener(e -> eliminarLoteSelecionado());
         this.containerBotoesFinaisToolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         this.containerBotoesFinaisToolbar.setOpaque(false);
 
@@ -612,9 +615,56 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                 "Guardar entrada", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
         botaoGuardarEntrada.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Entrada de lote registrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
+            String qtdStr = (campoQuantidadeEntrada != null) ? campoQuantidadeEntrada.getText().trim() : "0";
+            int qtd;
+            try {
+                qtd = Integer.parseInt(qtdStr);
+                if (qtd <= 0) throw new NumberFormatException();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Informe uma quantidade vÃ¡lida e positiva.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String valStr = (campoValidadeEntrada != null) ? campoValidadeEntrada.getText().trim() : "";
+            LocalDate validade = null;
+            try {
+                validade = LocalDate.parse(valStr, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            } catch (Exception ex) {
+                validade = LocalDate.now().plusMonths(6);
+            }
+            Utilizador user = SessaoUtilizador.getUtilizador();
+            if (user == null || user.getFuncionario() == null) {
+                JOptionPane.showMessageDialog(this, "SessÃ£o invÃ¡lida.", "Erro", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            Estoque novoLote = new Estoque();
+            novoLote.setQuantidade(qtd);
+            novoLote.setDataEntrada(LocalDate.now());
+            novoLote.setDataValidade(validade);
+            novoLote.setFuncionario(user.getFuncionario());
+            Produto prod = new Produto();
+            prod.setIdProduto(1L);
+            if (listaEstoqueEntidades != null && !listaEstoqueEntidades.isEmpty() && listaEstoqueEntidades.get(0).getProduto() != null) {
+                prod = listaEstoqueEntidades.get(0).getProduto();
+            }
+            novoLote.setProduto(prod);
+
+            botaoGuardarEntrada.setEnabled(false);
+            AsyncTask.executar(
+                () -> {
+                    estoqueBO.salvar(novoLote);
+                    return true;
+                },
+                res -> {
+                    JOptionPane.showMessageDialog(this, "Entrada de lote registrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                    botaoGuardarEntrada.setEnabled(true);
+                },
+                erro -> {
+                    JOptionPane.showMessageDialog(this, "Erro ao registrar entrada: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                    botaoGuardarEntrada.setEnabled(true);
+                }
+            );
         });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
@@ -833,9 +883,57 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                 "Confirmar retirada", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
         botaoConfirmarRetirada.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Retirada de estoque registrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
+            int row = tabela.getSelectedRow();
+            if (row < 0 || row >= tabela.getRowCount()) {
+                JOptionPane.showMessageDialog(this, "Selecione um lote para retirada.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String qtdStr = (campoQuantidadeARetirar != null) ? campoQuantidadeARetirar.getText().trim() : "0";
+            int qtdRetirar;
+            try {
+                qtdRetirar = Integer.parseInt(qtdStr);
+                if (qtdRetirar <= 0) throw new NumberFormatException();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Informe uma quantidade vÃ¡lida para retirar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String loteStr = String.valueOf(tabela.getValueAt(row, 0)).replace("L-", "").trim();
+            try {
+                Long idEstoque = Long.parseLong(loteStr);
+                Estoque lote = (listaEstoqueEntidades != null) ? listaEstoqueEntidades.stream()
+                    .filter(item -> item.getIdEstoque() != null && item.getIdEstoque().equals(idEstoque))
+                    .findFirst().orElse(null) : null;
+                if (lote == null) {
+                    JOptionPane.showMessageDialog(this, "Lote nÃ£o encontrado.", "Erro", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                int qtdAtual = lote.getQuantidade() != null ? lote.getQuantidade() : 0;
+                if (qtdRetirar > qtdAtual) {
+                    JOptionPane.showMessageDialog(this, "Quantidade a retirar excede o estoque disponÃ­vel no lote.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                lote.setQuantidade(qtdAtual - qtdRetirar);
+                final Estoque fLote = lote;
+                botaoConfirmarRetirada.setEnabled(false);
+                AsyncTask.executar(
+                    () -> {
+                        estoqueBO.atualizar(fLote);
+                        return true;
+                    },
+                    res -> {
+                        JOptionPane.showMessageDialog(this, "Retirada de estoque registrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                        recarregarDados();
+                        botaoConfirmarRetirada.setEnabled(true);
+                    },
+                    erro -> {
+                        JOptionPane.showMessageDialog(this, "Erro ao retirar estoque: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                        botaoConfirmarRetirada.setEnabled(true);
+                    }
+                );
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Identificador de lote invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
@@ -927,11 +1025,7 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoEliminarCard = new BotaoToolbarArredondado(
                 "Eliminar lote", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
-        botaoEliminarCard.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Lote eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
-        });
+        botaoEliminarCard.addActionListener(e -> eliminarLoteSelecionado());
 
         barraBotoes.add(botaoGuardarAlteracoes);
         barraBotoes.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -1000,6 +1094,36 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         int actual = parseInteiroSeguro(caixaQuantidadeActualRetirar.getTexto(), 0);
         int aRetirar = Math.max(0, parseInteiroSeguro(campoQuantidadeARetirar.getText(), 0));
         caixaNovaQuantidadeRetirar.setTexto(String.valueOf(Math.max(0, actual - aRetirar)));
+    }
+
+    private void eliminarLoteSelecionado() {
+        int row = tabela.getSelectedRow();
+        if (row < 0 || row >= tabela.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione um lote na tabela para eliminar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String loteStr = String.valueOf(tabela.getValueAt(row, 0)).replace("L-", "").trim();
+        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar o lote L-" + loteStr + "?", "Confirmar ExclusÃ£o", JOptionPane.YES_NO_OPTION);
+        if (opt != JOptionPane.YES_OPTION) return;
+        try {
+            Long idEstoque = Long.parseLong(loteStr);
+            AsyncTask.executar(
+                () -> {
+                    estoqueBO.eliminar(idEstoque);
+                    return true;
+                },
+                res -> {
+                    JOptionPane.showMessageDialog(this, "Lote L-" + loteStr + " eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                erro -> {
+                    JOptionPane.showMessageDialog(this, "Erro ao eliminar lote: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            );
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Identificador de lote invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void sincronizarDadosLoteParaEdicao() {
