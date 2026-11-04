@@ -39,6 +39,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.time.LocalDate;
+import java.util.Collections;
+import model.bo.UtilizadorBO;
+import model.dao.CargoDAO;
+import model.vo.Contacto;
 import model.bo.FuncionarioBO;
 import model.vo.Cargo;
 import model.vo.EstadoFuncionario;
@@ -176,10 +181,12 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         this.botaoSuspender = criarBotaoToolbar(
                 "Suspender", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, true
         );
+        this.botaoSuspender.addActionListener(e -> alterarEstadoFuncionarioSelecionado(EstadoFuncionario.SUSPENSO));
         this.botaoTransferirCargo = criarBotaoTransferirCargoToolbar();
         this.botaoEliminar = criarBotaoToolbar(
                 "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false
         );
+        this.botaoEliminar.addActionListener(e -> eliminarFuncionarioSelecionado());
         this.containerBotoesToolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         this.containerBotoesToolbar.setOpaque(false);
 
@@ -813,11 +820,7 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         botaoGuardarNovo = new BotaoToolbarArredondado(
                 "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
-        botaoGuardarNovo.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Funcionário cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
-        });
+        botaoGuardarNovo.addActionListener(e -> salvarNovoFuncionario());
         botaoCancelarNovo = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
@@ -936,11 +939,7 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         botaoGuardarAlteracoesEditar = new BotaoToolbarArredondado(
                 "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
-        botaoGuardarAlteracoesEditar.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Alterações do funcionário guardadas com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
-        });
+        botaoGuardarAlteracoesEditar.addActionListener(e -> salvarAlteracoesEditarFuncionario());
 
         botaoCancelarEditar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
@@ -950,11 +949,7 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         botaoEliminarEditar = new BotaoToolbarArredondado(
                 "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
-        botaoEliminarEditar.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Funcionário eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
-        });
+        botaoEliminarEditar.addActionListener(e -> eliminarFuncionarioSelecionado());
 
         acoes.add(botaoGuardarAlteracoesEditar);
         acoes.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -1117,6 +1112,250 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         );
     }
 
+    private void salvarNovoFuncionario() {
+        String nome = (campoNomeNovo != null) ? campoNomeNovo.getText().trim() : "";
+        if (nome.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Informe o nome do funcionário.", "Validação", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String bi = (campoBiNovo != null) ? campoBiNovo.getText().trim() : "";
+        if (bi.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Informe o BI do funcionário.", "Validação", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String dataNascStr = (campoDataNascimentoNovo != null) ? campoDataNascimentoNovo.getText().trim() : "";
+        LocalDate dataNascimento;
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        try {
+            dataNascimento = LocalDate.parse(dataNascStr, dtf);
+        } catch (Exception ex) {
+            dataNascimento = LocalDate.now().minusYears(25);
+        }
+
+        String dataIniStr = (campoDataInicioNovo != null) ? campoDataInicioNovo.getText().trim() : "";
+        LocalDate dataInicio;
+        try {
+            dataInicio = LocalDate.parse(dataIniStr, dtf);
+        } catch (Exception ex) {
+            dataInicio = LocalDate.now();
+        }
+
+        String nomeCargo = (seletorCargoNovo != null) ? seletorCargoNovo.getText().replace("▾", "").trim() : "Vendedor";
+        String contacto = (campoContactoNovo != null) ? campoContactoNovo.getText().trim() : "";
+        String username = (campoUsernameNovo != null) ? campoUsernameNovo.getText().trim() : "";
+        String perfilStr = (seletorPerfilNovo != null) ? seletorPerfilNovo.getText().replace("▾", "").trim() : "VENDEDOR";
+
+        botaoGuardarNovo.setEnabled(false);
+        final LocalDate finalDataNascimentoNovo = dataNascimento;
+        final LocalDate finalDataInicioNovo = dataInicio;
+
+        AsyncTask.executar(
+            () -> {
+                CargoDAO cargoDAO = new CargoDAO();
+                List<Cargo> cargos = cargoDAO.listarTodos();
+                Cargo cargoEscolhido = null;
+                for (Cargo c : cargos) {
+                    if (c.getNome() != null && c.getNome().toLowerCase().contains(nomeCargo.toLowerCase())) {
+                        cargoEscolhido = c;
+                        break;
+                    }
+                }
+                if (cargoEscolhido == null && !cargos.isEmpty()) {
+                    cargoEscolhido = cargos.get(0);
+                } else if (cargoEscolhido == null) {
+                    cargoEscolhido = new Cargo();
+                    cargoEscolhido.setIdCargo(1L);
+                    cargoEscolhido.setNome(nomeCargo);
+                }
+
+                Funcionario f = new Funcionario();
+                f.setNome(nome);
+                f.setBi(bi);
+                f.setDataNascimento(finalDataNascimentoNovo);
+                f.setDataInicio(finalDataInicioNovo);
+                f.setCargo(cargoEscolhido);
+                f.setEstado(EstadoFuncionario.ATIVO);
+
+                if (!contacto.isEmpty()) {
+                    Contacto c = new Contacto();
+                    c.setContacto(contacto);
+                    f.setContacto(Collections.singletonList(c));
+                }
+
+                funcionarioBO.salvar(f);
+
+                if (!username.isEmpty()) {
+                    try {
+                        Utilizador novoU = new Utilizador();
+                        novoU.setUsername(username);
+                        novoU.setPasswordHash(org.mindrot.jbcrypt.BCrypt.hashpw("Mudar@123", org.mindrot.jbcrypt.BCrypt.gensalt()));
+                        novoU.setPerfil(Perfil.valueOf(perfilStr.toUpperCase()));
+                        novoU.setFuncionario(f);
+                        new UtilizadorBO().salvar(novoU);
+                    } catch (Exception exU) {
+                        System.err.println("Aviso: Utilizador não foi criado: " + exU.getMessage());
+                    }
+                }
+
+                return f;
+            },
+            sucesso -> {
+                botaoGuardarNovo.setEnabled(true);
+                JOptionPane.showMessageDialog(this, "Funcionário cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                recarregarDados();
+            },
+            erro -> {
+                botaoGuardarNovo.setEnabled(true);
+                JOptionPane.showMessageDialog(this, "Erro ao cadastrar funcionário: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        );
+    }
+
+    private void salvarAlteracoesEditarFuncionario() {
+        int row = tabela.getSelectedRow();
+        if (row < 0 || row >= modeloTabela.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione um funcionário para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.valueOf(String.valueOf(modeloTabela.getValueAt(row, 0)));
+
+        String nome = (campoNomeEditar != null) ? campoNomeEditar.getText().trim() : "";
+        if (nome.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "O nome não pode estar vazio.", "Validação", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String bi = (campoBiEditar != null) ? campoBiEditar.getText().trim() : "";
+        if (bi.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "O BI não pode estar vazio.", "Validação", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String dataNascStr = (campoDataNascimentoEditar != null) ? campoDataNascimentoEditar.getText().trim() : "";
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        LocalDate dataNascimento;
+        try {
+            dataNascimento = LocalDate.parse(dataNascStr, dtf);
+        } catch (Exception ex) {
+            dataNascimento = LocalDate.now().minusYears(25);
+        }
+
+        String dataIniStr = (campoDataInicioEditar != null) ? campoDataInicioEditar.getText().trim() : "";
+        LocalDate dataInicio;
+        try {
+            dataInicio = LocalDate.parse(dataIniStr, dtf);
+        } catch (Exception ex) {
+            dataInicio = LocalDate.now();
+        }
+
+        String nomeCargo = (seletorCargoEditar != null) ? seletorCargoEditar.getText().replace("▾", "").trim() : "";
+        String contacto = (campoContactoEditar != null) ? campoContactoEditar.getText().trim() : "";
+
+        botaoGuardarAlteracoesEditar.setEnabled(false);
+        final LocalDate finalDataNascimentoEditar = dataNascimento;
+        final LocalDate finalDataInicioEditar = dataInicio;
+
+        AsyncTask.executar(
+            () -> {
+                Funcionario f = funcionarioBO.buscarPorId(id);
+                f.setNome(nome);
+                f.setBi(bi);
+                f.setDataNascimento(finalDataNascimentoEditar);
+                f.setDataInicio(finalDataInicioEditar);
+
+                if (!nomeCargo.isEmpty()) {
+                    CargoDAO cargoDAO = new CargoDAO();
+                    List<Cargo> cargos = cargoDAO.listarTodos();
+                    for (Cargo c : cargos) {
+                        if (c.getNome() != null && c.getNome().toLowerCase().contains(nomeCargo.toLowerCase())) {
+                            f.setCargo(c);
+                            break;
+                        }
+                    }
+                }
+
+                if (!contacto.isEmpty()) {
+                    Contacto c = new Contacto();
+                    c.setContacto(contacto);
+                    f.setContacto(Collections.singletonList(c));
+                }
+
+                funcionarioBO.atualizar(f);
+                return f;
+            },
+            sucesso -> {
+                botaoGuardarAlteracoesEditar.setEnabled(true);
+                JOptionPane.showMessageDialog(this, "Alterações do funcionário guardadas com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                recarregarDados();
+            },
+            erro -> {
+                botaoGuardarAlteracoesEditar.setEnabled(true);
+                JOptionPane.showMessageDialog(this, "Erro ao guardar alterações: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        );
+    }
+
+    private void eliminarFuncionarioSelecionado() {
+        int row = tabela.getSelectedRow();
+        if (row < 0 || row >= modeloTabela.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione um funcionário.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.valueOf(String.valueOf(modeloTabela.getValueAt(row, 0)));
+        String nome = String.valueOf(modeloTabela.getValueAt(row, 1));
+        int op = JOptionPane.showConfirmDialog(
+            this,
+            "Deseja realmente eliminar o funcionário \"" + nome + "\"?",
+            "Confirmar Eliminação",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        if (op != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        AsyncTask.executar(
+            () -> {
+                try {
+                    funcionarioBO.eliminar(id);
+                } catch (Exception ex) {
+                    Funcionario f = funcionarioBO.buscarPorId(id);
+                    if (f != null) {
+                        f.setEstado(EstadoFuncionario.INATIVO);
+                        funcionarioBO.atualizar(f);
+                        return "inativado";
+                    }
+                    throw ex;
+                }
+                return "eliminado";
+            },
+            resultado -> {
+                if ("inativado".equals(resultado)) {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "O funcionário possui registos associados (vendas/auditoria) e foi marcado como INATIVO.",
+                        "Funcionário Inativado",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                } else {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "Funcionário eliminado com sucesso!",
+                        "Sucesso",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                }
+                definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                recarregarDados();
+            },
+            erro -> JOptionPane.showMessageDialog(this, "Erro ao processar eliminação: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
+    }
+
     private void transferirCargoFuncionarioSelecionado() {
         int row = tabela.getSelectedRow();
         if (row < 0 || row >= modeloTabela.getRowCount()) {
@@ -1128,10 +1367,24 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         AsyncTask.executar(
             () -> {
                 Funcionario f = funcionarioBO.buscarPorId(id);
-                if (f.getCargo() == null) {
-                    f.setCargo(new Cargo());
+                CargoDAO cargoDAO = new CargoDAO();
+                List<Cargo> cargos = cargoDAO.listarTodos();
+                Cargo cargoEscolhido = null;
+                for (Cargo c : cargos) {
+                    if (c.getNome() != null && c.getNome().toLowerCase().contains(novoCargoNome.toLowerCase())) {
+                        cargoEscolhido = c;
+                        break;
+                    }
                 }
-                f.getCargo().setNome(novoCargoNome);
+                if (cargoEscolhido != null) {
+                    f.setCargo(cargoEscolhido);
+                } else {
+                    if (f.getCargo() == null) {
+                        f.setCargo(new Cargo());
+                        f.getCargo().setIdCargo(1L);
+                    }
+                    f.getCargo().setNome(novoCargoNome);
+                }
                 funcionarioBO.atualizar(f);
                 return f;
             },

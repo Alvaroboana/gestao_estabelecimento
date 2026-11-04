@@ -170,12 +170,11 @@ public class LoginPanel extends JPanel {
         campo.setForeground(UiStyle.TEXT);
         campo.setCaretColor(UiStyle.TEXT);
         campo.setBackground(UiStyle.INPUT_BG);
-        campo.putClientProperty(FlatClientProperties.STYLE, ""
-                + "arc: 8;"
-                + "borderColor: #3A4256;"
-                + "focusedBorderColor: #F5B638;"
-                + "background: #12151C;"
-                + "placeholderForeground: #A3ADC2;");
+        campo.putClientProperty(FlatClientProperties.STYLE,
+                "borderColor: #3A4256;" +
+                "focusedBorderColor: #F5B638;" +
+                "background: #12151C;" +
+                "placeholderForeground: #A3ADC2;");
         campo.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UiStyle.INPUT_BORDER, 1),
                 BorderFactory.createEmptyBorder(0, 10, 0, 10)

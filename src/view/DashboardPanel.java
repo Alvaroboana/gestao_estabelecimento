@@ -321,7 +321,7 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
                             l.get("nome_produto"),
                             l.get("nome_categoria"),
                             l.get("quantidade_vendida"),
-                            String.format("%.2f MT", (Double) l.getOrDefault("valor_vendido", 0.0))
+                            String.format("%.2f MT", ((Number) l.getOrDefault("valor_vendido", 0.0)).doubleValue())
                     });
                 }
             }
