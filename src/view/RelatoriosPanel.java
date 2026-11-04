@@ -15,12 +15,15 @@ import java.awt.RenderingHints;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.geom.RoundRectangle2D;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -30,6 +33,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -42,6 +46,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Locale;
 import java.util.Map;
+import controller.RelatorioController;
 import model.bo.RelatorioBO;
 import model.vo.Perfil;
 import model.vo.SessaoUtilizador;
@@ -201,6 +206,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
     private final JTable tabelaReembolsos;
     private final JTable tabelaAuditoria;
     private final RelatorioBO relatorioBO;
+    private final RelatorioController relatorioController;
     private boolean detalheVendaVisivel = true;
     private String abaAtiva = "Completo";
 
@@ -211,6 +217,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
     public RelatoriosPanel(AbaRelatorio abaInicial) {
         UiStyle.instalarTemaEscuro();
         this.relatorioBO = new RelatorioBO();
+        this.relatorioController = new RelatorioController(this.relatorioBO);
         // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
         setBackground(UiStyle.BACKGROUND);
@@ -223,16 +230,18 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         );
         this.botaoGerarRelatorio.addActionListener(e -> carregarRelatorioAtual());
         this.botaoExportarPdf = criarBotaoExportarPdf();
-        this.botaoImprimir = criarBotaoAcao(
-                "Imprimir", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, true
+        this.botaoImprimir = new BotaoToolbarArredondado(
+                "Imprimir", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        this.botaoImprimir.addActionListener(e -> imprimirRelatorioAtivo());
         this.botaoGerarSimples = new BotaoToolbarArredondado(
                 "Gerar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
         this.botaoGerarSimples.addActionListener(e -> carregarRelatorioAtual());
-        this.botaoExportarSimples = criarBotaoAcao(
-                "Exportar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, true
+        this.botaoExportarSimples = new BotaoToolbarArredondado(
+                "Exportar CSV", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        this.botaoExportarSimples.addActionListener(e -> exportarCsvRelatorioAtivo());
         this.botaoFecharDetalheVenda = new BotaoToolbarArredondado(
                 "Fechar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
@@ -341,6 +350,205 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         return tabelaAuditoria;
     }
 
+    public RelatorioController getRelatorioController() {
+        return relatorioController;
+    }
+
+    /**
+     * Retorna a JTable ativa de acordo com a aba selecionada no momento.
+     *
+     * @return Tabela Swing ativa
+     */
+    public JTable obterTabelaAtiva() {
+        if ("Vendas".equalsIgnoreCase(abaAtiva)) {
+            return tabelaVendas;
+        } else if ("Estoque baixo".equalsIgnoreCase(abaAtiva)) {
+            return tabelaEstoqueBaixo;
+        } else if ("Mais vendidos".equalsIgnoreCase(abaAtiva)) {
+            return tabelaMaisVendidos;
+        } else if ("Menos vendidos".equalsIgnoreCase(abaAtiva)) {
+            return tabelaMenosVendidos;
+        } else if ("Reembolsos".equalsIgnoreCase(abaAtiva)) {
+            return tabelaReembolsos;
+        } else if ("Auditoria".equalsIgnoreCase(abaAtiva)) {
+            return tabelaAuditoria;
+        } else {
+            // Aba Completo utiliza a tabela de vendas principal
+            return tabelaVendas;
+        }
+    }
+
+    /**
+     * Retorna o título descritivo do relatório ativo na visualização.
+     *
+     * @return Título amigável
+     */
+    public String obterTituloRelatorioAtivo() {
+        if ("Vendas".equalsIgnoreCase(abaAtiva)) {
+            return "Vendas";
+        } else if ("Estoque baixo".equalsIgnoreCase(abaAtiva)) {
+            return "Estoque Baixo";
+        } else if ("Mais vendidos".equalsIgnoreCase(abaAtiva)) {
+            return "Produtos Mais Vendidos";
+        } else if ("Menos vendidos".equalsIgnoreCase(abaAtiva)) {
+            return "Produtos Menos Vendidos";
+        } else if ("Reembolsos".equalsIgnoreCase(abaAtiva)) {
+            return "Reembolsos";
+        } else if ("Auditoria".equalsIgnoreCase(abaAtiva)) {
+            return "Auditoria";
+        } else {
+            return "Relatório Completo — Vendas";
+        }
+    }
+
+    /**
+     * Imprime a tabela ativa do relatório visualizado no momento utilizando a API Swing JTable.print().
+     */
+    public void imprimirRelatorioAtivo() {
+        JTable tabela = obterTabelaAtiva();
+        if (tabela == null || tabela.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Não existem dados disponíveis na tabela para impressão.",
+                    "Aviso de Impressão",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        try {
+            boolean impresso = relatorioController.imprimirTabela(tabela, obterTituloRelatorioAtivo());
+            if (impresso) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Relatório \"" + obterTituloRelatorioAtivo() + "\" enviado para impressão com sucesso.",
+                        "Impressão",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+            }
+        } catch (java.awt.print.PrinterException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Não foi possível imprimir o relatório: " + ex.getMessage(),
+                    "Erro de Impressão",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        } catch (SecurityException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Acesso ao serviço de impressão bloqueado pelo sistema de segurança.",
+                    "Permissão Negada",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Falha durante a impressão: " + ex.getMessage(),
+                    "Erro",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    /**
+     * Abre uma caixa de diálogo JFileChooser para que o utilizador escolha o local
+     * de gravação e exporta a tabela ativa para um ficheiro .csv com delimitador ';'
+     * e codificação UTF-8.
+     */
+    public void exportarCsvRelatorioAtivo() {
+        JTable tabela = obterTabelaAtiva();
+        if (tabela == null || tabela.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Não existem dados disponíveis na tabela para exportação.",
+                    "Aviso de Exportação",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Exportar " + obterTituloRelatorioAtivo() + " em CSV");
+        String nomeSugerido = "relatorio_" + normalizarNomeArquivo(abaAtiva) + "_" + LocalDate.now() + ".csv";
+        chooser.setSelectedFile(new File(nomeSugerido));
+        FileNameExtensionFilter filtro = new FileNameExtensionFilter("Ficheiros CSV (*.csv)", "csv");
+        chooser.setFileFilter(filtro);
+
+        int resultado = chooser.showSaveDialog(this);
+        if (resultado == JFileChooser.APPROVE_OPTION) {
+            File destino = chooser.getSelectedFile();
+            if (!destino.getName().toLowerCase().endsWith(".csv")) {
+                destino = new File(destino.getParentFile(), destino.getName() + ".csv");
+            }
+
+            if (destino.exists()) {
+                int confirmacao = JOptionPane.showConfirmDialog(
+                        this,
+                        "O ficheiro já existe:\n" + destino.getName() + "\nDeseja substituí-lo?",
+                        "Substituir Ficheiro",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                );
+                if (confirmacao != JOptionPane.YES_OPTION) {
+                    return;
+                }
+            }
+
+            try {
+                relatorioController.exportarCSV(tabela, destino);
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Relatório exportado com sucesso em:\n" + destino.getAbsolutePath(),
+                        "Exportação Concluída",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Erro ao gravar o ficheiro CSV: " + ex.getMessage(),
+                        "Erro de Gravação",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Falha inesperada ao exportar: " + ex.getMessage(),
+                        "Erro",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
+    }
+
+    /**
+     * Exporta os dados da tabela ativa programaticamente para um ficheiro CSV.
+     *
+     * @param destino Ficheiro de destino
+     * @throws IOException Em caso de falha de I/O
+     */
+    public void exportarCsv(File destino) throws IOException {
+        JTable tabela = obterTabelaAtiva();
+        if (tabela == null) {
+            throw new IllegalStateException("Nenhuma tabela ativa disponível.");
+        }
+        relatorioController.exportarCSV(tabela, destino);
+    }
+
+    private String normalizarNomeArquivo(String nome) {
+        if (nome == null) {
+            return "relatorio";
+        }
+        return nome.toLowerCase()
+                .replace(" ", "_")
+                .replace("ã", "a")
+                .replace("á", "a")
+                .replace("é", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ú", "u")
+                .replace("ç", "c");
+    }
+
     private JPanel criarTopo() {
         JPanel topo = new JPanel();
         topo.setLayout(new BoxLayout(topo, BoxLayout.Y_AXIS));
@@ -437,46 +645,60 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
 
         containerBotoesFiltro.removeAll();
         if ("Vendas".equalsIgnoreCase(this.abaAtiva)) {
-            // Em RelVendaDetalhe.dc.html (Vendas): <span class="bt">Gerar</span><span class="bt s">Exportar</span>
+            // Em RelVendaDetalhe.dc.html (Vendas): Gerar | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarSimples);
+            containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
+            containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_VENDAS);
         } else if ("Estoque baixo".equalsIgnoreCase(this.abaAtiva)) {
-            // Em RelEstoqueBaixo.dc.html (Estoque baixo): <span class="bt">Gerar</span><span class="bt s">Exportar</span>
+            // Em RelEstoqueBaixo.dc.html (Estoque baixo): Gerar | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarSimples);
+            containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
+            containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_ESTOQUE_BAIXO);
         } else if ("Mais vendidos".equalsIgnoreCase(this.abaAtiva)) {
-            // Em Relatorios.dc.html (Mais vendidos): <span class="bt">Gerar</span><span class="bt s">Exportar</span>
+            // Em Relatorios.dc.html (Mais vendidos): Gerar | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarSimples);
+            containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
+            containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_MAIS_VENDIDOS);
         } else if ("Menos vendidos".equalsIgnoreCase(this.abaAtiva)) {
-            // Em RelMenosVendidos.dc.html (Menos vendidos): <span class="bt">Gerar</span><span class="bt s">Exportar</span>
+            // Em RelMenosVendidos.dc.html (Menos vendidos): Gerar | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarSimples);
+            containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
+            containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_MENOS_VENDIDOS);
         } else if ("Reembolsos".equalsIgnoreCase(this.abaAtiva)) {
-            // Em RelReembolsos.dc.html (Reembolsos): <span class="bt">Gerar</span><span class="bt s">Exportar</span>
+            // Em RelReembolsos.dc.html (Reembolsos): Gerar | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarSimples);
+            containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
+            containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_REEMBOLSOS);
         } else if ("Auditoria".equalsIgnoreCase(this.abaAtiva)) {
-            // Em RelAuditoria.dc.html (Auditoria): <span class="bt">Gerar</span><span class="bt s">Exportar</span>
+            // Em RelAuditoria.dc.html (Auditoria): Gerar | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarSimples);
+            containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
+            containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_AUDITORIA);
         } else {
-            // Em RelCompleto.dc.html (Completo): Gerar relatório completo | Exportar PDF | Imprimir
+            // Em RelCompleto.dc.html (Completo): Gerar relatório completo | Exportar PDF | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarRelatorio);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarPdf);
+            containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
+            containerBotoesFiltro.add(botaoExportarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_COMPLETO);
@@ -1597,7 +1819,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                 },
                 erro -> {}
             );
-        } else if ("Vendas".equalsIgnoreCase(abaAtiva)) {
+        } else if ("Vendas".equalsIgnoreCase(abaAtiva) || "Completo".equalsIgnoreCase(abaAtiva)) {
             AsyncTask.executar(
                 () -> relatorioBO.vendasPeriodo(user, inicio, fim),
                 lista -> {

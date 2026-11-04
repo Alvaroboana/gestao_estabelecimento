@@ -7,6 +7,7 @@ import model.exception.AcessoNegadoException;
 import model.exception.DadoInvalidoException;
 import model.exception.EntidadeNaoEncontradaException;
 import model.vo.EstadoProduto;
+import model.vo.Fornecedor;
 import model.vo.Perfil;
 import model.vo.Produto;
 import model.vo.Utilizador;
@@ -62,6 +63,23 @@ public class ProdutoBO {
             throw new EntidadeNaoEncontradaException("Produto nao encontrado.");
         }
         return produto;
+    }
+
+    public List<Fornecedor> listarFornecedoresDoProduto(Long idProduto) {
+        validarId(idProduto, "idProduto");
+        return dao.listarFornecedoresDoProduto(idProduto);
+    }
+
+    public void associarFornecedor(Long idProduto, Long idFornecedor) {
+        validarId(idProduto, "idProduto");
+        validarId(idFornecedor, "idFornecedor");
+        dao.associarFornecedor(idProduto, idFornecedor);
+    }
+
+    public void desassociarFornecedor(Long idProduto, Long idFornecedor) {
+        validarId(idProduto, "idProduto");
+        validarId(idFornecedor, "idFornecedor");
+        dao.desassociarFornecedor(idProduto, idFornecedor);
     }
 
     public void descontinuar(Produto produto, Utilizador utilizador) {

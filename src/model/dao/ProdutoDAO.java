@@ -13,6 +13,7 @@ import infra.DBException;
 import infra.JdbcValidation;
 import model.vo.Categoria;
 import model.vo.EstadoProduto;
+import model.vo.Fornecedor;
 import model.vo.Produto;
 
 public class ProdutoDAO implements GenericoDAO<Produto, Long> {
@@ -151,6 +152,57 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
             throw new DBException("Erro ao buscar produto por ID: " + e.getMessage(), e);
         }
         return prod;
+    }
+
+    public List<Fornecedor> listarFornecedoresDoProduto(Long idProduto) {
+        String sql = "SELECT f.id_fornecedor, p.id_pessoa, p.nome " +
+                     "FROM fornecedor f " +
+                     "JOIN pessoa p ON f.id_pessoa = p.id_pessoa " +
+                     "JOIN fornecedor_produto fp ON f.id_fornecedor = fp.id_fornecedor " +
+                     "WHERE fp.id_produto = ? " +
+                     "ORDER BY p.nome";
+        List<Fornecedor> lista = new ArrayList<Fornecedor>();
+        try (Connection conn = ConexaoDB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, idProduto);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Fornecedor f = new Fornecedor();
+                    f.setIdFornecedor(rs.getLong("id_fornecedor"));
+                    f.setIdPessoa(rs.getLong("id_pessoa"));
+                    f.setNome(rs.getString("nome"));
+                    lista.add(f);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DBException("Erro ao listar fornecedores do produto: " + e.getMessage(), e);
+        }
+        return lista;
+    }
+
+    public void associarFornecedor(Long idProduto, Long idFornecedor) {
+        String sql = "INSERT INTO fornecedor_produto (id_produto, id_fornecedor) " +
+                     "VALUES (?, ?) ON DUPLICATE KEY UPDATE id_fornecedor = id_fornecedor";
+        try (Connection conn = ConexaoDB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, idProduto);
+            stmt.setLong(2, idFornecedor);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new DBException("Erro ao associar fornecedor ao produto: " + e.getMessage(), e);
+        }
+    }
+
+    public void desassociarFornecedor(Long idProduto, Long idFornecedor) {
+        String sql = "DELETE FROM fornecedor_produto WHERE id_produto = ? AND id_fornecedor = ?";
+        try (Connection conn = ConexaoDB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, idProduto);
+            stmt.setLong(2, idFornecedor);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new DBException("Erro ao desassociar fornecedor do produto: " + e.getMessage(), e);
+        }
     }
 
     private Produto extrairProduto(ResultSet rs) throws SQLException {

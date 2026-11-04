@@ -123,6 +123,7 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
     private JButton botaoEliminarEditar;
 
     private final FornecedorDAO fornecedorDAO;
+    private final controller.FornecedorController fornecedorController = new controller.FornecedorController();
     private List<Object[]> dadosFornecedoresCarregados = null;
     private List<Fornecedor> listaFornecedoresEntidades = null;
 
@@ -593,8 +594,8 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
             public void mousePressed(MouseEvent e) {
                 JOptionPane.showMessageDialog(
                         FornecedoresPanel.this,
-                        "A ação \"+ Adicionar contacto\" está reservada para a próxima etapa.",
-                        "Módulo reservado",
+                        "Por favor, guarde o fornecedor primeiro. ApÃ³s salvar, selecione-o na tabela para adicionar contactos adicionais.",
+                        "Adicionar Contacto",
                         JOptionPane.INFORMATION_MESSAGE
                 );
             }
@@ -749,12 +750,38 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
         linkAdicionarContactoEditar.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                JOptionPane.showMessageDialog(
-                        FornecedoresPanel.this,
-                        "A ação \"+ Adicionar contacto\" está reservada para a próxima etapa.",
-                        "Módulo reservado",
-                        JOptionPane.INFORMATION_MESSAGE
-                );
+                int row = tabela.getSelectedRow();
+                if (row < 0 || row >= tabela.getRowCount()) {
+                    JOptionPane.showMessageDialog(FornecedoresPanel.this, "Selecione um fornecedor para adicionar contacto extra.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                String idStr = String.valueOf(tabela.getValueAt(row, 0));
+                try {
+                    Long idFornecedor = Long.parseLong(idStr);
+                    Fornecedor f = (listaFornecedoresEntidades != null) ? listaFornecedoresEntidades.stream()
+                        .filter(item -> item.getIdFornecedor() != null && item.getIdFornecedor().equals(idFornecedor))
+                        .findFirst().orElse(null) : null;
+                    Long idPessoa = (f != null && f.getIdPessoa() != null) ? f.getIdPessoa() : idFornecedor;
+                    String novoContacto = JOptionPane.showInputDialog(FornecedoresPanel.this, 
+                        "Informe o novo contacto (telefone ou email):", 
+                        "Adicionar Contacto Extra", 
+                        JOptionPane.PLAIN_MESSAGE);
+                    if (novoContacto != null && !novoContacto.trim().isEmpty()) {
+                        AsyncTask.executar(
+                            () -> {
+                                fornecedorController.adicionarContactoExtra(idPessoa, novoContacto.trim());
+                                return true;
+                            },
+                            sucesso -> {
+                                JOptionPane.showMessageDialog(FornecedoresPanel.this, "Contacto extra adicionado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                                recarregarDados();
+                            },
+                            erro -> JOptionPane.showMessageDialog(FornecedoresPanel.this, "Erro ao adicionar contacto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+                        );
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(FornecedoresPanel.this, "Identificador de fornecedor invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
         card.add(linkAdicionarContactoEditar);

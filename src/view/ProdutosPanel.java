@@ -14,6 +14,8 @@ import java.awt.GridLayout;
 import java.awt.RenderingHints;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +41,12 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.util.Arrays;
 import java.util.Locale;
+import controller.FornecedorController;
+import controller.ProdutoController;
 import model.bo.ProdutoBO;
 import model.vo.Categoria;
+import model.vo.Contacto;
+import model.vo.Fornecedor;
 import model.vo.EstadoProduto;
 import model.vo.Perfil;
 import model.vo.Produto;
@@ -123,8 +129,17 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     // Controles do card "Fornecedores do produto"
     private JLabel labelNomeProdutoFornecedores;
     private BotaoSeletorFormulario seletorAssociarFornecedor;
+    private JButton botaoAssociarFornecedor;
+    private DefaultTableModel modeloFornecedores;
+    private JTable miniTabelaFornecedores;
+    private List<Fornecedor> listaFornecedoresDoProduto = new ArrayList<>();
+    private List<Fornecedor> listaTodosFornecedores = new ArrayList<>();
+    private Fornecedor fornecedorSelecionadoParaAssociar = null;
+    private Long idProdutoAtualFornecedores = null;
 
     private final ProdutoBO produtoBO;
+    private final ProdutoController produtoController;
+    private final FornecedorController fornecedorController;
     private List<Object[]> dadosProdutosCarregados = null;
     private List<Produto> listaProdutosEntidades = null;
 
@@ -143,6 +158,8 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         UiStyle.instalarTemaEscuro();
         this.modoLateral = modoInicial != null ? modoInicial : ModoPainelLateral.NENHUM;
         this.produtoBO = new ProdutoBO();
+        this.produtoController = new ProdutoController();
+        this.fornecedorController = new FornecedorController();
 
         // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
@@ -214,6 +231,18 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
     public JPanel getCardFornecedoresProduto() {
         return cardFornecedoresProduto;
+    }
+
+    public JTable getMiniTabelaFornecedores() {
+        return miniTabelaFornecedores;
+    }
+
+    public JButton getBotaoAssociarFornecedor() {
+        return botaoAssociarFornecedor;
+    }
+
+    public JButton getSeletorAssociarFornecedor() {
+        return seletorAssociarFornecedor;
     }
 
     public ModoPainelLateral getModoPainelLateral() {
@@ -855,22 +884,47 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         JPanel barraBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraBotoes.setOpaque(false);
 
-        BotaoToolbarArredondado botaoAssociar = new BotaoToolbarArredondado(
+        botaoAssociarFornecedor = new BotaoToolbarArredondado(
                 "+ Associar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
-        botaoAssociar.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"+ Associar\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
+        botaoAssociarFornecedor.addActionListener(e -> {
+            if (idProdutoAtualFornecedores == null) {
+                JOptionPane.showMessageDialog(this, "Selecione um produto na tabela primeiro.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String textoSel = seletorAssociarFornecedor != null ? seletorAssociarFornecedor.getText() : "";
+            if (textoSel == null || textoSel.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Selecione um fornecedor para associar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            final String nomeSel = textoSel.replace(" â–¾", "").replace(" â–¾", "").replace(" -", "").replace(" ?", "").trim();
+            Fornecedor fornecedorEncontrado = (listaTodosFornecedores != null) ? listaTodosFornecedores.stream()
+                .filter(f -> f.getNome() != null && f.getNome().equalsIgnoreCase(nomeSel))
+                .findFirst().orElse(null) : null;
+            if (fornecedorEncontrado == null) {
+                JOptionPane.showMessageDialog(this, "Fornecedor nÃ£o encontrado na lista.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            final Long idForn = fornecedorEncontrado.getIdFornecedor();
+            AsyncTask.executar(
+                () -> {
+                    produtoController.associarFornecedor(idProdutoAtualFornecedores, idForn);
+                    return true;
+                },
+                sucesso -> {
+                    JOptionPane.showMessageDialog(this, "Fornecedor associado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    carregarFornecedoresDoProduto(idProdutoAtualFornecedores);
+                },
+                erro -> JOptionPane.showMessageDialog(this, "Erro ao associar fornecedor: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        });
 
         BotaoToolbarArredondado botaoFechar = new BotaoToolbarArredondado(
                 "Fechar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
         botaoFechar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
-        barraBotoes.add(botaoAssociar);
+        barraBotoes.add(botaoAssociarFornecedor);
         barraBotoes.add(Box.createRigidArea(new Dimension(10, 0)));
         barraBotoes.add(botaoFechar);
         fixarLargura(barraBotoes, larguraInterna, 38);
@@ -885,8 +939,8 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     }
 
     private JPanel criarMiniTabelaFornecedores(int larguraInterna) {
-        DefaultTableModel modeloFornecedores = new DefaultTableModel(
-                DADOS_FORNECEDORES_PRODUTO, COLUNAS_FORNECEDORES_PRODUTO) {
+        this.modeloFornecedores = new DefaultTableModel(
+                new Object[0][3], COLUNAS_FORNECEDORES_PRODUTO) {
             private static final long serialVersionUID = 1L;
 
             @Override
@@ -895,7 +949,37 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             }
         };
 
-        JTable miniTabela = new JTable(modeloFornecedores);
+        this.miniTabelaFornecedores = new JTable(this.modeloFornecedores);
+        this.miniTabelaFornecedores.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int col = miniTabelaFornecedores.columnAtPoint(e.getPoint());
+                int row = miniTabelaFornecedores.rowAtPoint(e.getPoint());
+                if (col == 2 && row >= 0 && row < miniTabelaFornecedores.getRowCount()) {
+                    if (idProdutoAtualFornecedores == null || listaFornecedoresDoProduto == null || row >= listaFornecedoresDoProduto.size()) {
+                        return;
+                    }
+                    Fornecedor f = listaFornecedoresDoProduto.get(row);
+                    int opt = JOptionPane.showConfirmDialog(ProdutosPanel.this, 
+                        "Deseja desassociar o fornecedor \"" + f.getNome() + "\" deste produto?", 
+                        "Confirmar RemoÃ§Ã£o", JOptionPane.YES_NO_OPTION);
+                    if (opt == JOptionPane.YES_OPTION) {
+                        AsyncTask.executar(
+                            () -> {
+                                produtoController.desassociarFornecedor(idProdutoAtualFornecedores, f.getIdFornecedor());
+                                return true;
+                            },
+                            sucesso -> {
+                                JOptionPane.showMessageDialog(ProdutosPanel.this, "Fornecedor desassociado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                                carregarFornecedoresDoProduto(idProdutoAtualFornecedores);
+                            },
+                            erro -> JOptionPane.showMessageDialog(ProdutosPanel.this, "Erro ao desassociar: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+                        );
+                    }
+                }
+            }
+        });
+        JTable miniTabela = this.miniTabelaFornecedores;
         miniTabela.setRowHeight(29);
         miniTabela.setFont(UiStyle.fonte(12, Font.PLAIN));
         miniTabela.setBackground(UiStyle.SURFACE);
@@ -997,8 +1081,54 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         if (row < 0 || row >= tabela.getRowCount()) {
             row = 0;
         }
+        String idStr = String.valueOf(tabela.getValueAt(row, 0));
         String nome = String.valueOf(tabela.getValueAt(row, 1));
         labelNomeProdutoFornecedores.setText(nome);
+        try {
+            Long idProduto = Long.parseLong(idStr);
+            this.idProdutoAtualFornecedores = idProduto;
+            carregarFornecedoresDoProduto(idProduto);
+        } catch (Exception ex) {
+            // Ignora erro de parse
+        }
+    }
+
+    private void carregarFornecedoresDoProduto(Long idProduto) {
+        if (idProduto == null) return;
+        AsyncTask.executar(
+            () -> {
+                List<Fornecedor> associados = produtoController.listarFornecedoresDoProduto(idProduto);
+                List<Fornecedor> todos = fornecedorController.listarTodos();
+                return new Object[] { associados, todos };
+            },
+            res -> {
+                Object[] arr = (Object[]) res;
+                @SuppressWarnings("unchecked")
+                List<Fornecedor> associados = (List<Fornecedor>) arr[0];
+                @SuppressWarnings("unchecked")
+                List<Fornecedor> todos = (List<Fornecedor>) arr[1];
+                this.listaFornecedoresDoProduto = associados != null ? associados : new ArrayList<>();
+                this.listaTodosFornecedores = todos != null ? todos : new ArrayList<>();
+                
+                if (modeloFornecedores != null) {
+                    modeloFornecedores.setRowCount(0);
+                    for (Fornecedor f : this.listaFornecedoresDoProduto) {
+                        String cto = (f.getContacto() != null && !f.getContacto().isEmpty()) 
+                            ? f.getContacto().get(0).getContacto() : "-";
+                        modeloFornecedores.addRow(new Object[] { f.getNome(), cto, "Remover" });
+                    }
+                }
+                
+                if (seletorAssociarFornecedor != null && !this.listaTodosFornecedores.isEmpty()) {
+                    String[] nomes = this.listaTodosFornecedores.stream()
+                        .map(Fornecedor::getNome)
+                        .toArray(String[]::new);
+                    seletorAssociarFornecedor.setOpcoes(nomes);
+                    seletorAssociarFornecedor.setText(nomes[0] + " â–¾");
+                }
+            },
+            erro -> {}
+        );
     }
 
     private JPanel criarCampoComLabel(String textoLabel, JComponent campo) {
@@ -1256,9 +1386,11 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
      */
     private static final class BotaoSeletorFormulario extends JButton {
         private static final long serialVersionUID = 1L;
+        private String[] opcoes;
 
         BotaoSeletorFormulario(String textoInicial, String[] opcoes) {
             super(textoInicial);
+            this.opcoes = opcoes;
             setFont(UiStyle.fonte(13, Font.PLAIN));
             setForeground(UiStyle.MUTED);
             setBackground(UiStyle.INPUT_BG);
@@ -1270,22 +1402,26 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setBorder(new EmptyBorder(0, 12, 0, 12));
 
-            if (opcoes != null && opcoes.length > 0) {
-                addActionListener(e -> {
+            addActionListener(e -> {
+                if (this.opcoes != null && this.opcoes.length > 0) {
                     JPopupMenu menu = new JPopupMenu();
                     menu.setBackground(UiStyle.SURFACE);
                     menu.setBorder(BorderFactory.createLineBorder(UiStyle.BORDER));
-                    for (String opcao : opcoes) {
+                    for (String opcao : this.opcoes) {
                         JMenuItem item = new JMenuItem(opcao);
                         item.setFont(UiStyle.fonte(13, Font.PLAIN));
                         item.setBackground(UiStyle.SURFACE);
                         item.setForeground(UiStyle.TEXT);
-                        item.addActionListener(ev -> setText(opcao + " ▾"));
+                        item.addActionListener(ev -> setText(opcao + " â–¾"));
                         menu.add(item);
                     }
                     menu.show(this, 0, getHeight() + 2);
-                });
-            }
+                }
+            });
+        }
+
+        public void setOpcoes(String[] novasOpcoes) {
+            this.opcoes = novasOpcoes;
         }
 
         @Override

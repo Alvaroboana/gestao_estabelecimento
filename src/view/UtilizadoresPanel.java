@@ -9,22 +9,31 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -34,17 +43,19 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-import java.util.Arrays;
-import java.util.Locale;
+import controller.UtilizadorController;
 import model.dao.CargoDAO;
 import model.dao.ContactoDAO;
+import model.vo.Bairro;
 import model.vo.Cargo;
+import model.vo.Cidade;
 import model.vo.Contacto;
 import model.vo.Perfil;
 import model.vo.Utilizador;
@@ -94,6 +105,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private static final String CARD_VISAO_AUXILIARES = "VISAO_AUXILIARES";
     private static final String CARD_TABELA_CARGOS = "TABELA_CARGOS";
     private static final String CARD_TABELA_CONTACTOS = "TABELA_CONTACTOS";
+    private static final String CARD_TABELA_ENDERECOS = "TABELA_ENDERECOS";
 
     private static final int RAIO_CARD = 14;
     private static final int RAIO_COMPONENTE = 8;
@@ -147,6 +159,26 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         {"3", "82 555 0101", "Carlos Mabjaia", "Funcionário"}
     };
 
+    private static final String[] COLUNAS_TABELA_CIDADES_AUX = {
+        "ID", "Nome da Cidade"
+    };
+
+    private static final Object[][] DADOS_TABELA_CIDADES_AUX = {
+        {"1", "Maputo"},
+        {"2", "Matola"},
+        {"3", "Beira"}
+    };
+
+    private static final String[] COLUNAS_TABELA_BAIRROS_AUX = {
+        "ID", "Nome do Bairro", "Cidade"
+    };
+
+    private static final Object[][] DADOS_TABELA_BAIRROS_AUX = {
+        {"1", "Central", "Maputo"},
+        {"2", "Polana", "Maputo"},
+        {"3", "Fomento", "Matola"}
+    };
+
     private final CardLayout layoutVisao;
     private final JPanel containerVisao;
 
@@ -169,10 +201,23 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private final JButton botaoNovoContactoAuxiliar;
     private final JButton botaoEditarContactoAuxiliar;
     private final JButton botaoEliminarContactoAuxiliar;
+    private final CampoBuscaArredondado campoBuscarEndereco;
+    private final JButton botaoNovaCidadeAuxiliar;
+    private final JButton botaoEditarCidadeAuxiliar;
+    private final JButton botaoEliminarCidadeAuxiliar;
+    private final JButton botaoNovoBairroAuxiliar;
+    private final JButton botaoEditarBairroAuxiliar;
+    private final JButton botaoEliminarBairroAuxiliar;
     private final DefaultTableModel modeloTabelaCargosAux;
     private final JTable tabelaCargosAuxiliar;
     private final DefaultTableModel modeloTabelaContactosAux;
     private final JTable tabelaContactosAuxiliar;
+    private final DefaultTableModel modeloTabelaCidadesAux;
+    private final JTable tabelaCidadesAuxiliar;
+    private final DefaultTableModel modeloTabelaBairrosAux;
+    private final JTable tabelaBairrosAuxiliar;
+    private JLabel labelTituloCidades;
+    private JLabel labelTituloBairros;
     private final JPanel cardNovoCargo;
     private final JPanel cardEditarCargo;
     private final JPanel cardNovoContacto;
@@ -200,10 +245,13 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private JButton botaoCancelarEditarContacto;
     private JButton botaoEliminarEditarContacto;
 
+    private final UtilizadorController utilizadorController;
     private final CargoDAO cargoDAO;
     private final ContactoDAO contactoDAO;
     private List<Object[]> dadosCargosCarregados = null;
     private List<Object[]> dadosContactosCarregados = null;
+    private List<Cidade> dadosCidadesCarregados = null;
+    private List<Bairro> dadosBairrosCarregados = null;
 
     private ModoVisao modoVisao;
     private String abaAuxiliarAtiva = "Cargos";
@@ -233,7 +281,12 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     }
 
     public UtilizadoresPanel(ModoVisao visaoInicial, AbaAuxiliar abaInicial, ModoPainelLateral modoLateralInicial) {
+        this(visaoInicial, abaInicial, modoLateralInicial, new UtilizadorController());
+    }
+
+    public UtilizadoresPanel(ModoVisao visaoInicial, AbaAuxiliar abaInicial, ModoPainelLateral modoLateralInicial, UtilizadorController utilizadorController) {
         UiStyle.instalarTemaEscuro();
+        this.utilizadorController = (utilizadorController != null) ? utilizadorController : new UtilizadorController();
         this.cargoDAO = new CargoDAO();
         this.contactoDAO = new ContactoDAO();
         this.modoVisao = visaoInicial != null ? visaoInicial : ModoVisao.TABELAS_AUXILIARES;
@@ -272,10 +325,75 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         );
         this.botaoEliminarContactoAuxiliar.addActionListener(e -> acaoEliminarContactoSelecionado());
 
+        this.campoBuscarEndereco = criarCampoBuscarEndereco();
+        this.botaoNovaCidadeAuxiliar = new BotaoToolbarArredondado(
+                "Nova cidade", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        this.botaoNovaCidadeAuxiliar.addActionListener(e -> acaoNovaCidade());
+        this.botaoEditarCidadeAuxiliar = new BotaoToolbarArredondado(
+                "Editar cidade", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        this.botaoEditarCidadeAuxiliar.addActionListener(e -> acaoEditarCidade());
+        this.botaoEliminarCidadeAuxiliar = new BotaoToolbarArredondado(
+                "Eliminar cidade", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
+        );
+        this.botaoEliminarCidadeAuxiliar.addActionListener(e -> acaoEliminarCidade());
+
+        this.botaoNovoBairroAuxiliar = new BotaoToolbarArredondado(
+                "Novo bairro", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        this.botaoNovoBairroAuxiliar.addActionListener(e -> acaoNovoBairro());
+        this.botaoEditarBairroAuxiliar = new BotaoToolbarArredondado(
+                "Editar bairro", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        this.botaoEditarBairroAuxiliar.addActionListener(e -> acaoEditarBairro());
+        this.botaoEliminarBairroAuxiliar = new BotaoToolbarArredondado(
+                "Eliminar bairro", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
+        );
+        this.botaoEliminarBairroAuxiliar.addActionListener(e -> acaoEliminarBairro());
+
         this.modeloTabelaCargosAux = criarModeloTabelaCargosAux();
         this.tabelaCargosAuxiliar = criarTabelaCargosAuxiliar(this.modeloTabelaCargosAux);
         this.modeloTabelaContactosAux = criarModeloTabelaContactosAux();
         this.tabelaContactosAuxiliar = criarTabelaCargosAuxiliar(this.modeloTabelaContactosAux);
+
+        this.modeloTabelaCidadesAux = criarModeloTabelaCidadesAux();
+        this.tabelaCidadesAuxiliar = criarTabelaCargosAuxiliar(this.modeloTabelaCidadesAux);
+        this.modeloTabelaBairrosAux = criarModeloTabelaBairrosAux();
+        this.tabelaBairrosAuxiliar = criarTabelaCargosAuxiliar(this.modeloTabelaBairrosAux);
+
+        if (this.tabelaCidadesAuxiliar.getColumnModel().getColumnCount() > 0) {
+            this.tabelaCidadesAuxiliar.getColumnModel().getColumn(0).setMaxWidth(60);
+            this.tabelaCidadesAuxiliar.getColumnModel().getColumn(0).setPreferredWidth(50);
+        }
+        if (this.tabelaBairrosAuxiliar.getColumnModel().getColumnCount() > 1) {
+            this.tabelaBairrosAuxiliar.getColumnModel().getColumn(0).setMaxWidth(60);
+            this.tabelaBairrosAuxiliar.getColumnModel().getColumn(0).setPreferredWidth(50);
+            this.tabelaBairrosAuxiliar.getColumnModel().getColumn(2).setPreferredWidth(140);
+        }
+
+        this.tabelaCidadesAuxiliar.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                atualizarTabelaBairrosFiltrada();
+            }
+        });
+
+        this.tabelaCidadesAuxiliar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && tabelaCidadesAuxiliar.getSelectedRow() >= 0) {
+                    acaoEditarCidade();
+                }
+            }
+        });
+        this.tabelaBairrosAuxiliar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && tabelaBairrosAuxiliar.getSelectedRow() >= 0) {
+                    acaoEditarBairro();
+                }
+            }
+        });
 
         this.cardNovoCargo = criarCardNovoCargo();
         this.cardEditarCargo = criarCardEditarCargo();
@@ -305,9 +423,12 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
 
         atualizarTabelaCargosFiltrada();
         atualizarTabelaContactosFiltrada();
+        atualizarTabelaCidadesFiltrada();
+        atualizarTabelaBairrosFiltrada();
         selecionarAbaAuxiliar(this.abaAuxiliarAtiva);
         definirModoPainelLateral(this.modoLateral);
         definirModoVisao(this.modoVisao);
+        recarregarDados();
     }
 
     public JTable getTabelaMatrizPermissoes() {
@@ -563,23 +684,19 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     }
 
     public final void selecionarAbaAuxiliar(String nomeAba) {
-        if (!"Cargos".equalsIgnoreCase(nomeAba) && !"Contactos".equalsIgnoreCase(nomeAba)) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "A sub-aba \"" + nomeAba + "\" está reservada para a próxima etapa.",
-                    "Módulo reservado",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
-            return;
+        if ("EndereÃ§os".equalsIgnoreCase(nomeAba) || "Enderecos".equalsIgnoreCase(nomeAba)) {
+            this.abaAuxiliarAtiva = "EndereÃ§os";
+        } else if ("Contactos".equalsIgnoreCase(nomeAba)) {
+            this.abaAuxiliarAtiva = "Contactos";
+        } else {
+            this.abaAuxiliarAtiva = "Cargos";
         }
-        this.abaAuxiliarAtiva = "Contactos".equalsIgnoreCase(nomeAba) ? "Contactos" : "Cargos";
         for (BotaoAbaPilula botao : botoesAbasAuxiliares) {
             botao.setAtiva(botao.getText().equalsIgnoreCase(this.abaAuxiliarAtiva));
         }
 
         containerToolbarAuxiliar.removeAll();
         if ("Contactos".equalsIgnoreCase(this.abaAuxiliarAtiva)) {
-            // Em ContactoNovo.dc.html: Buscar contacto | Novo contacto | Editar | Eliminar
             containerToolbarAuxiliar.add(campoBuscarContacto);
             containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(10, 0)));
             containerToolbarAuxiliar.add(botaoNovoContactoAuxiliar);
@@ -591,8 +708,23 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
             if (this.modoLateral == ModoPainelLateral.NOVO_CARGO || this.modoLateral == ModoPainelLateral.EDITAR_CARGO) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
             }
+        } else if ("EndereÃ§os".equalsIgnoreCase(this.abaAuxiliarAtiva)) {
+            containerToolbarAuxiliar.add(campoBuscarEndereco);
+            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(10, 0)));
+            containerToolbarAuxiliar.add(botaoNovaCidadeAuxiliar);
+            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(6, 0)));
+            containerToolbarAuxiliar.add(botaoEditarCidadeAuxiliar);
+            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(6, 0)));
+            containerToolbarAuxiliar.add(botaoEliminarCidadeAuxiliar);
+            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(14, 0)));
+            containerToolbarAuxiliar.add(botaoNovoBairroAuxiliar);
+            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(6, 0)));
+            containerToolbarAuxiliar.add(botaoEditarBairroAuxiliar);
+            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(6, 0)));
+            containerToolbarAuxiliar.add(botaoEliminarBairroAuxiliar);
+            layoutTabelasAuxiliares.show(containerTabelasAuxiliares, CARD_TABELA_ENDERECOS);
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
         } else {
-            // Em CargoNovo.dc.html / CargoEditar.dc.html: Buscar cargo | Novo cargo | Editar | Eliminar
             containerToolbarAuxiliar.add(campoBuscarCargo);
             containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(10, 0)));
             containerToolbarAuxiliar.add(botaoNovoCargoAuxiliar);
@@ -601,8 +733,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
             containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(10, 0)));
             containerToolbarAuxiliar.add(botaoEliminarCargoAuxiliar);
             layoutTabelasAuxiliares.show(containerTabelasAuxiliares, CARD_TABELA_CARGOS);
-            if (this.modoLateral == ModoPainelLateral.NOVO_CONTACTO
-                    || this.modoLateral == ModoPainelLateral.EDITAR_CONTACTO) {
+            if (this.modoLateral == ModoPainelLateral.NOVO_CONTACTO || this.modoLateral == ModoPainelLateral.EDITAR_CONTACTO) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
             }
         }
@@ -610,7 +741,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         revalidate();
         repaint();
     }
-
     private JPanel criarVisaoUtilizadoresPermissoes() {
         JPanel visao = new JPanel(new BorderLayout(0, 16));
         visao.setOpaque(false);
@@ -663,6 +793,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
 
         containerTabelasAuxiliares.add(criarCardTabelaAuxiliar(tabelaCargosAuxiliar), CARD_TABELA_CARGOS);
         containerTabelasAuxiliares.add(criarCardTabelaAuxiliar(tabelaContactosAuxiliar), CARD_TABELA_CONTACTOS);
+        containerTabelasAuxiliares.add(criarCardEnderecosAuxiliar(), CARD_TABELA_ENDERECOS);
 
         JPanel corpo = new JPanel(new BorderLayout(16, 0));
         corpo.setOpaque(false);
@@ -2167,6 +2298,28 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
                 atualizarTabelaContactosFiltrada();
             }
         );
+        AsyncTask.executar(
+            () -> {
+                List<Cidade> cids = utilizadorController.listarCidades();
+                List<Bairro> bairs = utilizadorController.listarBairros();
+                return new Object[] { cids, bairs };
+            },
+            res -> {
+                Object[] arr = (Object[]) res;
+                @SuppressWarnings("unchecked")
+                List<Cidade> cids = (List<Cidade>) arr[0];
+                @SuppressWarnings("unchecked")
+                List<Bairro> bairs = (List<Bairro>) arr[1];
+                this.dadosCidadesCarregados = cids != null ? cids : new ArrayList<>();
+                this.dadosBairrosCarregados = bairs != null ? bairs : new ArrayList<>();
+                atualizarTabelaCidadesFiltrada();
+                atualizarTabelaBairrosFiltrada();
+            },
+            erro -> {
+                atualizarTabelaCidadesFiltrada();
+                atualizarTabelaBairrosFiltrada();
+            }
+        );
     }
 
     @Override
@@ -2178,5 +2331,247 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     public void aplicarTema() {
         setBackground(UiStyle.BACKGROUND);
         repaint();
+    }
+
+    private CampoBuscaArredondado criarCampoBuscarEndereco() {
+        CampoBuscaArredondado campo = new CampoBuscaArredondado("Buscar endereÃ§o / cidade / bairro");
+        campo.setPreferredSize(new Dimension(LARGURA_MIN_INPUT, ALTURA_BOTAO));
+        campo.setMinimumSize(new Dimension(LARGURA_MIN_INPUT, ALTURA_BOTAO));
+        campo.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { atualizarTabelaCidadesFiltrada(); atualizarTabelaBairrosFiltrada(); }
+            @Override public void removeUpdate(DocumentEvent e) { atualizarTabelaCidadesFiltrada(); atualizarTabelaBairrosFiltrada(); }
+            @Override public void changedUpdate(DocumentEvent e) { atualizarTabelaCidadesFiltrada(); atualizarTabelaBairrosFiltrada(); }
+        });
+        return campo;
+    }
+
+    private DefaultTableModel criarModeloTabelaCidadesAux() {
+        return new DefaultTableModel(new String[]{"ID", "Nome da Cidade"}, 0) {
+            private static final long serialVersionUID = 1L;
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+    }
+
+    private DefaultTableModel criarModeloTabelaBairrosAux() {
+        return new DefaultTableModel(new String[]{"ID", "Nome do Bairro", "Cidade"}, 0) {
+            private static final long serialVersionUID = 1L;
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+    }
+
+    private JPanel criarCardEnderecosAuxiliar() {
+        JPanel painel = new JPanel(new GridLayout(1, 2, 16, 0));
+        painel.setOpaque(false);
+
+        // Painel Cidades
+        JPanel painelCidades = new JPanel(new BorderLayout(0, 8));
+        painelCidades.setOpaque(false);
+        labelTituloCidades = new JLabel("Cidades");
+        labelTituloCidades.setFont(UiStyle.fonteSemiBold(14));
+        labelTituloCidades.setForeground(UiStyle.TEXT);
+        painelCidades.add(labelTituloCidades, BorderLayout.NORTH);
+        painelCidades.add(criarCardTabelaAuxiliar(tabelaCidadesAuxiliar), BorderLayout.CENTER);
+
+        // Painel Bairros
+        JPanel painelBairros = new JPanel(new BorderLayout(0, 8));
+        painelBairros.setOpaque(false);
+        labelTituloBairros = new JLabel("Bairros");
+        labelTituloBairros.setFont(UiStyle.fonteSemiBold(14));
+        labelTituloBairros.setForeground(UiStyle.TEXT);
+        painelBairros.add(labelTituloBairros, BorderLayout.NORTH);
+        painelBairros.add(criarCardTabelaAuxiliar(tabelaBairrosAuxiliar), BorderLayout.CENTER);
+
+        painel.add(painelCidades);
+        painel.add(painelBairros);
+        return painel;
+    }
+
+    private void atualizarTabelaCidadesFiltrada() {
+        if (modeloTabelaCidadesAux == null) return;
+        modeloTabelaCidadesAux.setRowCount(0);
+        if (dadosCidadesCarregados == null) return;
+        String termo = (campoBuscarEndereco != null) ? campoBuscarEndereco.getTextoReal().trim().toLowerCase() : "";
+        for (Cidade c : dadosCidadesCarregados) {
+            String idStr = String.valueOf(c.getIdCidade());
+            String nomeStr = c.getNome() != null ? c.getNome() : "";
+            if (termo.isEmpty() || nomeStr.toLowerCase().contains(termo) || idStr.contains(termo)) {
+                modeloTabelaCidadesAux.addRow(new Object[]{idStr, nomeStr});
+            }
+        }
+    }
+
+    private void atualizarTabelaBairrosFiltrada() {
+        if (modeloTabelaBairrosAux == null) return;
+        modeloTabelaBairrosAux.setRowCount(0);
+        if (dadosBairrosCarregados == null) return;
+        String termo = (campoBuscarEndereco != null) ? campoBuscarEndereco.getTextoReal().trim().toLowerCase() : "";
+        Long idCidadeFiltro = null;
+        if (tabelaCidadesAuxiliar != null && tabelaCidadesAuxiliar.getSelectedRow() >= 0) {
+            try {
+                idCidadeFiltro = Long.parseLong(String.valueOf(tabelaCidadesAuxiliar.getValueAt(tabelaCidadesAuxiliar.getSelectedRow(), 0)));
+            } catch (Exception ex) {}
+        }
+        for (Bairro b : dadosBairrosCarregados) {
+            if (idCidadeFiltro != null && b.getCidade() != null && !idCidadeFiltro.equals(b.getCidade().getIdCidade())) {
+                continue;
+            }
+            String idStr = String.valueOf(b.getIdBairro());
+            String nomeStr = b.getNome() != null ? b.getNome() : "";
+            String cidNome = (b.getCidade() != null && b.getCidade().getNome() != null) ? b.getCidade().getNome() : "-";
+            if (termo.isEmpty() || nomeStr.toLowerCase().contains(termo) || cidNome.toLowerCase().contains(termo) || idStr.contains(termo)) {
+                modeloTabelaBairrosAux.addRow(new Object[]{idStr, nomeStr, cidNome});
+            }
+        }
+    }
+
+    private void acaoNovaCidade() {
+        String nome = JOptionPane.showInputDialog(this, "Nome da cidade:", "Nova Cidade", JOptionPane.PLAIN_MESSAGE);
+        if (nome == null || nome.trim().isEmpty()) return;
+        Cidade c = new Cidade();
+        c.setNome(nome.trim());
+        AsyncTask.executar(
+            () -> {
+                utilizadorController.salvarCidade(c);
+                return true;
+            },
+            ok -> {
+                JOptionPane.showMessageDialog(this, "Cidade cadastrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                recarregarDados();
+            },
+            err -> JOptionPane.showMessageDialog(this, "Erro ao salvar cidade: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
+    }
+
+    private void acaoEditarCidade() {
+        int row = (tabelaCidadesAuxiliar != null) ? tabelaCidadesAuxiliar.getSelectedRow() : -1;
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Selecione uma cidade na tabela para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.parseLong(String.valueOf(tabelaCidadesAuxiliar.getValueAt(row, 0)));
+        String nomeAtual = String.valueOf(tabelaCidadesAuxiliar.getValueAt(row, 1));
+        String novoNome = JOptionPane.showInputDialog(this, "Editar nome da cidade:", nomeAtual);
+        if (novoNome == null || novoNome.trim().isEmpty()) return;
+        Cidade c = new Cidade();
+        c.setIdCidade(id);
+        c.setNome(novoNome.trim());
+        AsyncTask.executar(
+            () -> {
+                utilizadorController.atualizarCidade(c);
+                return true;
+            },
+            ok -> {
+                JOptionPane.showMessageDialog(this, "Cidade atualizada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                recarregarDados();
+            },
+            err -> JOptionPane.showMessageDialog(this, "Erro ao atualizar cidade: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
+    }
+
+    private void acaoEliminarCidade() {
+        int row = (tabelaCidadesAuxiliar != null) ? tabelaCidadesAuxiliar.getSelectedRow() : -1;
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Selecione uma cidade na tabela para eliminar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.parseLong(String.valueOf(tabelaCidadesAuxiliar.getValueAt(row, 0)));
+        String nome = String.valueOf(tabelaCidadesAuxiliar.getValueAt(row, 1));
+        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar a cidade \"" + nome + "\"?", "Confirmar EliminaÃ§Ã£o", JOptionPane.YES_NO_OPTION);
+        if (opt != JOptionPane.YES_OPTION) return;
+        AsyncTask.executar(
+            () -> {
+                utilizadorController.eliminarCidade(id);
+                return true;
+            },
+            ok -> {
+                JOptionPane.showMessageDialog(this, "Cidade eliminada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                recarregarDados();
+            },
+            err -> JOptionPane.showMessageDialog(this, "Erro ao eliminar cidade: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
+    }
+
+    private void acaoNovoBairro() {
+        if (dadosCidadesCarregados == null || dadosCidadesCarregados.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Cadastre uma cidade primeiro.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String[] nomesCidades = dadosCidadesCarregados.stream().map(Cidade::getNome).toArray(String[]::new);
+        String cidadeEscolhida = (String) JOptionPane.showInputDialog(
+            this, "Selecione a cidade do bairro:", "Novo Bairro", JOptionPane.PLAIN_MESSAGE, null, nomesCidades, nomesCidades[0]
+        );
+        if (cidadeEscolhida == null) return;
+        Cidade cid = dadosCidadesCarregados.stream().filter(c -> c.getNome().equals(cidadeEscolhida)).findFirst().orElse(null);
+        if (cid == null) return;
+        String nomeBairro = JOptionPane.showInputDialog(this, "Nome do bairro:", "Novo Bairro", JOptionPane.PLAIN_MESSAGE);
+        if (nomeBairro == null || nomeBairro.trim().isEmpty()) return;
+        Bairro b = new Bairro();
+        b.setNome(nomeBairro.trim());
+        b.setCidade(cid);
+        AsyncTask.executar(
+            () -> {
+                utilizadorController.salvarBairro(b);
+                return true;
+            },
+            ok -> {
+                JOptionPane.showMessageDialog(this, "Bairro cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                recarregarDados();
+            },
+            err -> JOptionPane.showMessageDialog(this, "Erro ao salvar bairro: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
+    }
+
+    private void acaoEditarBairro() {
+        int row = (tabelaBairrosAuxiliar != null) ? tabelaBairrosAuxiliar.getSelectedRow() : -1;
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Selecione um bairro na tabela para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.parseLong(String.valueOf(tabelaBairrosAuxiliar.getValueAt(row, 0)));
+        String nomeAtual = String.valueOf(tabelaBairrosAuxiliar.getValueAt(row, 1));
+        String novoNome = JOptionPane.showInputDialog(this, "Editar nome do bairro:", nomeAtual);
+        if (novoNome == null || novoNome.trim().isEmpty()) return;
+        Bairro bExistente = (dadosBairrosCarregados != null) ? dadosBairrosCarregados.stream()
+            .filter(item -> item.getIdBairro() != null && item.getIdBairro().equals(id))
+            .findFirst().orElse(null) : null;
+        Cidade cid = (bExistente != null) ? bExistente.getCidade() : null;
+        Bairro b = new Bairro();
+        b.setIdBairro(id);
+        b.setNome(novoNome.trim());
+        b.setCidade(cid);
+        AsyncTask.executar(
+            () -> {
+                utilizadorController.atualizarBairro(b);
+                return true;
+            },
+            ok -> {
+                JOptionPane.showMessageDialog(this, "Bairro atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                recarregarDados();
+            },
+            err -> JOptionPane.showMessageDialog(this, "Erro ao atualizar bairro: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
+    }
+
+    private void acaoEliminarBairro() {
+        int row = (tabelaBairrosAuxiliar != null) ? tabelaBairrosAuxiliar.getSelectedRow() : -1;
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Selecione um bairro na tabela para eliminar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.parseLong(String.valueOf(tabelaBairrosAuxiliar.getValueAt(row, 0)));
+        String nome = String.valueOf(tabelaBairrosAuxiliar.getValueAt(row, 1));
+        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar o bairro \"" + nome + "\"?", "Confirmar EliminaÃ§Ã£o", JOptionPane.YES_NO_OPTION);
+        if (opt != JOptionPane.YES_OPTION) return;
+        AsyncTask.executar(
+            () -> {
+                utilizadorController.eliminarBairro(id);
+                return true;
+            },
+            ok -> {
+                JOptionPane.showMessageDialog(this, "Bairro eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                recarregarDados();
+            },
+            err -> JOptionPane.showMessageDialog(this, "Erro ao eliminar bairro: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
     }
 }

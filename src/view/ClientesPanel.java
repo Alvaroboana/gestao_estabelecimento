@@ -129,6 +129,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
     private JButton botaoFecharInformacoes;
 
     private final ClienteBO clienteBO;
+    private final controller.ClienteController clienteController = new controller.ClienteController();
     private List<Object[]> dadosClientesCarregados = null;
     private List<Cliente> listaClientesEntidades = null;
 
@@ -623,8 +624,8 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
             public void mousePressed(MouseEvent e) {
                 JOptionPane.showMessageDialog(
                         ClientesPanel.this,
-                        "A ação \"+ Adicionar contacto\" está reservada para a próxima etapa.",
-                        "Módulo reservado",
+                        "Por favor, guarde o cliente primeiro. ApÃ³s salvar, selecione-o na tabela para adicionar contactos adicionais.",
+                        "Adicionar Contacto",
                         JOptionPane.INFORMATION_MESSAGE
                 );
             }
@@ -754,12 +755,38 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         linkAdicionarContactoEditar.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                JOptionPane.showMessageDialog(
-                        ClientesPanel.this,
-                        "A ação \"+ Adicionar contacto\" está reservada para a próxima etapa.",
-                        "Módulo reservado",
-                        JOptionPane.INFORMATION_MESSAGE
-                );
+                int row = tabela.getSelectedRow();
+                if (row < 0 || row >= tabela.getRowCount()) {
+                    JOptionPane.showMessageDialog(ClientesPanel.this, "Selecione um cliente para adicionar contacto extra.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                String idStr = String.valueOf(tabela.getValueAt(row, 0));
+                try {
+                    Long idCliente = Long.parseLong(idStr);
+                    Cliente c = (listaClientesEntidades != null) ? listaClientesEntidades.stream()
+                        .filter(item -> item.getIdCliente() != null && item.getIdCliente().equals(idCliente))
+                        .findFirst().orElse(null) : null;
+                    Long idPessoa = (c != null && c.getIdPessoa() != null) ? c.getIdPessoa() : idCliente;
+                    String novoContacto = JOptionPane.showInputDialog(ClientesPanel.this, 
+                        "Informe o novo contacto (telefone ou email):", 
+                        "Adicionar Contacto Extra", 
+                        JOptionPane.PLAIN_MESSAGE);
+                    if (novoContacto != null && !novoContacto.trim().isEmpty()) {
+                        AsyncTask.executar(
+                            () -> {
+                                clienteController.adicionarContactoExtra(idPessoa, novoContacto.trim());
+                                return true;
+                            },
+                            sucesso -> {
+                                JOptionPane.showMessageDialog(ClientesPanel.this, "Contacto extra adicionado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                                recarregarDados();
+                            },
+                            erro -> JOptionPane.showMessageDialog(ClientesPanel.this, "Erro ao adicionar contacto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+                        );
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(ClientesPanel.this, "Identificador de cliente invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
         card.add(linkAdicionarContactoEditar);
