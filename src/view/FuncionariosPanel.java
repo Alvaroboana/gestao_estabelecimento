@@ -1029,12 +1029,15 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         botaoActivarEstadoCargo = criarBotaoToolbar(
                 "Activar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, true
         );
+        botaoActivarEstadoCargo.addActionListener(e -> alterarEstadoFuncionarioSelecionado(EstadoFuncionario.ATIVO));
         botaoInactivarEstadoCargo = criarBotaoToolbar(
                 "Inactivar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, true
         );
+        botaoInactivarEstadoCargo.addActionListener(e -> alterarEstadoFuncionarioSelecionado(EstadoFuncionario.INATIVO));
         botaoSuspenderEstadoCargo = criarBotaoToolbar(
                 "Suspender", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, true
         );
+        botaoSuspenderEstadoCargo.addActionListener(e -> alterarEstadoFuncionarioSelecionado(EstadoFuncionario.SUSPENSO));
 
         barraEstados.add(botaoActivarEstadoCargo);
         barraEstados.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -1077,6 +1080,7 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         botaoConfirmarTransferirCargo = criarBotaoToolbar(
                 "Transferir cargo", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, true
         );
+        botaoConfirmarTransferirCargo.addActionListener(e -> transferirCargoFuncionarioSelecionado());
         botaoCancelarEstadoCargo = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
@@ -1088,6 +1092,56 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         card.add(acoes);
 
         return card;
+    }
+
+    private void alterarEstadoFuncionarioSelecionado(EstadoFuncionario novoEstado) {
+        int row = tabela.getSelectedRow();
+        if (row < 0 || row >= modeloTabela.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione um funcionário.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.valueOf(String.valueOf(modeloTabela.getValueAt(row, 0)));
+        AsyncTask.executar(
+            () -> {
+                Funcionario f = funcionarioBO.buscarPorId(id);
+                f.setEstado(novoEstado);
+                funcionarioBO.atualizar(f);
+                return f;
+            },
+            atualizado -> {
+                JOptionPane.showMessageDialog(this, "Estado do funcionário alterado para " + novoEstado + "!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                recarregarDados();
+            },
+            erro -> JOptionPane.showMessageDialog(this, "Erro ao alterar estado: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
+    }
+
+    private void transferirCargoFuncionarioSelecionado() {
+        int row = tabela.getSelectedRow();
+        if (row < 0 || row >= modeloTabela.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione um funcionário.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.valueOf(String.valueOf(modeloTabela.getValueAt(row, 0)));
+        String novoCargoNome = seletorNovoCargoEstadoCargo.getText().replace("▾", "").trim();
+        AsyncTask.executar(
+            () -> {
+                Funcionario f = funcionarioBO.buscarPorId(id);
+                if (f.getCargo() == null) {
+                    f.setCargo(new Cargo());
+                }
+                f.getCargo().setNome(novoCargoNome);
+                funcionarioBO.atualizar(f);
+                return f;
+            },
+            atualizado -> {
+                JOptionPane.showMessageDialog(this, "Cargo transferido para " + novoCargoNome + " com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                recarregarDados();
+            },
+            erro -> JOptionPane.showMessageDialog(this, "Erro ao transferir cargo: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
     }
 
     private void sincronizarDadosFuncionarioParaEstadoCargo() {
@@ -1103,7 +1157,8 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         }
 
         String id = String.valueOf(modeloTabela.getValueAt(row, 0));
-        for (Object[] f : DADOS_INICIAIS) {
+        List<Object[]> fonte = (dadosFuncionariosCarregados != null) ? dadosFuncionariosCarregados : Arrays.asList(DADOS_INICIAIS);
+        for (Object[] f : fonte) {
             if (String.valueOf(f[0]).equals(id)) {
                 String nome = String.valueOf(f[1]);
                 String cargo = String.valueOf(f[4]);
@@ -1143,7 +1198,8 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         }
 
         String id = String.valueOf(modeloTabela.getValueAt(row, 0));
-        for (Object[] f : DADOS_INICIAIS) {
+        List<Object[]> fonte = (dadosFuncionariosCarregados != null) ? dadosFuncionariosCarregados : Arrays.asList(DADOS_INICIAIS);
+        for (Object[] f : fonte) {
             if (String.valueOf(f[0]).equals(id)) {
                 String nome = String.valueOf(f[1]);
                 String bi = String.valueOf(f[2]);
@@ -1174,7 +1230,7 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
                     campoContactoEditar.setText("84 987 6543");
                     seletorCidadeEditar.setText("Matola ▾");
                     seletorBairroEditar.setText("Fomento ▾");
-                    campoUsernameEditar.setText("pedro");
+                    campoUsernameEditar.setText("maria");
                     seletorPerfilEditar.setText("VENDEDOR ▾");
                 }
                 break;

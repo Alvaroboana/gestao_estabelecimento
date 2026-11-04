@@ -152,6 +152,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
 
     // Componentes da visão "Utilizadores e permissões" (Utilizadores.dc.html)
     private final JTable tabelaMatrizPermissoes;
+    private final DefaultTableModel modeloTabelaCargos;
     private final JTable tabelaCargos;
     private final JButton botaoNovoCargo;
 
@@ -245,7 +246,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
 
         this.tabelaMatrizPermissoes = criarTabelaMatrizPermissoes();
-        this.tabelaCargos = criarTabelaCargos();
+        this.modeloTabelaCargos = criarModeloTabelaCargos();
+        this.tabelaCargos = criarTabelaCargos(this.modeloTabelaCargos);
         this.botaoNovoCargo = criarBotaoNovoCargo();
 
         this.containerToolbarAuxiliar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -258,15 +260,17 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         this.campoBuscarCargo = criarCampoBuscarCargo();
         this.botaoNovoCargoAuxiliar = criarBotaoNovoCargoAuxiliar();
         this.botaoEditarCargoAuxiliar = criarBotaoEditarCargoAuxiliar();
-        this.botaoEliminarCargoAuxiliar = criarBotaoAcaoReservada(
-                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false
+        this.botaoEliminarCargoAuxiliar = new BotaoToolbarArredondado(
+                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        this.botaoEliminarCargoAuxiliar.addActionListener(e -> acaoEliminarCargoSelecionado());
         this.campoBuscarContacto = criarCampoBuscarContacto();
         this.botaoNovoContactoAuxiliar = criarBotaoNovoContactoAuxiliar();
         this.botaoEditarContactoAuxiliar = criarBotaoEditarContactoAuxiliar();
-        this.botaoEliminarContactoAuxiliar = criarBotaoAcaoReservada(
-                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false
+        this.botaoEliminarContactoAuxiliar = new BotaoToolbarArredondado(
+                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        this.botaoEliminarContactoAuxiliar.addActionListener(e -> acaoEliminarContactoSelecionado());
 
         this.modeloTabelaCargosAux = criarModeloTabelaCargosAux();
         this.tabelaCargosAuxiliar = criarTabelaCargosAuxiliar(this.modeloTabelaCargosAux);
@@ -1033,9 +1037,10 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        botaoGuardarNovoContacto = criarBotaoAcaoReservada(
-                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, true
+        botaoGuardarNovoContacto = new BotaoToolbarArredondado(
+                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarNovoContacto.addActionListener(e -> acaoGuardarNovoContacto());
         botaoCancelarNovoContacto = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
@@ -1111,16 +1116,18 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        botaoGuardarAlteracoesContacto = criarBotaoAcaoReservada(
-                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, true
+        botaoGuardarAlteracoesContacto = new BotaoToolbarArredondado(
+                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarAlteracoesContacto.addActionListener(e -> acaoGuardarAlteracoesContacto());
         botaoCancelarEditarContacto = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
         botaoCancelarEditarContacto.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
-        botaoEliminarEditarContacto = criarBotaoAcaoReservada(
-                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false
+        botaoEliminarEditarContacto = new BotaoToolbarArredondado(
+                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        botaoEliminarEditarContacto.addActionListener(e -> acaoEliminarContactoSelecionado());
 
         acoes.add(botaoGuardarAlteracoesContacto);
         acoes.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -1211,9 +1218,10 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        botaoGuardarNovoCargo = criarBotaoAcaoReservada(
-                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, true
+        botaoGuardarNovoCargo = new BotaoToolbarArredondado(
+                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarNovoCargo.addActionListener(e -> acaoGuardarNovoCargo());
         botaoCancelarNovoCargo = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
@@ -1293,16 +1301,18 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        botaoGuardarAlteracoesCargo = criarBotaoAcaoReservada(
-                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, true
+        botaoGuardarAlteracoesCargo = new BotaoToolbarArredondado(
+                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarAlteracoesCargo.addActionListener(e -> acaoGuardarAlteracoesCargo());
         botaoCancelarEditarCargo = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
         botaoCancelarEditarCargo.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
-        botaoEliminarEditarCargo = criarBotaoAcaoReservada(
-                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false
+        botaoEliminarEditarCargo = new BotaoToolbarArredondado(
+                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        botaoEliminarEditarCargo.addActionListener(e -> acaoEliminarCargoSelecionado());
 
         acoes.add(botaoGuardarAlteracoesCargo);
         acoes.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -1433,8 +1443,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         return t;
     }
 
-    private JTable criarTabelaCargos() {
-        DefaultTableModel modelo = new DefaultTableModel(DADOS_CARGOS, COLUNAS_CARGOS) {
+    private DefaultTableModel criarModeloTabelaCargos() {
+        return new DefaultTableModel(DADOS_CARGOS, COLUNAS_CARGOS) {
             private static final long serialVersionUID = 1L;
 
             @Override
@@ -1442,7 +1452,9 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
                 return false;
             }
         };
+    }
 
+    private JTable criarTabelaCargos(DefaultTableModel modelo) {
         JTable t = new JTable(modelo);
         t.setRowHeight(42);
         t.setFont(UiStyle.fonte(13, Font.PLAIN));
@@ -1930,6 +1942,186 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
+    private void acaoGuardarNovoCargo() {
+        String nome = campoNomeNovoCargo.getText().trim();
+        String salStr = campoSalarioBaseNovoCargo.getText().trim().replace(",", ".");
+        if (nome.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "O nome do cargo é obrigatório.", "Validação", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        double salario = 0.0;
+        try {
+            salario = salStr.isEmpty() ? 0.0 : Double.parseDouble(salStr);
+            if (salario < 0) {
+                JOptionPane.showMessageDialog(this, "O salário base deve ser maior ou igual a zero.", "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Salário base inválido.", "Validação", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Cargo c = new Cargo();
+        c.setNome(nome);
+        c.setSalarioBase(salario);
+        AsyncTask.executar(
+            () -> {
+                cargoDAO.salvar(c);
+                return c;
+            },
+            salvo -> {
+                JOptionPane.showMessageDialog(this, "Cargo salvo com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                campoNomeNovoCargo.setText("");
+                campoSalarioBaseNovoCargo.setText("");
+                definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                recarregarDados();
+            },
+            erro -> JOptionPane.showMessageDialog(this, "Erro ao salvar cargo: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
+    }
+
+    private void acaoGuardarAlteracoesCargo() {
+        int row = tabelaCargosAuxiliar.getSelectedRow();
+        if (row < 0 || row >= modeloTabelaCargosAux.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione um cargo para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.valueOf(String.valueOf(modeloTabelaCargosAux.getValueAt(row, 0)));
+        String nome = campoNomeEditarCargo.getText().trim();
+        String salStr = campoSalarioBaseEditarCargo.getText().trim().replaceAll("[^0-9.,]", "").replace(",", ".");
+        if (nome.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "O nome do cargo é obrigatório.", "Validação", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        double salario = 0.0;
+        try {
+            salario = salStr.isEmpty() ? 0.0 : Double.parseDouble(salStr);
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Salário base inválido.", "Validação", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Cargo c = new Cargo();
+        c.setIdCargo(id);
+        c.setNome(nome);
+        c.setSalarioBase(salario);
+        AsyncTask.executar(
+            () -> {
+                cargoDAO.atualizar(c);
+                return true;
+            },
+            res -> {
+                JOptionPane.showMessageDialog(this, "Cargo atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                recarregarDados();
+            },
+            erro -> JOptionPane.showMessageDialog(this, "Erro ao atualizar cargo: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
+    }
+
+    private void acaoEliminarCargoSelecionado() {
+        int row = tabelaCargosAuxiliar.getSelectedRow();
+        if (row < 0 || row >= modeloTabelaCargosAux.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione um cargo para eliminar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.valueOf(String.valueOf(modeloTabelaCargosAux.getValueAt(row, 0)));
+        String nome = String.valueOf(modeloTabelaCargosAux.getValueAt(row, 1));
+        int op = JOptionPane.showConfirmDialog(this, "Deseja realmente eliminar o cargo '" + nome + "'?", "Confirmar Eliminação", JOptionPane.YES_NO_OPTION);
+        if (op == JOptionPane.YES_OPTION) {
+            AsyncTask.executar(
+                () -> {
+                    cargoDAO.eliminar(id);
+                    return true;
+                },
+                res -> {
+                    JOptionPane.showMessageDialog(this, "Cargo eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                erro -> JOptionPane.showMessageDialog(this, "Erro ao eliminar cargo: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        }
+    }
+
+    private void acaoGuardarNovoContacto() {
+        String valor = campoValorNovoContacto.getText().trim();
+        if (valor.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "O valor do contacto é obrigatório.", "Validação", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Contacto c = new Contacto();
+        c.setContacto(valor);
+        Long idPessoa = 1L;
+        AsyncTask.executar(
+            () -> {
+                contactoDAO.salvarComPessoa(c, idPessoa);
+                return c;
+            },
+            salvo -> {
+                JOptionPane.showMessageDialog(this, "Contacto salvo com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                campoValorNovoContacto.setText("");
+                definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                recarregarDados();
+            },
+            erro -> JOptionPane.showMessageDialog(this, "Erro ao salvar contacto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
+    }
+
+    private void acaoGuardarAlteracoesContacto() {
+        int row = tabelaContactosAuxiliar.getSelectedRow();
+        if (row < 0 || row >= modeloTabelaContactosAux.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione um contacto para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.valueOf(String.valueOf(modeloTabelaContactosAux.getValueAt(row, 0)));
+        String valor = campoValorEditarContacto.getText().trim();
+        if (valor.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "O valor do contacto é obrigatório.", "Validação", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Contacto c = new Contacto();
+        c.setIdContacto(id);
+        c.setContacto(valor);
+        AsyncTask.executar(
+            () -> {
+                contactoDAO.atualizar(c);
+                return true;
+            },
+            res -> {
+                JOptionPane.showMessageDialog(this, "Contacto atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                recarregarDados();
+            },
+            erro -> JOptionPane.showMessageDialog(this, "Erro ao atualizar contacto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
+    }
+
+    private void acaoEliminarContactoSelecionado() {
+        int row = tabelaContactosAuxiliar.getSelectedRow();
+        if (row < 0 || row >= modeloTabelaContactosAux.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione um contacto para eliminar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.valueOf(String.valueOf(modeloTabelaContactosAux.getValueAt(row, 0)));
+        String valor = String.valueOf(modeloTabelaContactosAux.getValueAt(row, 1));
+        int op = JOptionPane.showConfirmDialog(this, "Deseja realmente eliminar o contacto '" + valor + "'?", "Confirmar Eliminação", JOptionPane.YES_NO_OPTION);
+        if (op == JOptionPane.YES_OPTION) {
+            AsyncTask.executar(
+                () -> {
+                    contactoDAO.eliminar(id);
+                    return true;
+                },
+                res -> {
+                    JOptionPane.showMessageDialog(this, "Contacto eliminado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                erro -> JOptionPane.showMessageDialog(this, "Erro ao eliminar contacto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        }
+    }
+
     @Override
     public void recarregarDados() {
         AsyncTask.executar(
@@ -1937,12 +2129,14 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
             cargos -> {
                 if (cargos != null && !cargos.isEmpty()) {
                     List<Object[]> linhas = new ArrayList<>();
+                    modeloTabelaCargos.setRowCount(0);
                     for (Cargo c : cargos) {
                         String idStr = String.valueOf(c.getIdCargo());
                         String nomeStr = c.getNome() != null ? c.getNome() : "";
                         String salStr = String.format(Locale.GERMANY, "%,.2f MT", c.getSalarioBase() != null ? c.getSalarioBase() : 0.0);
                         String funcStr = "1";
                         linhas.add(new Object[] {idStr, nomeStr, salStr, funcStr});
+                        modeloTabelaCargos.addRow(new Object[] {nomeStr, salStr, funcStr});
                     }
                     this.dadosCargosCarregados = linhas;
                 }

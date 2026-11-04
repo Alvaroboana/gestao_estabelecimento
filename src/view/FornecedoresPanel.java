@@ -841,7 +841,8 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
         }
 
         String id = String.valueOf(modeloTabela.getValueAt(row, 0));
-        for (Object[] f : DADOS_INICIAIS) {
+        List<Object[]> fonte = (dadosFornecedoresCarregados != null) ? dadosFornecedoresCarregados : Arrays.asList(DADOS_INICIAIS);
+        for (Object[] f : fonte) {
             if (String.valueOf(f[0]).equals(id)) {
                 campoNomeEditar.setText(String.valueOf(f[1]));
                 campoContactoEditar.setText(String.valueOf(f[2]));

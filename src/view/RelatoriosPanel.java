@@ -34,8 +34,17 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Locale;
+import java.util.Map;
 import model.bo.RelatorioBO;
 import model.vo.Perfil;
+import model.vo.SessaoUtilizador;
 import model.vo.Utilizador;
 import util.AsyncTask;
 
@@ -209,16 +218,18 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
 
         this.campoDataDe = new CampoDataArredondado("De: 01/11/2026");
         this.campoDataAte = new CampoDataArredondado("Até: 03/11/2026");
-        this.botaoGerarRelatorio = criarBotaoAcao(
-                "Gerar relatório completo", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, true
+        this.botaoGerarRelatorio = new BotaoToolbarArredondado(
+                "Gerar relatório completo", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        this.botaoGerarRelatorio.addActionListener(e -> carregarRelatorioAtual());
         this.botaoExportarPdf = criarBotaoExportarPdf();
         this.botaoImprimir = criarBotaoAcao(
                 "Imprimir", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, true
         );
-        this.botaoGerarSimples = criarBotaoAcao(
-                "Gerar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, true
+        this.botaoGerarSimples = new BotaoToolbarArredondado(
+                "Gerar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        this.botaoGerarSimples.addActionListener(e -> carregarRelatorioAtual());
         this.botaoExportarSimples = criarBotaoAcao(
                 "Exportar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, true
         );
@@ -1430,10 +1441,195 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
+    private LocalDateTime extrairDataInicio() {
+        try {
+            String texto = campoDataDe.getText().replaceAll("(?i)De:\\s*", "").trim();
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            return LocalDate.parse(texto, dtf).atStartOfDay();
+        } catch (Exception e) {
+            return LocalDateTime.now().minusMonths(1).with(LocalTime.MIN);
+        }
+    }
+
+    private LocalDateTime extrairDataFim() {
+        try {
+            String texto = campoDataAte.getText().replaceAll("(?i)Até:\\s*", "").trim();
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            return LocalDate.parse(texto, dtf).atTime(LocalTime.MAX);
+        } catch (Exception e) {
+            return LocalDateTime.now().with(LocalTime.MAX);
+        }
+    }
+
+    private Utilizador obterUtilizadorAutenticadoOuPadrao() {
+        Utilizador u = SessaoUtilizador.getUtilizador();
+        if (u == null) {
+            u = new Utilizador();
+            u.setPerfil(Perfil.ADMIN);
+        }
+        return u;
+    }
+
+    public void carregarRelatorioAtual() {
+        Utilizador user = obterUtilizadorAutenticadoOuPadrao();
+        LocalDateTime inicio = extrairDataInicio();
+        LocalDateTime fim = extrairDataFim();
+
+        if ("Estoque baixo".equalsIgnoreCase(abaAtiva)) {
+            AsyncTask.executar(
+                () -> relatorioBO.estoqueBaixo(user),
+                lista -> {
+                    if (lista != null && !lista.isEmpty()) {
+                        DefaultTableModel m = (DefaultTableModel) tabelaEstoqueBaixo.getModel();
+                        m.setRowCount(0);
+                        for (Map<String, Object> map : lista) {
+                            String prod = String.valueOf(map.getOrDefault("nome_produto", ""));
+                            String atual = String.valueOf(map.getOrDefault("quantidade_atual", 0));
+                            String min = String.valueOf(map.getOrDefault("quantidade_minima", 0));
+                            int falta = 0;
+                            try {
+                                falta = Integer.parseInt(min) - Integer.parseInt(atual);
+                            } catch (Exception ignored) {}
+                            m.addRow(new Object[] {prod, atual, min, String.valueOf(Math.max(0, falta))});
+                        }
+                    }
+                },
+                erro -> {}
+            );
+        } else if ("Mais vendidos".equalsIgnoreCase(abaAtiva)) {
+            AsyncTask.executar(
+                () -> relatorioBO.produtosMaisVendidos(user),
+                lista -> {
+                    if (lista != null && !lista.isEmpty()) {
+                        DefaultTableModel m = (DefaultTableModel) tabelaMaisVendidos.getModel();
+                        m.setRowCount(0);
+                        int pos = 1;
+                        for (Map<String, Object> map : lista) {
+                            String prod = String.valueOf(map.getOrDefault("nome_produto", ""));
+                            String qtd = String.valueOf(map.getOrDefault("quantidade_vendida", 0));
+                            double rec = 0.0;
+                            try {
+                                rec = Double.parseDouble(String.valueOf(map.getOrDefault("valor_vendido", 0.0)));
+                            } catch (Exception ignored) {}
+                            String recStr = String.format(Locale.GERMANY, "%,.2f MT", rec);
+                            m.addRow(new Object[] {String.valueOf(pos++), prod, qtd, recStr});
+                        }
+                    }
+                },
+                erro -> {}
+            );
+        } else if ("Menos vendidos".equalsIgnoreCase(abaAtiva)) {
+            AsyncTask.executar(
+                () -> {
+                    List<Map<String, Object>> lista = relatorioBO.produtosMaisVendidos(user);
+                    if (lista != null) {
+                        lista = new ArrayList<>(lista);
+                        Collections.sort(lista, Comparator.comparingDouble(o -> {
+                            try {
+                                return Double.parseDouble(String.valueOf(o.getOrDefault("quantidade_vendida", 0)));
+                            } catch (Exception e) {
+                                return 0.0;
+                            }
+                        }));
+                    }
+                    return lista;
+                },
+                lista -> {
+                    if (lista != null && !lista.isEmpty()) {
+                        DefaultTableModel m = (DefaultTableModel) tabelaMenosVendidos.getModel();
+                        m.setRowCount(0);
+                        int pos = 1;
+                        for (Map<String, Object> map : lista) {
+                            String prod = String.valueOf(map.getOrDefault("nome_produto", ""));
+                            String qtd = String.valueOf(map.getOrDefault("quantidade_vendida", 0));
+                            double rec = 0.0;
+                            try {
+                                rec = Double.parseDouble(String.valueOf(map.getOrDefault("valor_vendido", 0.0)));
+                            } catch (Exception ignored) {}
+                            String recStr = String.format(Locale.GERMANY, "%,.2f MT", rec);
+                            m.addRow(new Object[] {String.valueOf(pos++), prod, qtd, recStr});
+                        }
+                    }
+                },
+                erro -> {}
+            );
+        } else if ("Reembolsos".equalsIgnoreCase(abaAtiva)) {
+            AsyncTask.executar(
+                () -> relatorioBO.reembolsosPeriodo(user, inicio, fim),
+                lista -> {
+                    if (lista != null && !lista.isEmpty()) {
+                        DefaultTableModel m = (DefaultTableModel) tabelaReembolsos.getModel();
+                        m.setRowCount(0);
+                        for (Map<String, Object> map : lista) {
+                            String data = String.valueOf(map.getOrDefault("data_reembolso", ""));
+                            if (data.length() >= 10) data = data.substring(0, 10);
+                            String venda = String.valueOf(map.getOrDefault("id_venda", ""));
+                            String item = String.valueOf(map.getOrDefault("nome_produto", ""));
+                            String qtd = String.valueOf(map.getOrDefault("quantidade", ""));
+                            double val = 0.0;
+                            try {
+                                val = Double.parseDouble(String.valueOf(map.getOrDefault("valor", 0.0)));
+                            } catch (Exception ignored) {}
+                            String valStr = String.format(Locale.GERMANY, "%,.2f MT", val);
+                            String motivo = String.valueOf(map.getOrDefault("motivo", ""));
+                            String func = String.valueOf(map.getOrDefault("nome_funcionario", ""));
+                            m.addRow(new Object[] {data, venda, item, qtd, valStr, motivo, func});
+                        }
+                    }
+                },
+                erro -> {}
+            );
+        } else if ("Auditoria".equalsIgnoreCase(abaAtiva)) {
+            AsyncTask.executar(
+                () -> relatorioBO.resumoAuditoria(user, inicio, fim),
+                lista -> {
+                    if (lista != null && !lista.isEmpty()) {
+                        DefaultTableModel m = (DefaultTableModel) tabelaAuditoria.getModel();
+                        m.setRowCount(0);
+                        for (Map<String, Object> map : lista) {
+                            String dia = String.valueOf(map.getOrDefault("dia", ""));
+                            String tabela = String.valueOf(map.getOrDefault("tabela_afetada", ""));
+                            String operacao = String.valueOf(map.getOrDefault("operacao", ""));
+                            String qtd = String.valueOf(map.getOrDefault("quantidade", ""));
+                            m.addRow(new Object[] {dia, tabela, operacao, qtd});
+                        }
+                    }
+                },
+                erro -> {}
+            );
+        } else if ("Vendas".equalsIgnoreCase(abaAtiva)) {
+            AsyncTask.executar(
+                () -> relatorioBO.vendasPeriodo(user, inicio, fim),
+                lista -> {
+                    if (lista != null && !lista.isEmpty()) {
+                        DefaultTableModel m = (DefaultTableModel) tabelaVendas.getModel();
+                        m.setRowCount(0);
+                        for (Map<String, Object> map : lista) {
+                            String id = String.valueOf(map.getOrDefault("id_venda", ""));
+                            String data = String.valueOf(map.getOrDefault("data_venda", ""));
+                            if (data.length() >= 10) data = data.substring(0, 10);
+                            String cli = String.valueOf(map.getOrDefault("nome_cliente", ""));
+                            String func = String.valueOf(map.getOrDefault("nome_funcionario", ""));
+                            double tot = 0.0;
+                            try {
+                                tot = Double.parseDouble(String.valueOf(map.getOrDefault("total", 0.0)));
+                            } catch (Exception ignored) {}
+                            String totStr = String.format(Locale.GERMANY, "%,.2f MT", tot);
+                            String est = String.valueOf(map.getOrDefault("estado", ""));
+                            m.addRow(new Object[] {id, data, cli, func, totStr, est});
+                        }
+                    }
+                },
+                erro -> {}
+            );
+        }
+    }
+
     @Override
     public void recarregarDados() {
         if (abaAtiva != null) {
             selecionarAba(abaAtiva);
+            carregarRelatorioAtual();
         }
     }
 
