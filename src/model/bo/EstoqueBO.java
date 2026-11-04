@@ -59,6 +59,44 @@ public class EstoqueBO {
         return dao.buscarPorProduto(idProduto);
     }
 
+    public void baixarEstoqueFEFO(Long idProduto, int quantidadeDesejada) {
+        if (quantidadeDesejada <= 0) {
+            return;
+        }
+        validarId(idProduto, "idProduto");
+        List<Estoque> lotes = dao.buscarPorProduto(idProduto);
+        int restante = quantidadeDesejada;
+        for (Estoque lote : lotes) {
+            if (restante <= 0) {
+                break;
+            }
+            int qtdLote = lote.getQuantidade() != null ? lote.getQuantidade() : 0;
+            if (qtdLote <= restante) {
+                restante -= qtdLote;
+                lote.setQuantidade(0);
+                dao.atualizar(lote);
+            } else {
+                lote.setQuantidade(qtdLote - restante);
+                restante = 0;
+                dao.atualizar(lote);
+            }
+        }
+    }
+
+    public void reporEstoque(Long idProduto, int quantidade) {
+        if (quantidade <= 0) {
+            return;
+        }
+        validarId(idProduto, "idProduto");
+        List<Estoque> lotes = dao.buscarPorProduto(idProduto);
+        if (lotes != null && !lotes.isEmpty()) {
+            Estoque lote = lotes.get(0);
+            int qtdAtual = lote.getQuantidade() != null ? lote.getQuantidade() : 0;
+            lote.setQuantidade(qtdAtual + quantidade);
+            dao.atualizar(lote);
+        }
+    }
+
     private void validar(Estoque estoque, boolean exigirId) {
         ValidadorObjeto.validarNaoNulo(estoque, "Estoque");
         if (exigirId) {

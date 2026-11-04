@@ -14,10 +14,10 @@ public class App {
         }
         UiStyle.instalarTemaEscuro();
         abrir();
-        
+
     }
 
-     public static void abrir() {
+    public static void abrir() {
         SwingUtilities.invokeLater(() -> {
             MainFrame f = new MainFrame();
             f.setVisible(true);
