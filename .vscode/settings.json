@@ -1,9 +1,4 @@
 {
-    "java.project.sourcePaths": ["src"],
-    "java.project.outputPath": "bin",
-    "java.project.referencedLibraries": [
-        "lib/**/*.jar"
-    ],
     "sqltools.connections": [
         {
             "mysqlOptions": {
@@ -13,10 +8,10 @@
             "ssh": "Disabled",
             "previewLimit": 50,
             "server": "localhost",
-            "port": 3307,
+            "port": 3306,
             "driver": "MySQL",
-            "name": "Docker",
-            "group": "Docker",
+            "name": "Estabelecimento",
+            "group": "Estabelecimento",
             "database": "gestao",
             "username": "gestao"
         }
