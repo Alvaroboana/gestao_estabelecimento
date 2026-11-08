@@ -1,6 +1,8 @@
 package model.vo;
 
-public class Contacto {
+import java.io.Serializable;
+
+public class Contacto implements Serializable {
     private Long idContacto;
     private String contacto;
 
@@ -33,10 +35,43 @@ public class Contacto {
     }
 
     @Override
-    public String toString() {
-        return "Contacto [contacto=" + contacto + "]";
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        Contacto outro = (Contacto) obj;
+        if (this.idContacto == null) {
+            if (outro.idContacto != null) {
+                return false;
+            }
+        } else {
+            if (!this.idContacto.equals(outro.idContacto)) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    
+    @Override
+    public int hashCode() {
+        int primo = 31;
+        int resultado = 1;
+        if (this.idContacto != null) {
+            resultado = primo * resultado + this.idContacto.hashCode();
+        } else {
+            resultado = primo * resultado + 0;
+        }
+        return resultado;
+    }
 
+    @Override
+    public String toString() {
+        return "Contacto [idContacto=" + idContacto + ", contacto=" + contacto + "]";
+    }
 }
