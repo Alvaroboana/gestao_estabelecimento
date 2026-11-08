@@ -11,10 +11,14 @@ Base inicial do projeto para a arquitetura MVC apresentada nos slides.
 - `src/model/vo`: objetos de valor existentes
 - `src/model/dao`: acesso a dados existente
 - `src/infra`: infraestrutura existente
+- `src/infra/DatabaseConfig.java`: configuracao JDBC centralizada
 - `lib`: bibliotecas externas fornecidas com o projeto
 - `bin`: classes compiladas
 
-Esta etapa nao implementa regras de negocio, controllers funcionais, views Swing,
+O diretorio legado `src/controler` foi preservado. O pacote novo e correto para
+os controllers MVC e `src/controller`.
+
+As views Swing ainda nao implementam regras de negocio, controllers funcionais,
 autenticacao, transacoes ou funcionalidades de venda, estoque e relatorios.
 Tambem nao utiliza DTO nem gerenciador de dependencias.
 
@@ -35,23 +39,70 @@ classpath manual. Nenhuma dependencia nova e instalada nesta etapa.
 ## Compilacao e execucao no Windows
 
 Com um JDK instalado e `javac`/`java` disponiveis no `PATH`, abra o terminal na
-raiz do projeto e execute:
+raiz do projeto e execute manualmente:
 
-```bat
-compile.bat
-run.bat
-```
-
-`compile.bat` compila todos os fontes de `src` para `bin`, usando os JARs de
-`lib` no classpath. `run.bat` recompila e executa o ponto de entrada minimo
-`App`; nesta etapa ele apenas confirma que a estrutura inicial foi carregada,
-sem abrir GUI ou iniciar login.
-
-Os mesmos comandos podem ser executados manualmente:
-
-```bat
+```powershell
+New-Item -ItemType Directory -Force bin
 dir /s /b src\*.java > fontes.txt
 javac -encoding UTF-8 -cp "lib\*" -d bin @fontes.txt
 java -cp "bin;lib\*" App
 del fontes.txt
 ```
+
+O ponto de entrada abre o `LoginFrame` Swing. Após autenticação válida, o login
+abre a janela principal. Em ambientes sem interface grafica, apenas informa a
+limitacao e termina.
+
+## Janela principal
+
+`view.LoginFrame` e `view.MainFrame` seguem o fluxo visual do PDF. A janela
+principal fornece marca, navegacao superior, menu do utilizador e o
+`DashboardPanel`, com cartoes de indicadores, alertas de estoque e produtos
+mais vendidos. Os botoes apresentam apenas avisos de modulos reservados; nao
+executam operacoes de negocio nem substituem controllers. Os testes visuais
+ficam em `src/testes/TesteLoginFrame.java` e
+`src/testes/TesteMainFrame.java`.
+
+## Infraestrutura JDBC
+
+As credenciais e a URL nao sao repetidas pelos DAOs. A classe
+`infra.DatabaseConfig` centraliza os valores existentes e permite sobrescreve-los
+sem alterar o codigo, usando as propriedades `gestao.db.url`,
+`gestao.db.username` e `gestao.db.password`, ou as variaveis
+`GESTAO_DB_URL`, `GESTAO_DB_USERNAME` e `GESTAO_DB_PASSWORD`.
+
+O script `docker/sql/00_privileges.sql` limita os privilegios do utilizador
+`gestao` ao schema `gestao`; ele nao cria credenciais novas.
+
+## Camada Business Object
+
+Os BOs em `src/model/bo` centralizam validacoes de entrada, relacionamentos
+obrigatorios, estados e permissoes ja existentes nos VOs. Eles delegam a
+persistencia aos DAOs e nao contem SQL nem DTOs.
+
+Foram implementados `UtilizadorBO`, `ProdutoBO`, `ClienteBO`, `FuncionarioBO`,
+`EstoqueBO`, `VendaBO`, `ReembolsoBO` e, posteriormente, `RelatorioBO` com
+consultas apoiadas pelas views SQL.
+
+## Login
+
+`LoginBO` centraliza o caso de uso de autenticação sem criar GUI ou sessão
+global. Ele delega a pesquisa ao `UtilizadorBO`, que valida username, senha,
+hash BCrypt e estado ativo do funcionário. O teste unitário correspondente fica
+em `src/testes/TesteLoginBO.java`.
+
+`TesteRelatorioDAO.java` cobre as consultas do `RelatorioDAO` contra o MySQL;
+quando a base não estiver disponível, o teste informa explicitamente a
+limitação de infraestrutura.
+
+## Auditoria e relatorios
+
+O banco possui scripts SQL para a tabela `auditoria`, com triggers para todas
+as tabelas existentes (exceto a propria auditoria), indices, views, functions,
+procedures e cursores administrativos. Os triggers usam `@id_utilizador_atual`
+quando definida; caso contrario, a operacao fica sem utilizador associado.
+`utilizador.password_hash` nao e gravado na auditoria.
+
+As consultas Java ficam em `RelatorioDAO` e `RelatorioBO`. Como o projeto nao
+usa DTO, os relatorios retornam `List<Map<String, Object>>`; o BO valida o
+periodo e exige permissao de consulta de relatorios.

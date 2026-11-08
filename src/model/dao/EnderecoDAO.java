@@ -10,6 +10,7 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
 import model.vo.Bairro;
 import model.vo.Cidade;
 import model.vo.Endereco;
@@ -18,7 +19,7 @@ public class EnderecoDAO implements GenericoDAO<Endereco, Long> {
 
     @Override
     public void salvar(Endereco objecto) {
-        salvarComPessoa(objecto, null);
+        throw new IllegalArgumentException("idPessoa e obrigatorio para salvar um endereco.");
     }
 
     public void salvarComPessoa(Endereco objecto, Long idPessoa) {
@@ -28,16 +29,10 @@ public class EnderecoDAO implements GenericoDAO<Endereco, Long> {
             stmt.setString(1, objecto.getQuarteirao());
             stmt.setString(2, objecto.getRua());
             stmt.setString(3, objecto.getNumeroCasa());
-            long idBairro = 0L;
-            if (objecto.getBairro() != null && objecto.getBairro().getIdBairro() != null) {
-                idBairro = objecto.getBairro().getIdBairro();
-            }
-            stmt.setLong(4, idBairro);
-            long idPess = 0L;
-            if (idPessoa != null) {
-                idPess = idPessoa;
-            }
-            stmt.setLong(5, idPess);
+            stmt.setLong(4, JdbcValidation.requireId(
+                    objecto.getBairro() == null ? null : objecto.getBairro().getIdBairro(),
+                    "bairro.idBairro"));
+            stmt.setLong(5, JdbcValidation.requireId(idPessoa, "idPessoa"));
             stmt.executeUpdate();
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -70,11 +65,9 @@ public class EnderecoDAO implements GenericoDAO<Endereco, Long> {
             stmt.setString(1, objecto.getQuarteirao());
             stmt.setString(2, objecto.getRua());
             stmt.setString(3, objecto.getNumeroCasa());
-            long idBairro = 0L;
-            if (objecto.getBairro() != null && objecto.getBairro().getIdBairro() != null) {
-                idBairro = objecto.getBairro().getIdBairro();
-            }
-            stmt.setLong(4, idBairro);
+            stmt.setLong(4, JdbcValidation.requireId(
+                    objecto.getBairro() == null ? null : objecto.getBairro().getIdBairro(),
+                    "bairro.idBairro"));
             stmt.setLong(5, objecto.getIdEndereco());
             stmt.executeUpdate();
         } catch (SQLException e) {

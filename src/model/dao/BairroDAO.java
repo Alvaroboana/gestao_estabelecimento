@@ -10,6 +10,7 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
 import model.vo.Bairro;
 import model.vo.Cidade;
 
@@ -21,11 +22,9 @@ public class BairroDAO implements GenericoDAO<Bairro, Long> {
         try (Connection conn = ConexaoDB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, objecto.getNome());
-            long idCid = 0L;
-            if (objecto.getCidade() != null && objecto.getCidade().getIdCidade() != null) {
-                idCid = objecto.getCidade().getIdCidade();
-            }
-            stmt.setLong(2, idCid);
+            stmt.setLong(2, JdbcValidation.requireId(
+                    objecto.getCidade() == null ? null : objecto.getCidade().getIdCidade(),
+                    "cidade.idCidade"));
             stmt.executeUpdate();
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -56,11 +55,9 @@ public class BairroDAO implements GenericoDAO<Bairro, Long> {
         try (Connection conn = ConexaoDB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, objecto.getNome());
-            long idCid = 0L;
-            if (objecto.getCidade() != null && objecto.getCidade().getIdCidade() != null) {
-                idCid = objecto.getCidade().getIdCidade();
-            }
-            stmt.setLong(2, idCid);
+            stmt.setLong(2, JdbcValidation.requireId(
+                    objecto.getCidade() == null ? null : objecto.getCidade().getIdCidade(),
+                    "cidade.idCidade"));
             stmt.setLong(3, objecto.getIdBairro());
             stmt.executeUpdate();
         } catch (SQLException e) {

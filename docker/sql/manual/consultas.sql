@@ -1,2 +1,1 @@
-SELECT * FROM produto;
-SELECT * FROM bairro;
+SELECT * FROM utilizador;

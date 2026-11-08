@@ -12,6 +12,7 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
 import model.vo.Funcionario;
 import model.vo.ItemVendido;
 import model.vo.Produto;
@@ -21,10 +22,17 @@ public class ReembolsoDAO implements GenericoDAO<Reembolso, Long> {
 
     @Override
     public void salvar(Reembolso objecto) {
+        try (Connection conn = ConexaoDB.getConnection()) {
+            salvar(conn, objecto);
+        } catch (SQLException e) {
+            throw new DBException("Erro ao salvar reembolso: " + e.getMessage(), e);
+        }
+    }
+
+    public void salvar(Connection conn, Reembolso objecto) throws SQLException {
         String sql = "INSERT INTO reembolso (quantidade, valor, motivo, data, id_item, id_funcionario) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection conn = ConexaoDB.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, objecto.getQuantidade() != null ? objecto.getQuantidade() : 1);
             stmt.setDouble(2, objecto.getValor() != null ? objecto.getValor() : 0.0);
             stmt.setString(3, objecto.getMotivo());
@@ -35,17 +43,12 @@ public class ReembolsoDAO implements GenericoDAO<Reembolso, Long> {
                 stmt.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
             }
 
-            long idItem = 0L;
-            if (objecto.getItem() != null && objecto.getItem().getIdItem() != null) {
-                idItem = objecto.getItem().getIdItem();
-            }
-            stmt.setLong(5, idItem);
-
-            long idFuncionario = 0L;
-            if (objecto.getFuncionario() != null && objecto.getFuncionario().getIdFuncionario() != null) {
-                idFuncionario = objecto.getFuncionario().getIdFuncionario();
-            }
-            stmt.setLong(6, idFuncionario);
+            stmt.setLong(5, JdbcValidation.requireId(
+                    objecto.getItem() == null ? null : objecto.getItem().getIdItem(),
+                    "item.idItem"));
+            stmt.setLong(6, JdbcValidation.requireId(
+                    objecto.getFuncionario() == null ? null : objecto.getFuncionario().getIdFuncionario(),
+                    "funcionario.idFuncionario"));
 
             stmt.executeUpdate();
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -53,11 +56,84 @@ public class ReembolsoDAO implements GenericoDAO<Reembolso, Long> {
                     objecto.setIdReembolso(rs.getLong(1));
                 }
             }
-        } catch (SQLException e) {
-            throw new DBException("Erro ao salvar reembolso: " + e.getMessage(), e);
         }
     }
 
+    public void salvarReembolsoEReporEstoque(Reembolso reembolso, EstoqueDAO estoqueDAO) {
+        Connection conn = null;
+        try (Connection resource = ConexaoDB.getConnection()) {
+            conn = resource;
+            conn.setAutoCommit(false);
+
+            salvar(conn, reembolso);
+
+            Long idProduto = (reembolso.getItem() != null && reembolso.getItem().getProduto() != null)
+                    ? reembolso.getItem().getProduto().getIdProduto()
+                    : null;
+            Long idFuncionario = (reembolso.getFuncionario() != null)
+                    ? reembolso.getFuncionario().getIdFuncionario()
+                    : null;
+            int qtd = reembolso.getQuantidade() != null ? reembolso.getQuantidade() : 0;
+
+            if (idProduto != null && qtd > 0 && estoqueDAO != null) {
+                estoqueDAO.reporEstoque(conn, idProduto, qtd, idFuncionario);
+            }
+
+            Long idVenda = (reembolso.getItem() != null && reembolso.getItem().getVenda() != null)
+                    ? reembolso.getItem().getVenda().getIdVenda()
+                    : null;
+            if (idVenda == null && reembolso.getItem() != null && reembolso.getItem().getIdItem() != null) {
+                try (PreparedStatement stV = conn.prepareStatement("SELECT id_venda FROM item_vendido WHERE id_item = ?")) {
+                    stV.setLong(1, reembolso.getItem().getIdItem());
+                    try (ResultSet rs = stV.executeQuery()) {
+                        if (rs.next()) {
+                            idVenda = rs.getLong(1);
+                        }
+                    }
+                }
+            }
+            if (idVenda != null && idVenda > 0) {
+                String sqlCheckTotal =
+                        "SELECT " +
+                        "  COALESCE((SELECT SUM(iv.quantidade) FROM item_vendido iv WHERE iv.id_venda = ?), 0) AS total_vendido, " +
+                        "  COALESCE((SELECT SUM(r.quantidade) FROM reembolso r INNER JOIN item_vendido iv2 ON r.id_item = iv2.id_item WHERE iv2.id_venda = ?), 0) AS total_reembolsado";
+                int totalVendido = 0;
+                int totalReembolsado = 0;
+                try (PreparedStatement stChk = conn.prepareStatement(sqlCheckTotal)) {
+                    stChk.setLong(1, idVenda);
+                    stChk.setLong(2, idVenda);
+                    try (ResultSet rsChk = stChk.executeQuery()) {
+                        if (rsChk.next()) {
+                            totalVendido = rsChk.getInt("total_vendido");
+                            totalReembolsado = rsChk.getInt("total_reembolsado");
+                        }
+                    }
+                }
+                if (totalVendido > 0 && totalReembolsado >= totalVendido) {
+                    try (PreparedStatement stUp = conn.prepareStatement(
+                            "UPDATE venda SET estado = 'REEMBOLSADA' WHERE id_venda = ? AND estado = 'CONCLUIDA'")) {
+                        stUp.setLong(1, idVenda);
+                        stUp.executeUpdate();
+                    }
+                }
+            }
+
+            conn.commit();
+        } catch (SQLException e) {
+            DBException failure = new DBException("Erro ao processar reembolso: " + e.getMessage(), e);
+            ConexaoDB.rollback(conn, failure);
+            throw failure;
+        } catch (RuntimeException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackEx) {
+                    e.addSuppressed(rollbackEx);
+                }
+            }
+            throw e;
+        }
+    }
     @Override
     public void eliminar(Long id) {
         String sql = "DELETE FROM reembolso WHERE id_reembolso = ?";
@@ -86,17 +162,12 @@ public class ReembolsoDAO implements GenericoDAO<Reembolso, Long> {
                 stmt.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
             }
 
-            long idItem = 0L;
-            if (objecto.getItem() != null && objecto.getItem().getIdItem() != null) {
-                idItem = objecto.getItem().getIdItem();
-            }
-            stmt.setLong(5, idItem);
-
-            long idFuncionario = 0L;
-            if (objecto.getFuncionario() != null && objecto.getFuncionario().getIdFuncionario() != null) {
-                idFuncionario = objecto.getFuncionario().getIdFuncionario();
-            }
-            stmt.setLong(6, idFuncionario);
+            stmt.setLong(5, JdbcValidation.requireId(
+                    objecto.getItem() == null ? null : objecto.getItem().getIdItem(),
+                    "item.idItem"));
+            stmt.setLong(6, JdbcValidation.requireId(
+                    objecto.getFuncionario() == null ? null : objecto.getFuncionario().getIdFuncionario(),
+                    "funcionario.idFuncionario"));
             stmt.setLong(7, objecto.getIdReembolso());
 
             stmt.executeUpdate();

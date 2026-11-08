@@ -14,7 +14,6 @@ import model.vo.Cliente;
 import model.vo.Pessoa;
 
 
-// Acho que não vamos usar esse DAO mas por precausão vamos la deixar 😁
 
 public class PessoaDAO implements GenericoDAO<Pessoa, Long> {
 
