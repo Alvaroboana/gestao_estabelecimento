@@ -1,10 +1,5 @@
 package model.vo;
 
-/**
- * Gerenciador de sessão do utilizador autenticado em memória.
- * Permite acesso thread-safe ao utilizador logado em qualquer camada do sistema
- * (DAOs, BOs, Views e ConexaoDB para auditoria).
- */
 public final class SessaoUtilizador {
 
     private static volatile Utilizador utilizadorAtual;

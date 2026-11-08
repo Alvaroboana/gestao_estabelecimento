@@ -17,6 +17,18 @@ public class ItemVendido implements Serializable {
     public ItemVendido() {
     }
 
+    
+
+    public ItemVendido(Integer quantidade, Double preco, Double desconto, Venda venda, Produto produto) {
+        this.quantidade = quantidade;
+        this.preco = preco;
+        this.desconto = desconto;
+        this.venda = venda;
+        this.produto = produto;
+    }
+
+
+
     public ItemVendido(Integer quantidade, Double preco, Double desconto, Venda venda, Produto produto,
             List<Reembolso> reembolso) {
         this.quantidade = quantidade;

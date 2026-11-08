@@ -9,6 +9,7 @@ import java.util.Set;
 
 public class Produto implements Serializable {
     private Long idProduto;
+    private String codigoBarras;
     private String nome;
     private Double preco;
     private String descricao;
@@ -55,6 +56,16 @@ public class Produto implements Serializable {
 
     public void setIdProduto(Long idProduto) {
         this.idProduto = idProduto;
+    }
+
+    public String getCodigoBarras() {
+        return codigoBarras;
+    }
+
+    public void setCodigoBarras(String codigoBarras) {
+        this.codigoBarras = (codigoBarras != null && !codigoBarras.trim().isEmpty())
+                ? codigoBarras.trim()
+                : null;
     }
 
     public String getNome() {
@@ -228,6 +239,10 @@ public class Produto implements Serializable {
             }
         }
         return total;
+    }
+
+    public int calcularEstoqueTotal() {
+        return calcularQuantidadeEmEstoque();
     }
 
     public boolean itemStockSuficiente(int quantidade) {
