@@ -1,108 +1,111 @@
-# Gestao Estabelecimento
+# Gestão de Estabelecimento
 
-Base inicial do projeto para a arquitetura MVC apresentada nos slides.
+Aplicação desktop de gestão de estabelecimento, desenvolvida em Java com
+Swing. O projecto organiza a interface, os controladores, as regras de negócio
+e o acesso a dados em camadas, usando MySQL para persistência.
 
-## Estrutura
+## Funcionalidades
 
-- `src/controller`: controladores (reservado para as proximas etapas)
-- `src/view`: interfaces de apresentacao (reservado para as proximas etapas)
-- `src/model/bo`: objetos de negocio (reservado para as proximas etapas)
-- `src/tablemodel`: modelos de tabela Swing (reservado para as proximas etapas)
-- `src/model/vo`: objetos de valor existentes
-- `src/model/dao`: acesso a dados existente
-- `src/infra`: infraestrutura existente
-- `src/infra/DatabaseConfig.java`: configuracao JDBC centralizada
-- `lib`: bibliotecas externas fornecidas com o projeto
-- `bin`: classes compiladas
+- Autenticação de utilizadores e controlo de acesso por perfil.
+- Gestão de clientes, fornecedores, funcionários, utilizadores e produtos.
+- Gestão de estoque, vendas, itens vendidos, anulações e reembolsos.
+- Painel inicial com indicadores e alertas.
+- Relatórios, consultas SQL e exportação para PDF.
+- Geração de documentos PDF e leitura de códigos de barras.
+- Base de dados MySQL com dados iniciais, índices, auditoria, views,
+  functions, procedures e cursores.
 
-O diretorio legado `src/controler` foi preservado. O pacote novo e correto para
-os controllers MVC e `src/controller`.
+## Tecnologias e dependências
 
-As views Swing ainda nao implementam regras de negocio, controllers funcionais,
-autenticacao, transacoes ou funcionalidades de venda, estoque e relatorios.
-Tambem nao utiliza DTO nem gerenciador de dependencias.
+- Java (JDK, com `javac` e `java` disponíveis no `PATH`).
+- MySQL 8.0; opcionalmente, Docker Compose para iniciar a base de dados.
+- Bibliotecas fornecidas no directório `lib`: MySQL Connector/J, FlatLaf,
+  Ikonli, jBCrypt, iText 5 e ZXing.
 
-## Bibliotecas externas existentes
+As dependências já estão incluídas no projecto; não é necessário um gestor de
+dependências para compilar.
 
-As bibliotecas abaixo ja fazem parte de `lib` e sao utilizadas diretamente pelo
-classpath manual. Nenhuma dependencia nova e instalada nesta etapa.
+## Estrutura do projecto
 
-| Arquivo | Finalidade |
+| Caminho | Conteúdo |
 | --- | --- |
-| `mysql-connector-j-26.7.0.jar` | Driver JDBC do MySQL |
-| `jbcrypt-0.4.jar` | Hash de palavras-passe existente nos VOs |
-| `flatlaf-3.5.4.jar` | Look and feel Swing, reservado para as views |
-| `ikonli-core-12.3.1.jar` | API base de icones, reservada para a interface |
-| `ikonli-swing-12.3.1.jar` | Integracao Ikonli com Swing |
-| `ikonli-materialdesign2-pack-12.3.1.jar` | Pack de icones Material Design 2 |
+| `src/App.java` | Ponto de entrada da aplicação |
+| `src/view` | Interface gráfica Swing |
+| `src/controller` | Controladores que ligam a interface aos casos de uso |
+| `src/model/bo` | Regras de negócio |
+| `src/model/dao` | Acesso JDBC e consultas à base de dados |
+| `src/model/vo` | Entidades e objectos de valor |
+| `src/infra` | Configuração e utilitários de infraestrutura da base de dados |
+| `src/util` | Validadores, tarefas assíncronas e geração de documentos |
+| `src/testes` | Testes e verificações, incluindo testes que dependem do MySQL |
+| `docker/sql` | Scripts de criação, configuração e dados iniciais da base |
+| `docs` | Diagramas e documentação do modelo |
+| `lib` | Bibliotecas Java utilizadas pelo projecto |
 
-## Compilacao e execucao no Windows
+## Preparar a base de dados
 
-Com um JDK instalado e `javac`/`java` disponiveis no `PATH`, abra o terminal na
-raiz do projeto e execute manualmente:
+É necessário ter Docker Desktop com o comando `docker compose` disponível. Na
+raiz do projecto, inicie os serviços:
 
 ```powershell
-New-Item -ItemType Directory -Force bin
-dir /s /b src\*.java > fontes.txt
-javac -encoding UTF-8 -cp "lib\*" -d bin @fontes.txt
-java -cp "bin;lib\*" App
-del fontes.txt
+docker compose -f docker\docker-compose.yml up -d
 ```
 
-O ponto de entrada abre o `LoginFrame` Swing. Após autenticação válida, o login
-abre a janela principal. Em ambientes sem interface grafica, apenas informa a
-limitacao e termina.
+O serviço MySQL fica disponível na porta `3306`; o Adminer, para administração
+da base de dados, fica em <http://localhost:8080>. No Adminer, use o servidor
+`db`, a base de dados `gestao` e as credenciais de desenvolvimento `gestao` /
+`gestao`.
 
-## Janela principal
+Na primeira inicialização de um volume MySQL vazio, o Docker executa os scripts
+de `docker/sql` pela ordem dos nomes: schema, restrições, índices, dados
+iniciais, triggers, functions, procedures, views e cursores. O volume
+`mysql_data` preserva os dados entre reinicializações; por isso, os scripts de
+inicialização não são novamente executados quando a base já foi criada.
 
-`view.LoginFrame` e `view.MainFrame` seguem o fluxo visual do PDF. A janela
-principal fornece marca, navegacao superior, menu do utilizador e o
-`DashboardPanel`, com cartoes de indicadores, alertas de estoque e produtos
-mais vendidos. Os botoes apresentam apenas avisos de modulos reservados; nao
-executam operacoes de negocio nem substituem controllers. Os testes visuais
-ficam em `src/testes/TesteLoginFrame.java` e
-`src/testes/TesteMainFrame.java`.
+O `docker-compose.yml` contém credenciais padrão destinadas a desenvolvimento
+local. Altere-as antes de utilizar o sistema num ambiente partilhado ou de
+produção.
 
-## Infraestrutura JDBC
+## Configuração da ligação JDBC
 
-As credenciais e a URL nao sao repetidas pelos DAOs. A classe
-`infra.DatabaseConfig` centraliza os valores existentes e permite sobrescreve-los
-sem alterar o codigo, usando as propriedades `gestao.db.url`,
-`gestao.db.username` e `gestao.db.password`, ou as variaveis
-`GESTAO_DB_URL`, `GESTAO_DB_USERNAME` e `GESTAO_DB_PASSWORD`.
+Por padrão, a aplicação liga-se à base `gestao` em
+`jdbc:mysql://localhost:3306/gestao`, usando o utilizador e a palavra-passe
+`gestao`. Pode substituir cada valor com uma propriedade Java ou uma variável
+de ambiente:
 
-O script `docker/sql/00_privileges.sql` limita os privilegios do utilizador
-`gestao` ao schema `gestao`; ele nao cria credenciais novas.
+| Propriedade Java | Variável de ambiente |
+| --- | --- |
+| `gestao.db.url` | `GESTAO_DB_URL` |
+| `gestao.db.username` | `GESTAO_DB_USERNAME` |
+| `gestao.db.password` | `GESTAO_DB_PASSWORD` |
 
-## Camada Business Object
+As propriedades Java têm precedência sobre as variáveis de ambiente. Por
+exemplo, para definir valores na sessão actual do PowerShell:
 
-Os BOs em `src/model/bo` centralizam validacoes de entrada, relacionamentos
-obrigatorios, estados e permissoes ja existentes nos VOs. Eles delegam a
-persistencia aos DAOs e nao contem SQL nem DTOs.
+```powershell
+$env:GESTAO_DB_URL = "jdbc:mysql://localhost:3306/gestao?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+$env:GESTAO_DB_USERNAME = "gestao"
+$env:GESTAO_DB_PASSWORD = "gestao"
+```
 
-Foram implementados `UtilizadorBO`, `ProdutoBO`, `ClienteBO`, `FuncionarioBO`,
-`EstoqueBO`, `VendaBO`, `ReembolsoBO` e, posteriormente, `RelatorioBO` com
-consultas apoiadas pelas views SQL.
+## Compilar e executar no Windows
 
-## Login
+Com o MySQL em execução e o terminal aberto na raiz do projecto, compile todos
+os ficheiros Java e inicie a aplicação:
 
-`LoginBO` centraliza o caso de uso de autenticação sem criar GUI ou sessão
-global. Ele delega a pesquisa ao `UtilizadorBO`, que valida username, senha,
-hash BCrypt e estado ativo do funcionário. O teste unitário correspondente fica
-em `src/testes/TesteLoginBO.java`.
+```powershell
+New-Item -ItemType Directory -Force bin | Out-Null
+$fontes = Get-ChildItem -Path src -Recurse -Filter *.java | ForEach-Object { $_.FullName }
+javac -encoding UTF-8 -cp "lib\*" -d bin $fontes
+if ($LASTEXITCODE -ne 0) { throw "A compilação falhou." }
+java -cp "bin;lib\*" App
+```
 
-`TesteRelatorioDAO.java` cobre as consultas do `RelatorioDAO` contra o MySQL;
-quando a base não estiver disponível, o teste informa explicitamente a
-limitação de infraestrutura.
+A aplicação abre a janela de autenticação. É necessária uma sessão gráfica
+para utilizar a interface Swing.
 
-## Auditoria e relatorios
+## Testes
 
-O banco possui scripts SQL para a tabela `auditoria`, com triggers para todas
-as tabelas existentes (exceto a propria auditoria), indices, views, functions,
-procedures e cursores administrativos. Os triggers usam `@id_utilizador_atual`
-quando definida; caso contrario, a operacao fica sem utilizador associado.
-`utilizador.password_hash` nao e gravado na auditoria.
-
-As consultas Java ficam em `RelatorioDAO` e `RelatorioBO`. Como o projeto nao
-usa DTO, os relatorios retornam `List<Map<String, Object>>`; o BO valida o
-periodo e exige permissao de consulta de relatorios.
+As verificações encontram-se em `src/testes`. Algumas são testes de integração
+e precisam de uma base MySQL disponível e configurada. Os testes de interface
+Swing também requerem um ambiente gráfico.
