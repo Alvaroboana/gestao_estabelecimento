@@ -16,9 +16,11 @@ import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.geom.RoundRectangle2D;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
@@ -26,6 +28,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -33,6 +36,7 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
@@ -46,11 +50,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.awt.event.ItemEvent;
 import javax.swing.JComboBox;
-import model.bo.ClienteBO;
-import model.bo.EstoqueBO;
-import model.bo.ProdutoBO;
-import model.bo.ReembolsoBO;
-import model.bo.VendaBO;
+import controller.VendaController;
 import model.vo.Cliente;
 import model.vo.EstadoVenda;
 import model.vo.Funcionario;
@@ -61,15 +61,20 @@ import model.vo.Reembolso;
 import model.vo.SessaoUtilizador;
 import model.vo.Utilizador;
 import model.vo.Venda;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignC;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignP;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignT;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignU;
 import util.AsyncTask;
+import util.GeradorFaturaPDF;
+import util.ServidorLeitorCodigoBarras;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import java.awt.image.BufferedImage;
+import javax.swing.ImageIcon;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
 
-/**
- * Painel Vendas e Nova Venda em Java Swing fiel aos designs HTML:
- * - "ADMIN · Barra superior · Escuro — Vendas" (Vendas.dc.html)
- * - "ADMIN · Barra superior · Escuro — Vendas — nova venda" (NovaVenda.dc.html)
- * - "ADMIN · Barra superior · Escuro — Vendas — anular" (ConfirmarAnular.dc.html)
- * - "ADMIN · Barra superior · Escuro — Vendas — reembolsar" (Reembolso.dc.html)
- */
 public class VendasPanel extends JPanel implements PainelRecarregavel {
     private static final long serialVersionUID = 1L;
 
@@ -91,28 +96,15 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     private static final int LARGURA_CARD_LATERAL = 420;
 
     private static final String[] COLUNAS_COMPLETAS = {
-        "ID", "Data", "Total", "Estado", "Cliente", "Funcionário"
+            "ID", "Data", "Total", "Estado", "Cliente", "Funcionário", "Itens"
     };
 
     private static final String[] COLUNAS_COMPACTAS = {
-        "ID", "Data", "Total", "Estado", "Cliente"
-    };
-
-    private static final Object[][] DADOS_INICIAIS = {
-        {"1042", "03/11/2026", "1.250,00 MT", "PENDENTE", "Ana Macie", "Carlos"},
-        {"1041", "03/11/2026", "840,00 MT", "CONCLUÍDA", "João Sitoe", "Carlos"},
-        {"1040", "02/11/2026", "300,00 MT", "ANULADA", "Maria Nhaca", "Sara"},
-        {"1039", "02/11/2026", "2.100,00 MT", "REEMBOLSADA", "Ana Macie", "Sara"}
+            "ID", "Data", "Total", "Estado", "Cliente"
     };
 
     private static final String[] COLUNAS_ITENS = {
-        "Item", "Qtd", "Subtotal", ""
-    };
-
-    private static final Object[][] ITENS_INICIAIS_NOVA_VENDA = {
-        {"Leite 1L", "2", "170,00 MT", "✕"},
-        {"Pão", "10", "50,00 MT", "✕"},
-        {"Arroz 25kg", "1", "1.710,00 MT", "✕"}
+            "Item", "Qtd", "Subtotal", ""
     };
 
     private final DefaultTableModel modeloTabela;
@@ -120,6 +112,9 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     private final BotaoSeletorEstado seletorEstado;
     private final CampoBuscaArredondado campoBuscaId;
     private final JButton botaoNovaVenda;
+    private final BotaoToolbarArredondado botaoConcluirPendente;
+    private final BotaoToolbarArredondado botaoEditarPendente;
+    private final BotaoToolbarArredondado botaoRecibo;
     private final BotaoToolbarArredondado botaoAnular;
     private final BotaoToolbarArredondado botaoReembolsar;
     private final JPanel containerToolbarBotoes;
@@ -129,19 +124,19 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     private final CardLayout layoutLateral;
     private final JPanel containerLateral;
 
-    // Campos dinâmicos do card "Anular venda"
     private JLabel labelVendaSelecionada;
     private ChipEstado chipEstadoAnular;
     private JLabel labelValorClienteAnular;
     private JLabel labelValorTotalAnular;
 
-    // Campos dinâmicos do card "Reembolsar item"
     private JLabel labelVendaReembolso;
     private ChipEstado chipEstadoReembolso;
 
-    // Campos dinâmicos do card "Nova venda"
     private JComboBox<String> comboClienteNV;
     private JComboBox<String> comboProdutoNV;
+    private JTextField campoFiltroProdutoNV;
+    private JTextField campoCodigoBarrasNV;
+    private JLabel labelInfoProdutoNV;
     private JTextField campoQtdNV;
     private JTextField campoDescontoNV;
     private JTextField campoValorRecebidoNV;
@@ -151,8 +146,9 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     private List<ItemVendido> itensCarrinho = new ArrayList<>();
     private List<Cliente> listaClientesNV = new ArrayList<>();
     private List<Produto> listaProdutosNV = new ArrayList<>();
+    private List<Produto> listaProdutosFiltradosNV = new ArrayList<>();
+    private Venda vendaEmEdicaoPendente = null;
 
-    // Campos dinâmicos do card "Reembolsar item" (formulário)
     private JComboBox<String> comboItemReembolso;
     private JTextField campoQtdReembolso;
     private JLabel labelJaReembolsadoNV;
@@ -160,10 +156,9 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     private JLabel labelValorReembolsoNV;
     private List<ItemVendido> itensVendaSelecionada = new ArrayList<>();
 
-    private final VendaBO vendaBO;
-    private final ReembolsoBO reembolsoBO;
-    private List<Object[]> dadosVendasCarregados = null;
-    private List<Venda> listaVendasEntidades = null;
+    private final VendaController vendaController;
+    private List<Object[]> dadosVendasCarregados = new ArrayList<>();
+    private List<Venda> listaVendasEntidades = new ArrayList<>();
 
     private ModoPainelLateral modoLateral;
     private String estadoFiltro = "Todos";
@@ -179,10 +174,8 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     public VendasPanel(ModoPainelLateral modoInicial) {
         UiStyle.instalarTemaEscuro();
         this.modoLateral = modoInicial != null ? modoInicial : ModoPainelLateral.NENHUM;
-        this.vendaBO = new VendaBO();
-        this.reembolsoBO = new ReembolsoBO();
+        this.vendaController = new VendaController();
 
-        // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
         setBackground(UiStyle.BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
@@ -190,6 +183,9 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         this.seletorEstado = criarSeletorEstado();
         this.campoBuscaId = criarCampoBuscaId();
         this.botaoNovaVenda = criarBotaoNovaVenda();
+        this.botaoConcluirPendente = criarBotaoConcluirPendente();
+        this.botaoEditarPendente = criarBotaoEditarPendente();
+        this.botaoRecibo = criarBotaoRecibo();
         this.botaoReembolsar = criarBotaoReembolsar();
         this.botaoAnular = criarBotaoAnular();
         this.containerToolbarBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -204,9 +200,9 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         this.layoutLateral = new CardLayout();
         this.containerLateral = new JPanel(layoutLateral);
         this.containerLateral.setOpaque(false);
-        this.containerLateral.add(cardNovaVenda, CARD_NOVA_VENDA);
-        this.containerLateral.add(cardConfirmarAnular, CARD_CONFIRMAR_ANULAR);
-        this.containerLateral.add(cardReembolsarItem, CARD_REEMBOLSAR_ITEM);
+        this.containerLateral.add(UiStyle.envolverCardLateralComScroll(cardNovaVenda), CARD_NOVA_VENDA);
+        this.containerLateral.add(UiStyle.envolverCardLateralComScroll(cardConfirmarAnular), CARD_CONFIRMAR_ANULAR);
+        this.containerLateral.add(UiStyle.envolverCardLateralComScroll(cardReembolsarItem), CARD_REEMBOLSAR_ITEM);
 
         this.tabela.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -219,6 +215,7 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         add(criarCorpoPrincipal(), BorderLayout.CENTER);
 
         definirModoPainelLateral(this.modoLateral);
+        recarregarDados();
     }
 
     public JTable getTabela() {
@@ -239,6 +236,10 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
 
     public JButton getBotaoReembolsar() {
         return botaoReembolsar;
+    }
+
+    public JButton getBotaoConcluirPendente() {
+        return botaoConcluirPendente;
     }
 
     public JPanel getCardNovaVenda() {
@@ -286,19 +287,10 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             layoutLateral.show(containerLateral, CARD_REEMBOLSAR_ITEM);
         }
 
-        // Em NovaVenda.dc.html a ordem após "Nova venda" é: Reembolsar (.bt.s), Anular (.bt.d)
-        // Em Vendas.dc.html a ordem é: Anular (.bt.s), Reembolsar (.bt.s)
-        containerToolbarBotoes.removeAll();
         if (lateralAberto) {
             botaoAnular.configurarEstilo(new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false);
-            containerToolbarBotoes.add(botaoReembolsar);
-            containerToolbarBotoes.add(Box.createRigidArea(new Dimension(10, 0)));
-            containerToolbarBotoes.add(botaoAnular);
         } else {
             botaoAnular.configurarEstilo(UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, true);
-            containerToolbarBotoes.add(botaoAnular);
-            containerToolbarBotoes.add(Box.createRigidArea(new Dimension(10, 0)));
-            containerToolbarBotoes.add(botaoReembolsar);
         }
 
         atualizarEstruturaTabela();
@@ -328,35 +320,68 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         cabecalho.setLayout(new BoxLayout(cabecalho, BoxLayout.Y_AXIS));
         cabecalho.setOpaque(false);
 
-        // <h1>Vendas</h1> (h1 { font-size:24px; margin:0 })
         JLabel titulo = new JLabel("Vendas");
         UiStyle.aplicarTexto(titulo, 24, true);
         titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
         cabecalho.add(titulo);
         cabecalho.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        // .tb { display:flex; gap:10px; align-items:center }
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6)) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Dimension getPreferredSize() {
+                int larguraDisp = getWidth();
+                if (larguraDisp <= 0 && getParent() != null) {
+                    larguraDisp = getParent().getWidth();
+                }
+                if (larguraDisp <= 0) {
+                    return super.getPreferredSize();
+                }
+                Insets in = getInsets();
+                int maxW = Math.max(200, larguraDisp - in.left - in.right);
+                int hgap = 8;
+                int vgap = 6;
+                int x = 0;
+                int y = in.top + vgap;
+                int rowH = 0;
+                for (Component c : getComponents()) {
+                    if (!c.isVisible()) {
+                        continue;
+                    }
+                    Dimension d = c.getPreferredSize();
+                    if (x > 0 && x + hgap + d.width > maxW) {
+                        y += rowH + vgap;
+                        x = 0;
+                        rowH = 0;
+                    }
+                    if (x > 0) {
+                        x += hgap;
+                    }
+                    x += d.width;
+                    rowH = Math.max(rowH, d.height);
+                }
+                y += rowH + vgap + in.bottom;
+                return new Dimension(larguraDisp, Math.max(ALTURA_INPUT, y));
+            }
+        };
         toolbar.setOpaque(false);
         toolbar.setAlignmentX(Component.LEFT_ALIGNMENT);
+        toolbar.setBorder(new EmptyBorder(-6, -8, -6, 0));
 
         toolbar.add(seletorEstado);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
         toolbar.add(campoBuscaId);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
         toolbar.add(botaoNovaVenda);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
-        toolbar.add(containerToolbarBotoes);
+        toolbar.add(botaoConcluirPendente);
+        toolbar.add(botaoEditarPendente);
+        toolbar.add(botaoRecibo);
+        toolbar.add(botaoAnular);
+        toolbar.add(botaoReembolsar);
 
         cabecalho.add(toolbar);
         return cabecalho;
     }
 
-    /**
-     * .row { display:flex; gap:16px; align-items:flex-start }
-     * Esquerda: card da tabela (flex:1)
-     * Direita: card Nova venda (width:420px; height:fit-content)
-     */
     private JPanel criarCorpoPrincipal() {
         JPanel linha = new JPanel(new BorderLayout(16, 0));
         linha.setOpaque(false);
@@ -364,24 +389,19 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
 
         JPanel wrapperDireita = new JPanel(new BorderLayout());
         wrapperDireita.setOpaque(false);
-        wrapperDireita.add(containerLateral, BorderLayout.NORTH);
+        wrapperDireita.add(containerLateral, BorderLayout.CENTER);
         linha.add(wrapperDireita, BorderLayout.EAST);
 
         return linha;
     }
 
-    /**
-     * <span class="in">Estado: Todos ▾</span>
-     * .in { height:38px; border:1px solid #3A4256; border-radius:8px; background:#12151C;
-     *       padding:0 12px; font-size:13px; color:#A3ADC2; min-width:200px }
-     */
     private BotaoSeletorEstado criarSeletorEstado() {
-        BotaoSeletorEstado botao = new BotaoSeletorEstado("Estado: Todos ▾");
+        BotaoSeletorEstado botao = new BotaoSeletorEstado("Estado: Todos");
         Dimension dim = new Dimension(LARGURA_MIN_INPUT, ALTURA_INPUT);
         botao.setPreferredSize(dim);
         botao.setMinimumSize(dim);
 
-        String[] opcoes = {"Todos", "PENDENTE", "CONCLUÍDA", "ANULADA", "REEMBOLSADA"};
+        String[] opcoes = { "Todos", "PENDENTE", "CONCLUIDA", "ANULADA", "REEMBOLSADA" };
         botao.addActionListener(e -> {
             JPopupMenu menu = new JPopupMenu();
             menu.setBackground(UiStyle.SURFACE);
@@ -393,19 +413,16 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                 item.setForeground(UiStyle.TEXT);
                 item.addActionListener(ev -> {
                     estadoFiltro = opcao;
-                    botao.setText("Estado: " + opcao + " ▾");
+                    botao.setText("Estado: " + opcao);
                     atualizarTabelaFiltrada();
                 });
                 menu.add(item);
             }
-            menu.show(botao, 0, botao.getHeight() + 2);
+            UiStyle.mostrarPopupSincronizado(menu, botao);
         });
         return botao;
     }
 
-    /**
-     * <span class="in">Buscar por ID</span>
-     */
     private CampoBuscaArredondado criarCampoBuscaId() {
         CampoBuscaArredondado campo = new CampoBuscaArredondado("Buscar por ID");
         Dimension dim = new Dimension(LARGURA_MIN_INPUT, ALTURA_INPUT);
@@ -430,14 +447,11 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         return campo;
     }
 
-    /**
-     * .bt { border:0; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:600; background:#F5B638; color:#12151C }
-     * .bt.s { background:#232A3B; color:#E8ECF4; border:1px solid #3A4256 }
-     */
     private JButton criarBotaoNovaVenda() {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
-                "Nova venda", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
-        );
+                "Nova venda", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true);
+        botao.setIcon(UiStyle.icone(MaterialDesignC.CART_PLUS, 15, UiStyle.ACCENT_TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.NOVA_VENDA) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -448,10 +462,152 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         return botao;
     }
 
+    private BotaoToolbarArredondado criarBotaoConcluirPendente() {
+        BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
+                "Concluir pendente", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CHECK_CIRCLE, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
+        botao.addActionListener(e -> concluirVendaPendenteSelecionada());
+        return botao;
+    }
+
+    private BotaoToolbarArredondado criarBotaoEditarPendente() {
+        BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
+                "Editar pendente", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLIPBOARD_TEXT, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
+        botao.addActionListener(e -> carregarVendaPendenteParaEdicao());
+        return botao;
+    }
+
+    private BotaoToolbarArredondado criarBotaoRecibo() {
+        BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
+                "Fatura / Recibo", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLIPBOARD_TEXT, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
+        botao.addActionListener(e -> exibirReciboVendaSelecionada());
+        return botao;
+    }
+
+    private void carregarVendaPendenteParaEdicao() {
+        int row = tabela.getSelectedRow();
+        if (row < 0 || row >= tabela.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione uma venda PENDENTE na tabela para editar os itens.", "Aviso",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        try {
+            Long idVenda = Long.parseLong(String.valueOf(tabela.getValueAt(row, 0)));
+            Venda vendaAlvo = (listaVendasEntidades != null) ? listaVendasEntidades.stream()
+                    .filter(v -> idVenda.equals(v.getIdVenda()))
+                    .findFirst().orElse(null) : null;
+            if (vendaAlvo == null) {
+                vendaAlvo = vendaController.buscarPorId(idVenda);
+            }
+            if (vendaAlvo == null || vendaAlvo.getEstado() != EstadoVenda.PENDENTE) {
+                JOptionPane.showMessageDialog(this,
+                        "Apenas vendas com estado PENDENTE podem ser reabertas para edição.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            this.vendaEmEdicaoPendente = vendaAlvo;
+            this.itensCarrinho.clear();
+            if (modeloItensVenda != null) {
+                modeloItensVenda.setRowCount(0);
+            }
+            if (vendaAlvo.getItemVendido() != null) {
+                for (ItemVendido it : vendaAlvo.getItemVendido()) {
+                    if (it == null)
+                        continue;
+                    ItemVendido copia = new ItemVendido(it.getQuantidade(), it.getPreco(), it.getDesconto(), vendaAlvo,
+                            it.getProduto());
+                    itensCarrinho.add(copia);
+                    double sub = Math.max(0.0,
+                            (it.getPreco() != null ? it.getPreco() : 0.0)
+                                    * (it.getQuantidade() != null ? it.getQuantidade() : 1)
+                                    - (it.getDesconto() != null ? it.getDesconto() : 0.0));
+                    String nomeProd = (it.getProduto() != null && it.getProduto().getNome() != null)
+                            ? it.getProduto().getNome()
+                            : "Item";
+                    modeloItensVenda.addRow(new Object[] {
+                            nomeProd,
+                            String.valueOf(it.getQuantidade() != null ? it.getQuantidade() : 1),
+                            String.format(Locale.GERMANY, "%,.2f MT", sub),
+                            "✕"
+                    });
+                }
+            }
+            if (comboClienteNV != null && vendaAlvo.getCliente() != null && vendaAlvo.getCliente().getNome() != null) {
+                comboClienteNV.setSelectedItem(vendaAlvo.getCliente().getNome());
+            }
+            atualizarTotalNV();
+            definirModoPainelLateral(ModoPainelLateral.NOVA_VENDA);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Erro ao abrir venda pendente: " + ex.getMessage(), "Erro",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void concluirVendaPendenteSelecionada() {
+        int row = tabela.getSelectedRow();
+        if (row < 0 || row >= tabela.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione uma venda PENDENTE na tabela para concluir.", "Aviso",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String idStr = String.valueOf(tabela.getValueAt(row, 0));
+        try {
+            Long idVenda = Long.parseLong(idStr);
+            Venda vendaAlvo = (listaVendasEntidades != null) ? listaVendasEntidades.stream()
+                    .filter(v -> v.getIdVenda() != null && v.getIdVenda().equals(idVenda))
+                    .findFirst()
+                    .orElse(null) : null;
+            if (vendaAlvo == null) {
+                vendaAlvo = vendaController.buscarPorId(idVenda);
+            }
+            if (vendaAlvo.getEstado() != EstadoVenda.PENDENTE) {
+                JOptionPane.showMessageDialog(this, "Apenas vendas com estado PENDENTE podem ser concluídas.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            int conf = JOptionPane.showConfirmDialog(
+                    this,
+                    "Deseja concluir a Venda #" + idVenda + " e efetuar a baixa automática no estoque (FEFO)?",
+                    "Concluir Venda Pendente",
+                    JOptionPane.YES_NO_OPTION);
+            if (conf != JOptionPane.YES_OPTION) {
+                return;
+            }
+            final Venda fVenda = vendaAlvo;
+            Utilizador operador = SessaoUtilizador.getUtilizador();
+            botaoConcluirPendente.setEnabled(false);
+            AsyncTask.executar(
+                    () -> {
+                        vendaController.concluirVenda(fVenda, operador);
+                        return true;
+                    },
+                    sucesso -> {
+                        botaoConcluirPendente.setEnabled(true);
+                        exibirDialogoRecibo(fVenda, fVenda.getTotal() != null ? fVenda.getTotal() : 0.0, 0.0);
+                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                        recarregarDados();
+                    },
+                    erro -> {
+                        botaoConcluirPendente.setEnabled(true);
+                        JOptionPane.showMessageDialog(this, "Erro ao concluir venda: " + erro.getMessage(), "Erro",
+                                JOptionPane.ERROR_MESSAGE);
+                    });
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Erro ao processar venda selecionada: " + ex.getMessage(), "Erro",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private BotaoToolbarArredondado criarBotaoReembolsar() {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
-                "Reembolsar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
-        );
+                "Reembolsar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignU.UNDO_VARIANT, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.REEMBOLSAR_ITEM) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -465,8 +621,10 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
 
     private BotaoToolbarArredondado criarBotaoAnular() {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
-                "Anular", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
-        );
+                "Anular", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false);
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CANCEL, 15,
+                () -> botao.preencherFundo ? UiStyle.TEXT : UiStyle.DANGER_TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.CONFIRMAR_ANULAR) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -536,13 +694,9 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         aplicarRenderizadoresColunas(tabela);
     }
 
-    /**
-     * <div class="card" style="padding:0"><table>...</table></div>
-     */
     private JPanel criarCardTabela() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BorderLayout());
-        // 1px de margem interna para que a tabela respeite o contorno arredondado de 14px
         card.setBorder(new EmptyBorder(2, 2, 2, 2));
 
         JScrollPane scroll = new JScrollPane(tabela);
@@ -560,15 +714,12 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Nova venda" com combos dinâmicos ligados ao banco de dados.
-     */
     private JPanel criarCardNovaVenda() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
         JLabel titulo = new JLabel("Nova venda");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
@@ -577,15 +728,72 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 8)));
 
-        // --- Combo Cliente ---
         comboClienteNV = new JComboBox<>();
         estilizarCombo(comboClienteNV);
-        JPanel blocoCliente = criarCampoComLabel("Cliente", comboClienteNV);
+        JPanel linhaClienteComMais = new JPanel(new BorderLayout(6, 0));
+        linhaClienteComMais.setOpaque(false);
+        BotaoToolbarArredondado btnMaisCliente = new BotaoToolbarArredondado(
+                "", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        btnMaisCliente.setBorder(new EmptyBorder(0, 10, 0, 10));
+        btnMaisCliente.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PLUS, 14, () -> UiStyle.TEXT));
+        btnMaisCliente.setToolTipText("Novo cliente rápido");
+        btnMaisCliente.addActionListener(e -> abrirDialogoNovoClienteRapido());
+        linhaClienteComMais.add(comboClienteNV, BorderLayout.CENTER);
+        linhaClienteComMais.add(btnMaisCliente, BorderLayout.EAST);
+        JPanel blocoCliente = criarCampoComLabel("Cliente (padrão: Consumidor Final)", linhaClienteComMais);
         fixarLargura(blocoCliente, larguraInterna, 60);
         card.add(blocoCliente);
         card.add(Box.createRigidArea(new Dimension(0, 8)));
 
-        // --- Linha Produto / Qtd / Desc ---
+        campoCodigoBarrasNV = new JTextField();
+        estilizarCampo(campoCodigoBarrasNV);
+        campoCodigoBarrasNV.setToolTipText("Aponte o leitor USB ou digite o código de barras e prima Enter");
+        campoCodigoBarrasNV.addActionListener(e -> {
+            String cod = campoCodigoBarrasNV.getText() != null ? campoCodigoBarrasNV.getText().trim() : "";
+            if (!cod.isEmpty()) {
+                processarCodigoBarras(cod);
+                campoCodigoBarrasNV.setText("");
+            }
+        });
+        BotaoToolbarArredondado btnLeitorCelular = new BotaoToolbarArredondado(
+                "Leitor Celular", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        btnLeitorCelular.setBorder(new EmptyBorder(0, 10, 0, 10));
+        btnLeitorCelular.addActionListener(e -> abrirDialogoLeitorCelular());
+        JPanel linhaCodigoBarras = new JPanel(new BorderLayout(6, 0));
+        linhaCodigoBarras.setOpaque(false);
+        linhaCodigoBarras.add(campoCodigoBarrasNV, BorderLayout.CENTER);
+        linhaCodigoBarras.add(btnLeitorCelular, BorderLayout.EAST);
+        JPanel blocoCodigoBarras = criarCampoComLabel("Código de barras (Leitor USB / Enter ou Celular)",
+                linhaCodigoBarras);
+        fixarLargura(blocoCodigoBarras, larguraInterna, 60);
+        card.add(blocoCodigoBarras);
+        card.add(Box.createRigidArea(new Dimension(0, 8)));
+
+        campoFiltroProdutoNV = new JTextField();
+        estilizarCampo(campoFiltroProdutoNV);
+        campoFiltroProdutoNV
+                .setToolTipText("Digite parte do nome, ID ou código de barras para filtrar a lista de produtos");
+        campoFiltroProdutoNV.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                filtrarComboProdutosNV();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                filtrarComboProdutosNV();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                filtrarComboProdutosNV();
+            }
+        });
+        JPanel blocoFiltroProd = criarCampoComLabel("Pesquisar produto (nome, ID ou código)", campoFiltroProdutoNV);
+        fixarLargura(blocoFiltroProd, larguraInterna, 60);
+        card.add(blocoFiltroProd);
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+
         JPanel linhaProduto = new JPanel(new GridBagLayout());
         linhaProduto.setOpaque(false);
         linhaProduto.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -600,47 +808,59 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         estilizarCampo(campoDescontoNV);
 
         GridBagConstraints gbcProd = new GridBagConstraints();
-        gbcProd.gridx = 0; gbcProd.gridy = 0; gbcProd.weightx = 2.0;
+        gbcProd.gridx = 0;
+        gbcProd.gridy = 0;
+        gbcProd.weightx = 2.0;
         gbcProd.fill = GridBagConstraints.HORIZONTAL;
         gbcProd.insets = new Insets(0, 0, 0, 8);
         linhaProduto.add(criarCampoComLabel("Produto", comboProdutoNV), gbcProd);
 
         GridBagConstraints gbcQtd = new GridBagConstraints();
-        gbcQtd.gridx = 1; gbcQtd.gridy = 0; gbcQtd.weightx = 1.0;
+        gbcQtd.gridx = 1;
+        gbcQtd.gridy = 0;
+        gbcQtd.weightx = 1.0;
         gbcQtd.fill = GridBagConstraints.HORIZONTAL;
         gbcQtd.insets = new Insets(0, 0, 0, 8);
         linhaProduto.add(criarCampoComLabel("Qtd", campoQtdNV), gbcQtd);
 
         GridBagConstraints gbcDesc = new GridBagConstraints();
-        gbcDesc.gridx = 2; gbcDesc.gridy = 0; gbcDesc.weightx = 1.0;
+        gbcDesc.gridx = 2;
+        gbcDesc.gridy = 0;
+        gbcDesc.weightx = 1.0;
         gbcDesc.fill = GridBagConstraints.HORIZONTAL;
-        linhaProduto.add(criarCampoComLabel("Desc. (MT)", campoDescontoNV), gbcDesc);
+        linhaProduto.add(criarCampoComLabel("Desc. (MT/%)", campoDescontoNV), gbcDesc);
 
         fixarLargura(linhaProduto, larguraInterna, 60);
         card.add(linhaProduto);
-        card.add(Box.createRigidArea(new Dimension(0, 8)));
+        card.add(Box.createRigidArea(new Dimension(0, 4)));
 
-        // --- Botão Adicionar Item ---
+        labelInfoProdutoNV = new JLabel("Preço unit.: - | Stock disponível: -");
+        labelInfoProdutoNV.setFont(UiStyle.fonte(12, Font.PLAIN));
+        labelInfoProdutoNV.setForeground(UiStyle.MUTED);
+        labelInfoProdutoNV.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(labelInfoProdutoNV);
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+
+        comboProdutoNV.addActionListener(e -> atualizarInfoProdutoSelecionadoNV());
+
         BotaoToolbarArredondado botaoAdicionarItem = new BotaoToolbarArredondado(
-                "+ Adicionar item", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
-        );
+                "Adicionar item", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botaoAdicionarItem.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PLUS, 15, () -> UiStyle.TEXT));
+        botaoAdicionarItem.setIconTextGap(6);
         botaoAdicionarItem.setHorizontalAlignment(SwingConstants.CENTER);
         fixarLargura(botaoAdicionarItem, larguraInterna, 38);
         card.add(botaoAdicionarItem);
         card.add(Box.createRigidArea(new Dimension(0, 8)));
 
-        // --- Mini-tabela de itens do carrinho ---
         JPanel miniTabelaPanel = criarMiniTabelaItens(larguraInterna);
         card.add(miniTabelaPanel);
         card.add(Box.createRigidArea(new Dimension(0, 8)));
 
-        // --- Linha Total ---
         JPanel linhaTotal = new JPanel(new BorderLayout());
         linhaTotal.setOpaque(false);
         linhaTotal.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, UiStyle.BORDER),
-                new EmptyBorder(8, 0, 0, 0)
-        ));
+                new EmptyBorder(8, 0, 0, 0)));
         JLabel labelTextoTotal = new JLabel("Total");
         labelTextoTotal.setFont(UiStyle.fonte(13, Font.PLAIN));
         labelTextoTotal.setForeground(UiStyle.MUTED);
@@ -653,7 +873,6 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         card.add(linhaTotal);
         card.add(Box.createRigidArea(new Dimension(0, 8)));
 
-        // --- Valor Recebido / Troco ---
         JPanel linhaPagamento = new JPanel(new GridLayout(1, 2, 8, 0));
         linhaPagamento.setOpaque(false);
 
@@ -663,9 +882,25 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         labelTrocoVendaNV = new JLabel("0,00 MT");
         labelTrocoVendaNV.setFont(UiStyle.fonte(13, Font.BOLD));
         labelTrocoVendaNV.setForeground(UiStyle.CHIP_YELLOW_FG);
-        JPanel caixaTroco = new JPanel(new BorderLayout());
-        caixaTroco.setOpaque(true);
-        caixaTroco.setBackground(UiStyle.CHIP_YELLOW_BG);
+        JPanel caixaTroco = new JPanel(new BorderLayout()) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                try {
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    int arco = RAIO_COMPONENTE * 2;
+                    g2.setColor(UiStyle.CHIP_YELLOW_BG);
+                    g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), arco, arco));
+                    labelTrocoVendaNV.setForeground(UiStyle.CHIP_YELLOW_FG);
+                } finally {
+                    g2.dispose();
+                }
+                super.paintComponent(g);
+            }
+        };
+        caixaTroco.setOpaque(false);
         caixaTroco.setBorder(new EmptyBorder(0, 12, 0, 12));
         caixaTroco.add(labelTrocoVendaNV, BorderLayout.CENTER);
 
@@ -675,55 +910,104 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         card.add(linhaPagamento);
         card.add(Box.createRigidArea(new Dimension(0, 8)));
 
-        // --- Barra de Acções ---
         JPanel barraAcoesCard = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraAcoesCard.setOpaque(false);
 
         BotaoToolbarArredondado botaoFinalizar = new BotaoToolbarArredondado(
-                "Finalizar venda", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
-        );
+                "Finalizar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true);
+        botaoFinalizar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoFinalizar.setIconTextGap(5);
+        botaoFinalizar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        BotaoToolbarArredondado botaoGuardarPendente = new BotaoToolbarArredondado(
+                "Guardar pendente", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botaoGuardarPendente.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLIPBOARD_TEXT, 14, () -> UiStyle.TEXT));
+        botaoGuardarPendente.setIconTextGap(5);
+        botaoGuardarPendente.setBorder(new EmptyBorder(9, 10, 9, 10));
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
-                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
-        );
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botaoCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 14, () -> UiStyle.TEXT));
+        botaoCancelar.setIconTextGap(5);
+        botaoCancelar.setBorder(new EmptyBorder(9, 10, 9, 10));
 
         barraAcoesCard.add(botaoFinalizar);
-        barraAcoesCard.add(Box.createRigidArea(new Dimension(10, 0)));
+        barraAcoesCard.add(Box.createRigidArea(new Dimension(6, 0)));
+        barraAcoesCard.add(botaoGuardarPendente);
+        barraAcoesCard.add(Box.createRigidArea(new Dimension(6, 0)));
         barraAcoesCard.add(botaoCancelar);
-        fixarLargura(barraAcoesCard, larguraInterna, 38);
+
+        barraAcoesCard.setPreferredSize(new Dimension(larguraInterna, 38));
+        barraAcoesCard.setMinimumSize(new Dimension(larguraInterna, 38));
+        barraAcoesCard.setMaximumSize(new Dimension(larguraInterna, 38));
+        barraAcoesCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         card.add(barraAcoesCard);
 
-        // --- Listeners de lógica ---
-        // Recalcular troco ao mudar valor recebido
         campoValorRecebidoNV.getDocument().addDocumentListener(new DocumentListener() {
-            @Override public void insertUpdate(DocumentEvent e) { recalcularTroco(); }
-            @Override public void removeUpdate(DocumentEvent e) { recalcularTroco(); }
-            @Override public void changedUpdate(DocumentEvent e) { recalcularTroco(); }
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                recalcularTroco();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                recalcularTroco();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                recalcularTroco();
+            }
         });
 
-        // Adicionar item ao carrinho
         botaoAdicionarItem.addActionListener(e -> {
             int idx = comboProdutoNV.getSelectedIndex();
-            if (idx < 0 || idx >= listaProdutosNV.size()) {
+            List<Produto> fonte = !listaProdutosFiltradosNV.isEmpty() ? listaProdutosFiltradosNV : listaProdutosNV;
+            if (idx < 0 || idx >= fonte.size()) {
                 JOptionPane.showMessageDialog(this, "Selecione um produto.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             int qtd;
             try {
                 qtd = Integer.parseInt(campoQtdNV.getText().trim());
-                if (qtd <= 0) throw new NumberFormatException();
+                if (qtd <= 0)
+                    throw new NumberFormatException();
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(this, "Quantidade inválida.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            double desconto = 0;
-            try { desconto = Double.parseDouble(campoDescontoNV.getText().trim()); } catch (NumberFormatException ignored) {}
-
-            Produto prod = listaProdutosNV.get(idx);
+            Produto prod = fonte.get(idx);
             double preco = prod.getPreco() != null ? prod.getPreco() : 0.0;
-            double subtotal = preco * qtd - desconto;
-            if (subtotal < 0) subtotal = 0;
+            double bruto = preco * qtd;
+            double desconto = 0;
+            try {
+                String descTxt = campoDescontoNV.getText() != null ? campoDescontoNV.getText().trim() : "0";
+                if (descTxt.endsWith("%")) {
+                    double perc = Double
+                            .parseDouble(descTxt.substring(0, descTxt.length() - 1).trim().replace(",", "."));
+                    if (perc < 0 || perc > 100) {
+                        JOptionPane.showMessageDialog(this, "O desconto percentual deve estar entre 0% e 100%.",
+                                "Aviso", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                    desconto = (bruto * perc) / 100.0;
+                } else if (!descTxt.isEmpty()) {
+                    desconto = Double.parseDouble(descTxt.replace(",", "."));
+                }
+            } catch (NumberFormatException ignored) {
+                JOptionPane.showMessageDialog(this, "Desconto inválido. Informe valor em MT ou percentagem (ex.: 10%).",
+                        "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (desconto < 0 || desconto > bruto) {
+                JOptionPane.showMessageDialog(this,
+                        "O desconto não pode ser negativo nem superior ao subtotal do item.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            double subtotal = bruto - desconto;
+            if (subtotal < 0)
+                subtotal = 0;
 
-            // Adicionar ao modelo de itens
             final double desc = desconto;
             ItemVendido item = new ItemVendido();
             item.setQuantidade(qtd);
@@ -733,78 +1017,19 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             itensCarrinho.add(item);
 
             String subtotalStr = String.format(java.util.Locale.GERMANY, "%,.2f MT", subtotal);
-            modeloItensVenda.addRow(new Object[]{prod.getNome(), String.valueOf(qtd), subtotalStr, "✕"});
+            modeloItensVenda.addRow(new Object[] { prod.getNome(), String.valueOf(qtd), subtotalStr, "✕" });
             atualizarTotalNV();
         });
 
-        // Remover item ao clicar em ✕ — tratado via seleção de linha na mini-tabela (listener no criarMiniTabelaItens)
+        botaoFinalizar.addActionListener(e -> submeterNovaVenda(true, botaoFinalizar, botaoGuardarPendente));
 
-        // Finalizar venda
-        botaoFinalizar.addActionListener(e -> {
-            if (itensCarrinho.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Adicione ao menos um item.", "Aviso", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            Utilizador user = SessaoUtilizador.getUtilizador();
-            if (user == null) {
-                JOptionPane.showMessageDialog(this, "Sessão inválida. Faça login novamente.", "Erro", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            // Montar Venda
-            Venda venda = new Venda();
-            venda.setEstado(EstadoVenda.PENDENTE);
-            venda.setData(java.time.LocalDateTime.now());
-            venda.setItemVendido(new ArrayList<>(itensCarrinho));
-
-            int cliIdx = comboClienteNV.getSelectedIndex();
-            if (cliIdx >= 0 && cliIdx < listaClientesNV.size()) {
-                venda.setCliente(listaClientesNV.get(cliIdx));
-            }
-            venda.setFuncionario(user.getFuncionario());
-
-            // Calcular total
-            double total = itensCarrinho.stream()
-                .mapToDouble(it -> {
-                    double p = it.getPreco() != null ? it.getPreco() : 0;
-                    int q = it.getQuantidade() != null ? it.getQuantidade() : 0;
-                    double d = it.getDesconto() != null ? it.getDesconto() : 0;
-                    return p * q - d;
-                }).sum();
-            venda.setTotal(total);
-
-            botaoFinalizar.setEnabled(false);
-            List<ItemVendido> itensCopia = new ArrayList<>(itensCarrinho);
-            EstoqueBO estoqueBO = new EstoqueBO();
-            AsyncTask.executar(
-                () -> {
-                    vendaBO.concluirEGuardar(venda, user);
-                    for (ItemVendido item : itensCopia) {
-                        if (item.getProduto() != null && item.getProduto().getIdProduto() != null) {
-                            estoqueBO.baixarEstoqueFEFO(item.getProduto().getIdProduto(), item.getQuantidade());
-                        }
-                    }
-                    return true;
-                },
-                res -> {
-                    JOptionPane.showMessageDialog(this, "Venda concluída com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                    itensCarrinho.clear();
-                    modeloItensVenda.setRowCount(0);
-                    atualizarTotalNV();
-                    definirNovaVendaVisivel(false);
-                    recarregarDados();
-                    botaoFinalizar.setEnabled(true);
-                },
-                erro -> {
-                    JOptionPane.showMessageDialog(this, "Erro ao finalizar venda: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
-                    botaoFinalizar.setEnabled(true);
-                }
-            );
-        });
+        botaoGuardarPendente.addActionListener(e -> submeterNovaVenda(false, botaoFinalizar, botaoGuardarPendente));
 
         botaoCancelar.addActionListener(e -> {
+            vendaEmEdicaoPendente = null;
             itensCarrinho.clear();
-            if (modeloItensVenda != null) modeloItensVenda.setRowCount(0);
+            if (modeloItensVenda != null)
+                modeloItensVenda.setRowCount(0);
             atualizarTotalNV();
             definirNovaVendaVisivel(false);
         });
@@ -817,72 +1042,482 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /** Recalcula o total da venda e actualiza o label. */
+    private void submeterNovaVenda(boolean concluirImediatamente, JButton botaoFinalizar,
+            JButton botaoGuardarPendente) {
+        if (itensCarrinho.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Adicione ao menos um item à venda.", "Aviso",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Utilizador user = SessaoUtilizador.getUtilizador();
+        if (user == null || user.getFuncionario() == null) {
+            JOptionPane.showMessageDialog(this, "Sessão inválida. Faça login novamente.", "Erro",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        int cliIdx = comboClienteNV != null ? comboClienteNV.getSelectedIndex() : -1;
+        Cliente clienteSelecionado = null;
+        if (cliIdx > 0 && (cliIdx - 1) < listaClientesNV.size()) {
+            clienteSelecionado = listaClientesNV.get(cliIdx - 1);
+        }
+        final Cliente clientePreSelecionado = clienteSelecionado;
+
+        Venda venda = new Venda();
+        if (vendaEmEdicaoPendente != null && vendaEmEdicaoPendente.getIdVenda() != null) {
+            venda.setIdVenda(vendaEmEdicaoPendente.getIdVenda());
+        }
+        venda.setEstado(EstadoVenda.PENDENTE);
+        venda.setData(java.time.LocalDateTime.now());
+        venda.setFuncionario(user.getFuncionario());
+
+        List<ItemVendido> itensParaPersistir = new ArrayList<>();
+        for (ItemVendido item : itensCarrinho) {
+            ItemVendido copia = new ItemVendido(item.getQuantidade(), item.getPreco(), item.getDesconto(), venda,
+                    item.getProduto());
+            itensParaPersistir.add(copia);
+        }
+        venda.setItemVendido(itensParaPersistir);
+        venda.setTotal(venda.calcularTotal());
+
+        double valorRecebido = venda.getTotal() != null ? venda.getTotal() : 0.0;
+        try {
+            double dig = Double.parseDouble(campoValorRecebidoNV.getText().trim().replace(",", "."));
+            if (dig > 0) {
+                valorRecebido = dig;
+            }
+        } catch (Exception ignored) {
+        }
+        final double finalRecebido = valorRecebido;
+        final double finalTroco = Math.max(0.0, finalRecebido - (venda.getTotal() != null ? venda.getTotal() : 0.0));
+
+        botaoFinalizar.setEnabled(false);
+        botaoGuardarPendente.setEnabled(false);
+        AsyncTask.executar(
+                () -> {
+                    Cliente cliEfetivo = clientePreSelecionado != null
+                            ? clientePreSelecionado
+                            : vendaController.obterOuCriarConsumidorFinal();
+                    venda.setCliente(cliEfetivo);
+                    if (venda.getIdVenda() != null && venda.getIdVenda() > 0) {
+                        vendaController.atualizarRascunho(venda, user);
+                    }
+                    if (concluirImediatamente) {
+                        vendaController.concluirVenda(venda, user);
+                    } else if (venda.getIdVenda() == null || venda.getIdVenda() <= 0) {
+                        vendaController.salvarRascunho(venda, user);
+                    }
+                    return true;
+                },
+                res -> {
+                    vendaEmEdicaoPendente = null;
+                    if (concluirImediatamente) {
+                        exibirDialogoRecibo(venda, finalRecebido, finalTroco);
+                    } else {
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "Venda #" + venda.getIdVenda() + " guardada como PENDENTE!",
+                                "Sucesso",
+                                JOptionPane.INFORMATION_MESSAGE);
+                    }
+                    itensCarrinho.clear();
+                    modeloItensVenda.setRowCount(0);
+                    if (campoValorRecebidoNV != null)
+                        campoValorRecebidoNV.setText("0");
+                    if (campoDescontoNV != null)
+                        campoDescontoNV.setText("0");
+                    atualizarTotalNV();
+                    definirNovaVendaVisivel(false);
+                    recarregarDados();
+                    botaoFinalizar.setEnabled(true);
+                    botaoGuardarPendente.setEnabled(true);
+                },
+                erro -> {
+                    JOptionPane.showMessageDialog(this, "Erro ao processar venda: " + erro.getMessage(), "Erro",
+                            JOptionPane.ERROR_MESSAGE);
+                    botaoFinalizar.setEnabled(true);
+                    botaoGuardarPendente.setEnabled(true);
+                });
+    }
+
     private void atualizarTotalNV() {
         double total = itensCarrinho.stream()
-            .mapToDouble(it -> {
-                double p = it.getPreco() != null ? it.getPreco() : 0;
-                int q = it.getQuantidade() != null ? it.getQuantidade() : 0;
-                double d = it.getDesconto() != null ? it.getDesconto() : 0;
-                return p * q - d;
-            }).sum();
+                .mapToDouble(it -> {
+                    double p = it.getPreco() != null ? it.getPreco() : 0;
+                    int q = it.getQuantidade() != null ? it.getQuantidade() : 0;
+                    double d = it.getDesconto() != null ? it.getDesconto() : 0;
+                    return p * q - d;
+                }).sum();
         if (labelTotalVendaNV != null) {
             labelTotalVendaNV.setText(String.format(java.util.Locale.GERMANY, "%,.2f MT", total));
         }
         recalcularTroco();
     }
 
-    /** Recalcula e exibe o troco com base no valor recebido. */
+    private void filtrarComboProdutosNV() {
+        if (comboProdutoNV == null)
+            return;
+        String termo = (campoFiltroProdutoNV != null && campoFiltroProdutoNV.getText() != null)
+                ? campoFiltroProdutoNV.getText().trim().toLowerCase()
+                : "";
+        listaProdutosFiltradosNV.clear();
+        comboProdutoNV.removeAllItems();
+        for (Produto p : listaProdutosNV) {
+            if (p == null)
+                continue;
+            String nome = p.getNome() != null ? p.getNome().toLowerCase() : "";
+            String idStr = p.getIdProduto() != null ? String.valueOf(p.getIdProduto()) : "";
+            String cb = p.getCodigoBarras() != null ? p.getCodigoBarras().toLowerCase() : "";
+            if (termo.isEmpty() || nome.contains(termo) || idStr.equals(termo) || cb.contains(termo)) {
+                listaProdutosFiltradosNV.add(p);
+                String preco = p.getPreco() != null
+                        ? String.format(Locale.GERMANY, "%,.2f MT", p.getPreco())
+                        : "";
+                comboProdutoNV.addItem(p.getNome() + " (" + preco + ")");
+            }
+        }
+        atualizarInfoProdutoSelecionadoNV();
+    }
+
+    private void atualizarInfoProdutoSelecionadoNV() {
+        if (labelInfoProdutoNV == null || comboProdutoNV == null)
+            return;
+        int idx = comboProdutoNV.getSelectedIndex();
+        List<Produto> fonte = !listaProdutosFiltradosNV.isEmpty() ? listaProdutosFiltradosNV : listaProdutosNV;
+        if (idx < 0 || idx >= fonte.size()) {
+            labelInfoProdutoNV.setText("Preço unit.: - | Stock disponível: -");
+            return;
+        }
+        Produto p = fonte.get(idx);
+        double preco = p.getPreco() != null ? p.getPreco() : 0.0;
+        String un = p.getUnidade() != null ? p.getUnidade() : "un";
+        int stock = p.calcularQuantidadeEmEstoque();
+        labelInfoProdutoNV.setText(String.format(
+                Locale.GERMANY,
+                "Preço unit.: %,.2f MT/%s  |  Stock disponível: %d %s",
+                preco, un, stock, un));
+    }
+
+    public void processarCodigoBarras(String codigo) {
+        if (codigo == null || codigo.trim().isEmpty())
+            return;
+        String cod = codigo.trim();
+        Produto encontrado = null;
+        for (Produto p : listaProdutosNV) {
+            if (p == null)
+                continue;
+            if ((p.getCodigoBarras() != null && p.getCodigoBarras().equalsIgnoreCase(cod))
+                    || (p.getIdProduto() != null && String.valueOf(p.getIdProduto()).equals(cod))) {
+                encontrado = p;
+                break;
+            }
+        }
+        if (encontrado == null) {
+            try {
+                encontrado = vendaController.buscarProdutoPorCodigoBarras(cod);
+            } catch (Exception ignored) {
+            }
+        }
+        if (encontrado == null) {
+            JOptionPane.showMessageDialog(this, "Nenhum produto encontrado para o código: " + cod,
+                    "Leitor de Código de Barras", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        double preco = encontrado.getPreco() != null ? encontrado.getPreco() : 0.0;
+        for (int i = 0; i < itensCarrinho.size(); i++) {
+            ItemVendido existente = itensCarrinho.get(i);
+            if (existente.getProduto() != null && encontrado.getIdProduto() != null
+                    && encontrado.getIdProduto().equals(existente.getProduto().getIdProduto())) {
+                int novaQtd = (existente.getQuantidade() != null ? existente.getQuantidade() : 1) + 1;
+                existente.setQuantidade(novaQtd);
+                double desc = existente.getDesconto() != null ? existente.getDesconto() : 0.0;
+                double sub = Math.max(0.0, preco * novaQtd - desc);
+                modeloItensVenda.setValueAt(String.valueOf(novaQtd), i, 1);
+                modeloItensVenda.setValueAt(String.format(Locale.GERMANY, "%,.2f MT", sub), i, 2);
+                atualizarTotalNV();
+                return;
+            }
+        }
+        ItemVendido novoItem = new ItemVendido();
+        novoItem.setProduto(encontrado);
+        novoItem.setQuantidade(1);
+        novoItem.setPreco(preco);
+        novoItem.setDesconto(0.0);
+        itensCarrinho.add(novoItem);
+        modeloItensVenda.addRow(new Object[] {
+                encontrado.getNome(),
+                "1",
+                String.format(Locale.GERMANY, "%,.2f MT", preco),
+                "✕"
+        });
+        atualizarTotalNV();
+    }
+
+    private void abrirDialogoLeitorCelular() {
+        try {
+            String url = ServidorLeitorCodigoBarras.iniciarOuAtualizarOuvinte(this::processarCodigoBarras);
+
+            JPanel painelQr = new JPanel();
+            painelQr.setLayout(new BoxLayout(painelQr, BoxLayout.Y_AXIS));
+            painelQr.setOpaque(false);
+
+            JLabel labelInstrucoes = new JLabel("<html><div style='text-align: center;'>"
+                    + "Leitor Mobile ativo na rede local!<br><br>"
+                    + "1. Conecte o telemóvel na mesma rede Wi-Fi/Hotspot deste computador.<br>"
+                    + "2. <b>Aponte a câmara para o QR Code abaixo</b>:</div></html>");
+            labelInstrucoes.setForeground(UiStyle.TEXT);
+            labelInstrucoes.setAlignmentX(Component.CENTER_ALIGNMENT);
+            painelQr.add(labelInstrucoes);
+            painelQr.add(Box.createRigidArea(new Dimension(0, 16)));
+
+            try {
+                QRCodeWriter qrCodeWriter = new QRCodeWriter();
+                // Gera o QR Code com 200x200 pixels
+                BitMatrix bitMatrix = qrCodeWriter.encode(url, BarcodeFormat.QR_CODE, 200, 200);
+                BufferedImage imagemQr = MatrixToImageWriter.toBufferedImage(bitMatrix);
+
+                JLabel labelImagemQr = new JLabel(new ImageIcon(imagemQr));
+                labelImagemQr.setAlignmentX(Component.CENTER_ALIGNMENT);
+                painelQr.add(labelImagemQr);
+            } catch (Exception e) {
+                System.err.println("Erro ao gerar QR Code: " + e.getMessage());
+            }
+
+            painelQr.add(Box.createRigidArea(new Dimension(0, 16)));
+
+            JTextField campoLink = new JTextField(url);
+            campoLink.setEditable(false);
+            campoLink.setHorizontalAlignment(JTextField.CENTER);
+            campoLink.setBackground(UiStyle.INPUT_BG);
+            campoLink.setForeground(UiStyle.TEXT);
+            campoLink.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(UiStyle.INPUT_BORDER),
+                    new EmptyBorder(8, 8, 8, 8)));
+            campoLink.setAlignmentX(Component.CENTER_ALIGNMENT);
+            campoLink.setMaximumSize(new Dimension(300, 35));
+            painelQr.add(campoLink);
+
+            JLabel labelDica = new JLabel("<html><br><div style='font-size: 11px; text-align: center;'>"
+                    + "Cada código lido será adicionado automaticamente ao carrinho desta venda.</div></html>");
+            labelDica.setForeground(UiStyle.MUTED);
+            labelDica.setAlignmentX(Component.CENTER_ALIGNMENT);
+            painelQr.add(labelDica);
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    painelQr,
+                    "Leitor de Código de Barras no Telemóvel",
+                    JOptionPane.PLAIN_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Não foi possível iniciar o servidor do leitor mobile: " + ex.getMessage(),
+                    "Erro",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void abrirDialogoNovoClienteRapido() {
+        JTextField campoNome = new JTextField();
+        JTextField campoContacto = new JTextField();
+        Object[] msg = {
+                "Nome do cliente *:", campoNome,
+                "Contacto *:", campoContacto
+        };
+        int op = JOptionPane.showConfirmDialog(this, msg, "Novo Cliente Rápido", JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE);
+        if (op != JOptionPane.OK_OPTION)
+            return;
+        String nome = campoNome.getText() != null ? campoNome.getText().trim() : "";
+        String contacto = campoContacto.getText() != null ? campoContacto.getText().trim() : "";
+        if (nome.isEmpty() || contacto.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Informe o nome e o contacto do cliente.", "Validação",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        AsyncTask.executar(
+                () -> vendaController.salvarClienteRapido(nome, contacto),
+                criado -> {
+                    if (criado != null) {
+                        listaClientesNV.add(criado);
+                        if (comboClienteNV != null) {
+                            comboClienteNV.addItem(criado.getNome());
+                            comboClienteNV.setSelectedItem(criado.getNome());
+                        }
+                    }
+                },
+                err -> JOptionPane.showMessageDialog(this, "Erro ao criar cliente: " + err.getMessage(), "Erro",
+                        JOptionPane.ERROR_MESSAGE));
+    }
+
+    private void exibirReciboVendaSelecionada() {
+        int row = tabela.getSelectedRow();
+        if (row < 0 || row >= tabela.getRowCount()) {
+            JOptionPane.showMessageDialog(this, "Selecione uma venda na tabela para visualizar o recibo.", "Aviso",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        try {
+            Long idVenda = Long.parseLong(String.valueOf(tabela.getValueAt(row, 0)));
+            Venda vendaAlvo = (listaVendasEntidades != null) ? listaVendasEntidades.stream()
+                    .filter(v -> idVenda.equals(v.getIdVenda()))
+                    .findFirst().orElse(null) : null;
+            if (vendaAlvo == null) {
+                vendaAlvo = vendaController.buscarPorId(idVenda);
+            }
+            if (vendaAlvo != null) {
+                double tot = vendaAlvo.getTotal() != null ? vendaAlvo.getTotal() : 0.0;
+                exibirDialogoRecibo(vendaAlvo, tot, 0.0);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Erro ao gerar recibo: " + ex.getMessage(), "Erro",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void exibirDialogoRecibo(Venda venda, double valorRecebido, double troco) {
+        if (venda == null)
+            return;
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        StringBuilder sb = new StringBuilder();
+        sb.append("==========================================\n");
+        sb.append("            MERCEARIA KUMBEZA             \n");
+        sb.append("           RECIBO DE PAGAMENTO            \n");
+        sb.append("==========================================\n");
+        sb.append("Venda Nº   : #").append(venda.getIdVenda() != null ? venda.getIdVenda() : "-").append("\n");
+        sb.append("Data/Hora  : ").append(venda.getData() != null ? venda.getData().format(dtf) : "-").append("\n");
+        sb.append("Estado     : ").append(venda.getEstado() != null ? venda.getEstado().name() : "CONCLUIDA")
+                .append("\n");
+        String cliNome = (venda.getCliente() != null && venda.getCliente().getNome() != null)
+                ? venda.getCliente().getNome()
+                : "Consumidor Final";
+        String funcNome = (venda.getFuncionario() != null && venda.getFuncionario().getNome() != null)
+                ? venda.getFuncionario().getNome()
+                : "-";
+        sb.append("Cliente    : ").append(cliNome).append("\n");
+        sb.append("Operador   : ").append(funcNome).append("\n");
+        sb.append("------------------------------------------\n");
+        sb.append(String.format("%-18s %4s %18s\n", "Item", "Qtd", "Subtotal"));
+        sb.append("------------------------------------------\n");
+        double somaDescontos = 0.0;
+        if (venda.getItemVendido() != null) {
+            for (ItemVendido it : venda.getItemVendido()) {
+                if (it == null)
+                    continue;
+                String nomeProd = (it.getProduto() != null && it.getProduto().getNome() != null)
+                        ? it.getProduto().getNome()
+                        : "Item";
+                if (nomeProd.length() > 18) {
+                    nomeProd = nomeProd.substring(0, 18);
+                }
+                int q = it.getQuantidade() != null ? it.getQuantidade() : 1;
+                double p = it.getPreco() != null ? it.getPreco() : 0.0;
+                double d = it.getDesconto() != null ? it.getDesconto() : 0.0;
+                somaDescontos += d;
+                double sub = Math.max(0.0, p * q - d);
+                sb.append(String.format("%-18s %4d %15s MT\n",
+                        nomeProd, q, String.format(Locale.GERMANY, "%,.2f", sub)));
+                if (d > 0) {
+                    sb.append(String.format("  (Desc. item: -%s MT)\n", String.format(Locale.GERMANY, "%,.2f", d)));
+                }
+            }
+        }
+        sb.append("------------------------------------------\n");
+        if (somaDescontos > 0) {
+            sb.append(String.format("Total Descontos : %21s MT\n",
+                    String.format(Locale.GERMANY, "%,.2f", somaDescontos)));
+        }
+        double total = venda.getTotal() != null ? venda.getTotal() : 0.0;
+        sb.append(String.format("TOTAL A PAGAR   : %21s MT\n", String.format(Locale.GERMANY, "%,.2f", total)));
+        sb.append(String.format("Valor Recebido  : %21s MT\n", String.format(Locale.GERMANY, "%,.2f", valorRecebido)));
+        sb.append(String.format("Troco           : %21s MT\n", String.format(Locale.GERMANY, "%,.2f", troco)));
+        sb.append("==========================================\n");
+        sb.append("       Obrigado pela sua preferência!     \n");
+        sb.append("==========================================\n");
+
+        JTextArea area = new JTextArea(sb.toString(), 22, 44);
+        area.setEditable(false);
+        area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        area.setBackground(UiStyle.SURFACE);
+        area.setForeground(UiStyle.TEXT);
+        area.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        JScrollPane scroll = new JScrollPane(area);
+        Object[] opcoes = { "Exportar Fatura PDF", "Imprimir Recibo", "Fechar" };
+        int esc = JOptionPane.showOptionDialog(
+                this,
+                scroll,
+                "Fatura / Recibo da Venda #" + (venda.getIdVenda() != null ? venda.getIdVenda() : ""),
+                JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                opcoes,
+                opcoes[0]);
+        if (esc == JOptionPane.YES_OPTION) {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("Guardar Fatura / Recibo em PDF");
+            String nomeArq = "fatura_venda_" + (venda.getIdVenda() != null ? venda.getIdVenda() : "nova") + ".pdf";
+            chooser.setSelectedFile(new File(nomeArq));
+            if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+                File dest = chooser.getSelectedFile();
+                if (!dest.getName().toLowerCase().endsWith(".pdf")) {
+                    dest = new File(dest.getParentFile(), dest.getName() + ".pdf");
+                }
+                try {
+                    GeradorFaturaPDF.gerar(venda, valorRecebido, troco, dest);
+                    JOptionPane.showMessageDialog(this, "Fatura PDF gerada com sucesso em:\n" + dest.getAbsolutePath(),
+                            "Fatura PDF", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception exPdf) {
+                    JOptionPane.showMessageDialog(this, "Erro ao gerar Fatura PDF: " + exPdf.getMessage(), "Erro",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } else if (esc == JOptionPane.NO_OPTION) {
+            try {
+                area.print();
+            } catch (Exception exPrint) {
+                JOptionPane.showMessageDialog(this, "Não foi possível imprimir: " + exPrint.getMessage(), "Impressão",
+                        JOptionPane.WARNING_MESSAGE);
+            }
+        }
+    }
+
     private void recalcularTroco() {
-        if (labelTrocoVendaNV == null || labelTotalVendaNV == null) return;
+        if (labelTrocoVendaNV == null || labelTotalVendaNV == null)
+            return;
         double total = 0;
         try {
             String t = labelTotalVendaNV.getText().replace("MT", "").replace(".", "").replace(",", ".").trim();
             total = Double.parseDouble(t);
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException ignored) {
+        }
         double recebido = 0;
         try {
             recebido = Double.parseDouble(campoValorRecebidoNV.getText().trim().replace(",", "."));
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException ignored) {
+        }
         double troco = recebido - total;
         labelTrocoVendaNV.setText(String.format(java.util.Locale.GERMANY, "%,.2f MT", Math.max(troco, 0)));
     }
 
-    /** Estiliza um JComboBox para o tema escuro do projecto. */
     private void estilizarCombo(JComboBox<?> combo) {
-        combo.setBackground(UiStyle.INPUT_BG);
-        combo.setForeground(UiStyle.TEXT);
-        combo.setFont(UiStyle.fonte(13, Font.PLAIN));
+        UiStyle.estilizarComboBox(combo);
         combo.setMaximumSize(new Dimension(Integer.MAX_VALUE, ALTURA_INPUT));
         combo.setPreferredSize(new Dimension(100, ALTURA_INPUT));
     }
 
-    /** Estiliza um JTextField para o tema escuro do projecto. */
     private void estilizarCampo(JTextField campo) {
-        campo.setBackground(UiStyle.INPUT_BG);
-        campo.setForeground(UiStyle.TEXT);
-        campo.setFont(UiStyle.fonte(13, Font.PLAIN));
-        campo.setCaretColor(UiStyle.TEXT);
-        campo.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(UiStyle.INPUT_BORDER, 1, true),
-            new EmptyBorder(0, 10, 0, 10)
-        ));
+        UiStyle.estilizarCampo(campo);
         campo.setPreferredSize(new Dimension(60, ALTURA_INPUT));
         campo.setMaximumSize(new Dimension(Integer.MAX_VALUE, ALTURA_INPUT));
     }
 
-    /**
-     * Card lateral "Anular venda" fiel a ConfirmarAnular.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardConfirmarAnular() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
-        // <b>Anular venda</b>
         JLabel titulo = new JLabel("Anular venda");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -890,7 +1525,6 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;gap:10px;align-items:center"><span>Venda 1042</span><span class="ch y">PENDENTE</span></div>
         JPanel linhaVenda = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         linhaVenda.setOpaque(false);
 
@@ -907,7 +1541,6 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         card.add(linhaVenda);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Cliente</span><div class="in">Ana Macie</div></div>
         CaixaValorArredondada caixaCliente = new CaixaValorArredondada("Ana Macie");
         labelValorClienteAnular = caixaCliente.getLabelValor();
         JPanel blocoCliente = criarCampoComLabel("Cliente", caixaCliente);
@@ -915,7 +1548,6 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         card.add(blocoCliente);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Total</span><div class="in">1.250,00 MT</div></div>
         CaixaValorArredondada caixaTotal = new CaixaValorArredondada("1.250,00 MT");
         labelValorTotalAnular = caixaTotal.getLabelValor();
         JPanel blocoTotal = criarCampoComLabel("Total", caixaTotal);
@@ -923,25 +1555,27 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         card.add(blocoTotal);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="k" style="line-height:1.5">Só vendas PENDENTES podem ser anuladas. Esta acção não pode ser desfeita.</div>
-        JLabel aviso = new JLabel("<html><div style='width:370px;line-height:1.5'>Só vendas PENDENTES podem ser anuladas. Esta acção não pode ser desfeita.</div></html>");
+        JLabel aviso = new JLabel(
+                "<html><div style='width:370px;line-height:1.5'>Só vendas PENDENTES podem ser anuladas. Esta acção não pode ser desfeita.</div></html>");
         aviso.setFont(UiStyle.fonte(12, Font.PLAIN));
         aviso.setForeground(UiStyle.MUTED);
-        fixarLargura(aviso, larguraInterna, 22);
+        fixarLargura(aviso, larguraInterna, 42);
         card.add(aviso);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt" style="background:#FF9C9C;color:#4F1B1B">Confirmar anulação</span><span class="bt s">Cancelar</span></div>
         JPanel barraBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraBotoes.setOpaque(false);
 
         BotaoToolbarArredondado botaoConfirmar = new BotaoToolbarArredondado(
-                "Confirmar anulação", UiStyle.ERROR_TEXT, UiStyle.ERROR_BG, null, RAIO_COMPONENTE, true
-        );
+                "Confirmar anulação", UiStyle.ERROR_TEXT, UiStyle.ERROR_BG, null, RAIO_COMPONENTE, true);
+        botaoConfirmar.markDestrutivoPreenchido();
+        botaoConfirmar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CANCEL, 15, () -> UiStyle.ERROR_TEXT));
+        botaoConfirmar.setIconTextGap(6);
         botaoConfirmar.addActionListener(e -> {
             int row = tabela.getSelectedRow();
             if (row < 0 || row >= tabela.getRowCount()) {
-                JOptionPane.showMessageDialog(this, "Selecione uma venda na tabela para anular.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Selecione uma venda na tabela para anular.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
             String idStr = String.valueOf(tabela.getValueAt(row, 0));
@@ -961,27 +1595,30 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                 final Venda fVenda = vendaAlvo;
                 Utilizador operador = SessaoUtilizador.getUtilizador();
                 AsyncTask.executar(
-                    () -> {
-                        vendaBO.anular(fVenda, operador);
-                        return null;
-                    },
-                    sucesso -> {
-                        JOptionPane.showMessageDialog(this, "Venda #" + idVenda + " anulada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
-                        recarregarDados();
-                    },
-                    erro -> {
-                        JOptionPane.showMessageDialog(this, "Erro ao anular venda: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
-                    }
-                );
+                        () -> {
+                            vendaController.anular(fVenda, operador);
+                            return null;
+                        },
+                        sucesso -> {
+                            JOptionPane.showMessageDialog(this, "Venda #" + idVenda + " anulada com sucesso!",
+                                    "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                            recarregarDados();
+                        },
+                        erro -> {
+                            JOptionPane.showMessageDialog(this, "Erro ao anular venda: " + erro.getMessage(), "Erro",
+                                    JOptionPane.ERROR_MESSAGE);
+                        });
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Identificador de venda inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Identificador de venda inválido.", "Erro",
+                        JOptionPane.ERROR_MESSAGE);
             }
         });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
-                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
-        );
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botaoCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelar.setIconTextGap(6);
         botaoCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         barraBotoes.add(botaoConfirmar);
@@ -1033,9 +1670,6 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         chipEstadoAnular.atualizarEstado(estado, bgChip, fgChip);
     }
 
-    /**
-     * Card lateral "Reembolsar item" com campos reais ligados ao banco de dados.
-     */
     private JPanel criarCardReembolsarItem() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
@@ -1074,23 +1708,16 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         linhaQtd.setOpaque(false);
         campoQtdReembolso = new JTextField("1");
         estilizarCampo(campoQtdReembolso);
-        labelJaReembolsadoNV = new JLabel("0");
-        labelJaReembolsadoNV.setFont(UiStyle.fonte(13, Font.PLAIN));
-        labelJaReembolsadoNV.setForeground(UiStyle.MUTED);
-        JPanel caixaJaReemb = new JPanel(new BorderLayout());
-        caixaJaReemb.setBackground(UiStyle.INPUT_BG);
-        caixaJaReemb.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(UiStyle.INPUT_BORDER, 1, true),
-            new EmptyBorder(0, 10, 0, 10)
-        ));
-        caixaJaReemb.add(labelJaReembolsadoNV, BorderLayout.CENTER);
+        CaixaValorArredondada caixaJaReemb = new CaixaValorArredondada("0");
+        labelJaReembolsadoNV = caixaJaReemb.getLabelValor();
         linhaQtd.add(criarCampoComLabel("Quantidade", campoQtdReembolso));
-        linhaQtd.add(criarCampoComLabel("Ja reembolsado", caixaJaReemb));
+        linhaQtd.add(criarCampoComLabel("Já reembolsado", caixaJaReemb));
         fixarLargura(linhaQtd, larguraInterna, 60);
         card.add(linhaQtd);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
         campoMotivoReembolso = new JTextField();
+        campoMotivoReembolso.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Motivo do reembolso");
         campoMotivoReembolso.setToolTipText("Descreva o motivo do reembolso");
         estilizarCampo(campoMotivoReembolso);
         JPanel blocoMotivo = criarCampoComLabel("Motivo *", campoMotivoReembolso);
@@ -1102,8 +1729,7 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         linhaValorReembolso.setOpaque(false);
         linhaValorReembolso.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, UiStyle.BORDER),
-                new EmptyBorder(12, 0, 6, 0)
-        ));
+                new EmptyBorder(12, 0, 6, 0)));
         JLabel labelTextoReembolso = new JLabel("Valor a reembolsar");
         labelTextoReembolso.setFont(UiStyle.fonte(14, Font.PLAIN));
         labelTextoReembolso.setForeground(UiStyle.TEXT);
@@ -1119,76 +1745,89 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         JPanel barraBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraBotoes.setOpaque(false);
         BotaoToolbarArredondado botaoConfirmar = new BotaoToolbarArredondado(
-                "Confirmar reembolso", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
-        );
+                "Confirmar reembolso", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true);
+        botaoConfirmar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoConfirmar.setIconTextGap(6);
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
-                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
-        );
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botaoCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelar.setIconTextGap(6);
         barraBotoes.add(botaoConfirmar);
         barraBotoes.add(Box.createRigidArea(new Dimension(10, 0)));
         barraBotoes.add(botaoCancelar);
         fixarLargura(barraBotoes, larguraInterna, 38);
         card.add(barraBotoes);
 
-        // Listener: recalcular valor ao mudar qtd ou item
         DocumentListener recalc = new DocumentListener() {
-            @Override public void insertUpdate(DocumentEvent e) { recalcularValorReembolso(); }
-            @Override public void removeUpdate(DocumentEvent e) { recalcularValorReembolso(); }
-            @Override public void changedUpdate(DocumentEvent e) { recalcularValorReembolso(); }
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                recalcularValorReembolso();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                recalcularValorReembolso();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                recalcularValorReembolso();
+            }
         };
         campoQtdReembolso.getDocument().addDocumentListener(recalc);
         comboItemReembolso.addItemListener(e -> {
-            if (e.getStateChange() == ItemEvent.SELECTED) recalcularValorReembolso();
+            if (e.getStateChange() == ItemEvent.SELECTED)
+                recalcularValorReembolso();
         });
 
         botaoConfirmar.addActionListener(e -> {
             int itemIdx = comboItemReembolso.getSelectedIndex();
             if (itemIdx < 0 || itemIdx >= itensVendaSelecionada.size()) {
-                JOptionPane.showMessageDialog(this, "Selecione um item para reembolsar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Selecione um item para reembolsar.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
             int qtd;
             try {
                 qtd = Integer.parseInt(campoQtdReembolso.getText().trim());
-                if (qtd <= 0) throw new NumberFormatException();
+                if (qtd <= 0)
+                    throw new NumberFormatException();
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Quantidade invalida.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Quantidade inválida.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             String motivo = campoMotivoReembolso.getText().trim();
             if (motivo.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Informe o motivo do reembolso.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Informe o motivo do reembolso.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
             Utilizador user = SessaoUtilizador.getUtilizador();
             if (user == null || user.getFuncionario() == null) {
-                JOptionPane.showMessageDialog(this, "Sessao invalida.", "Erro", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Sessão inválida.", "Erro", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             ItemVendido itemAlvo = itensVendaSelecionada.get(itemIdx);
             Funcionario func = user.getFuncionario();
             botaoConfirmar.setEnabled(false);
-            EstoqueBO estoqueBO = new EstoqueBO();
             final int qtdFinal = qtd;
             AsyncTask.executar(
-                () -> {
-                    Reembolso r = reembolsoBO.criarEGuardar(itemAlvo, qtdFinal, motivo, func);
-                    if (itemAlvo.getProduto() != null && itemAlvo.getProduto().getIdProduto() != null) {
-                        estoqueBO.reporEstoque(itemAlvo.getProduto().getIdProduto(), qtdFinal);
-                    }
-                    return r;
-                },
-                res -> {
-                    JOptionPane.showMessageDialog(this, "Reembolso processado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
-                    recarregarDados();
-                    botaoConfirmar.setEnabled(true);
-                },
-                erro -> {
-                    JOptionPane.showMessageDialog(this, "Erro ao processar reembolso: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
-                    botaoConfirmar.setEnabled(true);
-                }
-            );
+                    () -> {
+                        return vendaController.processarReembolso(itemAlvo, qtdFinal, motivo, func);
+                    },
+                    res -> {
+                        JOptionPane.showMessageDialog(this, "Reembolso processado com sucesso!", "Sucesso",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        campoMotivoReembolso.setText("");
+                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                        recarregarDados();
+                        botaoConfirmar.setEnabled(true);
+                    },
+                    erro -> {
+                        JOptionPane.showMessageDialog(this, "Erro ao processar reembolso: " + erro.getMessage(), "Erro",
+                                JOptionPane.ERROR_MESSAGE);
+                        botaoConfirmar.setEnabled(true);
+                    });
         });
         botaoCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
@@ -1200,19 +1839,39 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /** Recalcula o valor de reembolso com base no item e quantidade seleccionados. */
     private void recalcularValorReembolso() {
-        if (labelValorReembolsoNV == null) return;
+        if (labelValorReembolsoNV == null)
+            return;
         int itemIdx = comboItemReembolso != null ? comboItemReembolso.getSelectedIndex() : -1;
         if (itemIdx < 0 || itemIdx >= itensVendaSelecionada.size()) {
             labelValorReembolsoNV.setText("0,00 MT");
+            if (labelJaReembolsadoNV != null)
+                labelJaReembolsadoNV.setText("0");
             return;
         }
         ItemVendido item = itensVendaSelecionada.get(itemIdx);
+        int jaReembolsado = 0;
+        if (item.getReembolso() != null) {
+            for (Reembolso r : item.getReembolso()) {
+                if (r != null && r.getQuantidade() != null) {
+                    jaReembolsado += r.getQuantidade();
+                }
+            }
+        }
+        if (labelJaReembolsadoNV != null) {
+            labelJaReembolsadoNV.setText(String.valueOf(jaReembolsado));
+        }
         int qtd = 0;
-        try { qtd = Integer.parseInt(campoQtdReembolso.getText().trim()); } catch (NumberFormatException ignored) {}
+        try {
+            qtd = Integer.parseInt(campoQtdReembolso.getText().trim());
+        } catch (NumberFormatException ignored) {
+        }
         double preco = item.getPreco() != null ? item.getPreco() : 0;
+        double desconto = item.getDesconto() != null ? item.getDesconto() : 0;
         double valor = preco * qtd;
+        if (item.getQuantidade() != null && item.getQuantidade() > 0) {
+            valor -= (desconto / item.getQuantidade()) * qtd;
+        }
         labelValorReembolsoNV.setText(String.format(java.util.Locale.GERMANY, "%,.2f MT", Math.max(valor, 0)));
     }
 
@@ -1246,13 +1905,12 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         }
         chipEstadoReembolso.atualizarEstado(estado, bgChip, fgChip);
 
-        // Carregar itens da venda seleccionada para o combo
         if (listaVendasEntidades != null) {
             try {
                 Long idVenda = Long.parseLong(id);
                 Venda vendaSel = listaVendasEntidades.stream()
-                    .filter(v -> v.getIdVenda() != null && v.getIdVenda().equals(idVenda))
-                    .findFirst().orElse(null);
+                        .filter(v -> v.getIdVenda() != null && v.getIdVenda().equals(idVenda))
+                        .findFirst().orElse(null);
                 if (vendaSel != null && vendaSel.getItemVendido() != null) {
                     itensVendaSelecionada = new ArrayList<>(vendaSel.getItemVendido());
                 } else {
@@ -1267,15 +1925,22 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             comboItemReembolso.removeAllItems();
             for (ItemVendido it : itensVendaSelecionada) {
                 String nome = (it.getProduto() != null && it.getProduto().getNome() != null)
-                    ? it.getProduto().getNome() : "Item #" + it.getIdItem();
+                        ? it.getProduto().getNome()
+                        : "Item #" + it.getIdItem();
                 comboItemReembolso.addItem(nome + " (x" + it.getQuantidade() + ")");
             }
         }
-        if (labelJaReembolsadoNV != null) labelJaReembolsadoNV.setText("0");
+        if (labelJaReembolsadoNV != null)
+            labelJaReembolsadoNV.setText("0");
         recalcularValorReembolso();
     }
 
     private JPanel criarCampoComLabel(String textoLabel, JComponent campo) {
+        if (campo instanceof javax.swing.text.JTextComponent
+                && campo.getClientProperty(FlatClientProperties.PLACEHOLDER_TEXT) == null) {
+            String dica = textoLabel.replaceAll("\\(.*?\\)", "").replace("*", "").trim().toLowerCase();
+            campo.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Introduzir " + dica);
+        }
         JPanel painel = new JPanel();
         painel.setOpaque(false);
         painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
@@ -1300,8 +1965,11 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     private JPanel criarMiniTabelaItens(int larguraInterna) {
         modeloItensVenda = new DefaultTableModel(new Object[0][], COLUNAS_ITENS) {
             private static final long serialVersionUID = 1L;
+
             @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
 
         JTable miniTabela = new JTable(modeloItensVenda);
@@ -1331,7 +1999,6 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         miniTabela.getColumnModel().getColumn(2).setPreferredWidth(130);
         miniTabela.getColumnModel().getColumn(3).setPreferredWidth(34);
 
-        // Remover item ao clicar em ✕
         miniTabela.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -1347,10 +2014,14 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
 
         JPanel container = new JPanel(new BorderLayout());
         container.setOpaque(false);
-        container.add(header, BorderLayout.NORTH);
-        container.add(miniTabela, BorderLayout.CENTER);
+        JScrollPane scrollMini = new JScrollPane(miniTabela);
+        scrollMini.setBorder(BorderFactory.createEmptyBorder());
+        scrollMini.setOpaque(false);
+        scrollMini.getViewport().setOpaque(false);
+        scrollMini.getViewport().setBackground(UiStyle.SURFACE);
+        container.add(scrollMini, BorderLayout.CENTER);
 
-        fixarLargura(container, larguraInterna, 29 * 4); // altura para ~3 linhas + header
+        fixarLargura(container, larguraInterna, 29 * 4);
         return container;
     }
 
@@ -1365,16 +2036,19 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     private void atualizarTabelaFiltrada() {
         String termoId = campoBuscaId.getTextoReal().trim().toLowerCase();
         boolean lateralAberto = modoLateral != ModoPainelLateral.NENHUM;
-        List<Object[]> fonteDados = (dadosVendasCarregados != null) ? dadosVendasCarregados : Arrays.asList(DADOS_INICIAIS);
+        List<Object[]> fonteDados = (dadosVendasCarregados != null) ? dadosVendasCarregados : new ArrayList<>();
         List<Object[]> filtrados = new ArrayList<>();
         for (Object[] linha : fonteDados) {
             String id = String.valueOf(linha[0]).toLowerCase();
             String estado = String.valueOf(linha[3]);
-            boolean combinaEstado = "Todos".equalsIgnoreCase(estadoFiltro) || estado.equalsIgnoreCase(estadoFiltro);
+            String filtroNormalizado = estadoFiltro.replace("Í", "I").replace("í", "i");
+            String estadoNormalizado = estado.replace("Í", "I").replace("í", "i");
+            boolean combinaEstado = "Todos".equalsIgnoreCase(estadoFiltro)
+                    || estadoNormalizado.equalsIgnoreCase(filtroNormalizado);
             boolean combinaId = termoId.isEmpty() || id.contains(termoId);
             if (combinaEstado && combinaId) {
                 if (lateralAberto) {
-                    filtrados.add(new Object[] {linha[0], linha[1], linha[2], linha[3], linha[4]});
+                    filtrados.add(new Object[] { linha[0], linha[1], linha[2], linha[3], linha[4] });
                 } else {
                     filtrados.add(linha);
                 }
@@ -1387,9 +2061,6 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * .mt th { padding:6px 8px; font-size:12px; color:#A3ADC2; font-weight:600; border-bottom:1px solid #2A3040 }
-     */
     private static final class RenderizadorMiniCabecalho extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1404,15 +2075,11 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             label.setFont(UiStyle.fonteSemiBold(12));
             label.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.BORDER),
-                    new EmptyBorder(6, 8, 6, 8)
-            ));
+                    new EmptyBorder(6, 8, 6, 8)));
             return label;
         }
     }
 
-    /**
-     * .mt td { padding:6px 8px; font-size:12px; border-bottom:1px solid #242B3B }
-     */
     private static final class RenderizadorMiniCelula extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1427,15 +2094,11 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             label.setFont(UiStyle.fonte(12, Font.PLAIN));
             label.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.TABLE_ROW_BORDER),
-                    new EmptyBorder(6, 8, 6, 8)
-            ));
+                    new EmptyBorder(6, 8, 6, 8)));
             return label;
         }
     }
 
-    /**
-     * Caixa de campo estilo .in usada no formulário de Nova Venda.
-     */
     private static final class CaixaValorArredondada extends JPanel {
         private static final long serialVersionUID = 1L;
 
@@ -1472,12 +2135,13 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                 int w = getWidth();
                 int h = getHeight();
                 int arco = RAIO_COMPONENTE * 2;
-                g2.setColor(corFundo);
+                g2.setColor(UiStyle.INPUT_BG);
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
                 if (corBorda != null) {
-                    g2.setColor(corBorda);
+                    g2.setColor(UiStyle.INPUT_BORDER);
                     g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
                 }
+                labelValor.setForeground(UiStyle.MUTED);
             } finally {
                 g2.dispose();
             }
@@ -1485,9 +2149,6 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * th { text-align:left; color:#A3ADC2; font-weight:600; padding:11px 14px; border-bottom:1px solid #2A3040 }
-     */
     private static final class RenderizadorCabecalho extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1502,15 +2163,11 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             label.setFont(UiStyle.fonteSemiBold(13));
             label.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.BORDER),
-                    new EmptyBorder(11, 14, 11, 14)
-            ));
+                    new EmptyBorder(11, 14, 11, 14)));
             return label;
         }
     }
 
-    /**
-     * td { padding:11px 14px; border-bottom:1px solid #242B3B }
-     */
     private static final class RenderizadorCelulaTexto extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1526,20 +2183,11 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             label.setFont(UiStyle.fonte(13, Font.PLAIN));
             label.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.TABLE_ROW_BORDER),
-                    new EmptyBorder(11, 14, 11, 14)
-            ));
+                    new EmptyBorder(11, 14, 11, 14)));
             return label;
         }
     }
 
-    /**
-     * Renderiza os chips da coluna Estado:
-     * .ch { padding:3px 10px; border-radius:99px; font-size:12px; font-weight:600 }
-     * .y { background:#4A3A0F; color:#FFD36B } -> PENDENTE
-     * .g { background:#12402A; color:#7FE3A8 } -> CONCLUÍDA
-     * .r { background:#4F1B1B; color:#FF9C9C } -> ANULADA
-     * .b { background:#17345E; color:#9CC4FF } -> REEMBOLSADA
-     */
     private static final class RenderizadorCelulaEstado extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1569,8 +2217,7 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             container.setBackground(isSelected ? UiStyle.TABLE_SELECTION_BG : UiStyle.SURFACE);
             container.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.TABLE_ROW_BORDER),
-                    new EmptyBorder(8, 14, 8, 14)
-            ));
+                    new EmptyBorder(8, 14, 8, 14)));
             container.add(new ChipEstado(texto, bgChip, fgChip));
             return container;
         }
@@ -1600,11 +2247,28 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
 
         @Override
         protected void paintComponent(Graphics g) {
+            String txt = getText() != null ? getText().trim() : "";
+            Color bgDinamico = corFundo;
+            Color fgDinamico = getForeground();
+            if ("PENDENTE".equalsIgnoreCase(txt)) {
+                bgDinamico = UiStyle.CHIP_YELLOW_BG;
+                fgDinamico = UiStyle.CHIP_YELLOW_FG;
+            } else if ("CONCLUÍDA".equalsIgnoreCase(txt) || "CONCLUIDA".equalsIgnoreCase(txt)) {
+                bgDinamico = UiStyle.CHIP_GREEN_BG;
+                fgDinamico = UiStyle.CHIP_GREEN_FG;
+            } else if ("ANULADA".equalsIgnoreCase(txt)) {
+                bgDinamico = UiStyle.ERROR_BG;
+                fgDinamico = UiStyle.ERROR_TEXT;
+            } else if (!txt.isEmpty()) {
+                bgDinamico = UiStyle.CHIP_BLUE_BG;
+                fgDinamico = UiStyle.CHIP_BLUE_FG;
+            }
+            setForeground(fgDinamico);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int h = getHeight();
-                g2.setColor(corFundo);
+                g2.setColor(bgDinamico);
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), h, h, h));
             } finally {
                 g2.dispose();
@@ -1613,9 +2277,6 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Seletor estilo .in ("Estado: Todos ▾").
-     */
     private static final class BotaoSeletorEstado extends JButton {
         private static final long serialVersionUID = 1L;
 
@@ -1630,7 +2291,12 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             setContentAreaFilled(false);
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setBorder(new EmptyBorder(0, 12, 0, 12));
+            setBorder(new EmptyBorder(0, 12, 0, 28));
+        }
+
+        @Override
+        public String getText() {
+            return UiStyle.removerMarcadorSeta(super.getText());
         }
 
         @Override
@@ -1645,16 +2311,14 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
                 g2.setColor(UiStyle.INPUT_BORDER);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
+                super.paintComponent(g);
+                UiStyle.desenharChevronExpansivel(g2, this, getForeground());
             } finally {
                 g2.dispose();
             }
-            super.paintComponent(g);
         }
     }
 
-    /**
-     * Campo de texto estilo .in ("Buscar por ID").
-     */
     private static final class CampoBuscaArredondado extends JTextField {
         private static final long serialVersionUID = 1L;
 
@@ -1728,15 +2392,13 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Botão da toolbar (.bt / .bt.s / .bt.d) com padding 9px 16px, altura 38px e border-radius 8px.
-     */
     private static final class BotaoToolbarArredondado extends JButton {
         private static final long serialVersionUID = 1L;
 
         private Color corFundo;
         private Color corBorda;
         private boolean preencherFundo;
+        private boolean destrutivoPreenchido;
         private final int raio;
 
         BotaoToolbarArredondado(
@@ -1760,8 +2422,17 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setBorder(new EmptyBorder(9, 16, 9, 16));
-            Dimension pref = getPreferredSize();
-            setPreferredSize(new Dimension(pref.width, ALTURA_INPUT));
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            Dimension d = super.getPreferredSize();
+            return new Dimension(d.width, ALTURA_INPUT);
+        }
+
+        @Override
+        public Dimension getMinimumSize() {
+            return getPreferredSize();
         }
 
         void configurarEstilo(Color novoFundo, Color novoTexto, Color novaBorda, boolean preencher) {
@@ -1772,6 +2443,10 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             repaint();
         }
 
+        void markDestrutivoPreenchido() {
+            this.destrutivoPreenchido = true;
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
@@ -1780,27 +2455,40 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
+                boolean ehPrimario = UiStyle.ACCENT.equals(corFundo);
 
-                if (preencherFundo && corFundo != null) {
-                    Color atual = corFundo;
+                if (destrutivoPreenchido) {
+                    Color baseBg = UiStyle.ERROR_BG;
+                    setForeground(UiStyle.ERROR_TEXT);
+                    Color atual = getModel().isPressed() ? baseBg.darker() : baseBg;
+                    g2.setColor(atual);
+                    g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
+                    g2.setColor(UiStyle.DANGER_BORDER);
+                    g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
+                } else if (preencherFundo && corFundo != null) {
+                    Color baseBg = ehPrimario ? UiStyle.ACCENT : UiStyle.SECONDARY_BG;
+                    setForeground(ehPrimario ? UiStyle.ACCENT_TEXT : UiStyle.TEXT);
+                    Color atual = baseBg;
                     if (getModel().isPressed()) {
-                        atual = corFundo.darker();
+                        atual = baseBg.darker();
                     } else if (getModel().isRollover()) {
                         atual = new Color(
-                                Math.min(255, corFundo.getRed() + 10),
-                                Math.min(255, corFundo.getGreen() + 10),
-                                Math.min(255, corFundo.getBlue() + 10)
-                        );
+                                Math.min(255, baseBg.getRed() + 10),
+                                Math.min(255, baseBg.getGreen() + 10),
+                                Math.min(255, baseBg.getBlue() + 10));
                     }
                     g2.setColor(atual);
                     g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
-                } else if (getModel().isRollover()) {
-                    g2.setColor(new Color(0x4F, 0x1B, 0x1B, 90));
-                    g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
+                } else {
+                    setForeground(UiStyle.DANGER_TEXT);
+                    if (getModel().isRollover()) {
+                        g2.setColor(new Color(0x4F, 0x1B, 0x1B, 40));
+                        g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
+                    }
                 }
 
-                if (corBorda != null) {
-                    g2.setColor(corBorda);
+                if (!destrutivoPreenchido && corBorda != null) {
+                    g2.setColor(preencherFundo ? UiStyle.INPUT_BORDER : UiStyle.DANGER_BORDER);
                     g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
                 }
             } finally {
@@ -1810,9 +2498,6 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Card da tabela com padding:0, background #1B2030, border 1px #2A3040 e border-radius 14px.
-     */
     private static final class PainelCardTabela extends JPanel {
         private static final long serialVersionUID = 1L;
 
@@ -1829,13 +2514,17 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
 
         @Override
         protected void paintComponent(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                super.paintComponent(g);
+                return;
+            }
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
-                g2.setColor(corFundo);
+                g2.setColor(UiStyle.SURFACE);
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
             } finally {
                 g2.dispose();
@@ -1844,14 +2533,35 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         }
 
         @Override
+        protected void paintChildren(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                super.paintChildren(g);
+                return;
+            }
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                int arco = raio * 2;
+                Shape clip = new RoundRectangle2D.Float(1, 1, Math.max(0, getWidth() - 2), Math.max(0, getHeight() - 2),
+                        arco, arco);
+                g2.clip(clip);
+                super.paintChildren(g2);
+            } finally {
+                g2.dispose();
+            }
+        }
+
+        @Override
         protected void paintBorder(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                return;
+            }
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
-                g2.setColor(corBorda);
+                g2.setColor(UiStyle.BORDER);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
             } finally {
                 g2.dispose();
@@ -1865,64 +2575,60 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        // Carregar vendas para a tabela principal
         AsyncTask.executar(
-            () -> vendaBO.listarTodos(),
-            vendas -> {
-                this.listaVendasEntidades = vendas;
-                if (vendas != null && !vendas.isEmpty()) {
+                () -> vendaController.listarTodos(),
+                vendas -> {
+                    this.listaVendasEntidades = vendas != null ? vendas : new ArrayList<>();
                     List<Object[]> linhas = new ArrayList<>();
-                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                    for (Venda v : vendas) {
-                        String idStr = String.valueOf(v.getIdVenda());
-                        String dataStr = v.getData() != null ? v.getData().format(dtf) : "";
-                        String totalStr = String.format(Locale.GERMANY, "%,.2f MT", v.getTotal() != null ? v.getTotal() : 0.0);
-                        String estadoStr = v.getEstado() != null ? v.getEstado().name() : "PENDENTE";
-                        String cliStr = (v.getCliente() != null && v.getCliente().getNome() != null)
-                                ? v.getCliente().getNome() : "Consumidor";
-                        String funcStr = (v.getFuncionario() != null && v.getFuncionario().getNome() != null)
-                                ? v.getFuncionario().getNome() : "";
-                        linhas.add(new Object[] {idStr, dataStr, totalStr, estadoStr, cliStr, funcStr});
+                    if (vendas != null) {
+                        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                        for (Venda v : vendas) {
+                            String idStr = String.valueOf(v.getIdVenda());
+                            String dataStr = v.getData() != null ? v.getData().format(dtf) : "";
+                            String totalStr = String.format(Locale.GERMANY, "%,.2f MT",
+                                    v.getTotal() != null ? v.getTotal() : 0.0);
+                            String estadoStr = v.getEstado() != null ? v.getEstado().name() : "PENDENTE";
+                            String cliStr = (v.getCliente() != null && v.getCliente().getNome() != null)
+                                    ? v.getCliente().getNome()
+                                    : "Consumidor";
+                            String funcStr = (v.getFuncionario() != null && v.getFuncionario().getNome() != null)
+                                    ? v.getFuncionario().getNome()
+                                    : "";
+                            String itensStr = String.valueOf(v.contarItens());
+                            linhas.add(new Object[] { idStr, dataStr, totalStr, estadoStr, cliStr, funcStr, itensStr });
+                        }
                     }
                     this.dadosVendasCarregados = linhas;
-                }
-                atualizarTabelaFiltrada();
-            },
-            erro -> {
-                atualizarTabelaFiltrada();
-            }
-        );
-        // Carregar clientes para o combo de Nova Venda
+                    atualizarTabelaFiltrada();
+                },
+                erro -> {
+                    this.listaVendasEntidades = new ArrayList<>();
+                    this.dadosVendasCarregados = new ArrayList<>();
+                    atualizarTabelaFiltrada();
+                });
         AsyncTask.executar(
-            () -> new model.bo.ClienteBO().listarTodos(),
-            clientes -> {
-                this.listaClientesNV = clientes != null ? clientes : new ArrayList<>();
-                if (comboClienteNV != null) {
-                    comboClienteNV.removeAllItems();
-                    comboClienteNV.addItem("Consumidor (sem cadastro)");
-                    for (model.vo.Cliente c : listaClientesNV) {
-                        comboClienteNV.addItem(c.getNome());
+                () -> vendaController.listarClientes(),
+                clientes -> {
+                    this.listaClientesNV = clientes != null ? clientes : new ArrayList<>();
+                    if (comboClienteNV != null) {
+                        comboClienteNV.removeAllItems();
+                        comboClienteNV.addItem("Consumidor Final");
+                        for (model.vo.Cliente c : listaClientesNV) {
+                            comboClienteNV.addItem(c.getNome());
+                        }
+                        comboClienteNV.setSelectedIndex(0);
                     }
-                }
-            },
-            erro -> {}
-        );
-        // Carregar produtos para o combo de Nova Venda
+                },
+                erro -> {
+                });
         AsyncTask.executar(
-            () -> new model.bo.ProdutoBO().listarTodos(),
-            produtos -> {
-                this.listaProdutosNV = produtos != null ? produtos : new ArrayList<>();
-                if (comboProdutoNV != null) {
-                    comboProdutoNV.removeAllItems();
-                    for (model.vo.Produto p : listaProdutosNV) {
-                        String preco = p.getPreco() != null
-                            ? String.format(Locale.GERMANY, "%,.2f MT", p.getPreco()) : "";
-                        comboProdutoNV.addItem(p.getNome() + " (" + preco + ")");
-                    }
-                }
-            },
-            erro -> {}
-        );
+                () -> vendaController.listarProdutos(),
+                produtos -> {
+                    this.listaProdutosNV = produtos != null ? produtos : new ArrayList<>();
+                    filtrarComboProdutosNV();
+                },
+                erro -> {
+                });
     }
 
     @Override
@@ -1942,13 +2648,9 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     @Override
     public void aplicarTema() {
         setBackground(UiStyle.BACKGROUND);
-        if (tabela != null) {
-            tabela.setBackground(UiStyle.SURFACE);
-            tabela.setForeground(UiStyle.TEXT);
-            tabela.setGridColor(UiStyle.TABLE_ROW_BORDER);
-            tabela.getTableHeader().setBackground(UiStyle.SURFACE);
-            tabela.getTableHeader().setForeground(UiStyle.MUTED);
-        }
-        repaint();
+        UiStyle.atualizarComponentesTema(this);
+        UiStyle.atualizarComponentesTema(cardNovaVenda);
+        UiStyle.atualizarComponentesTema(cardConfirmarAnular);
+        UiStyle.atualizarComponentesTema(cardReembolsarItem);
     }
 }
