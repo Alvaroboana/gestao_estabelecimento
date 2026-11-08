@@ -11,8 +11,12 @@ import java.util.List;
 import infra.ConexaoDB;
 import infra.DBException;
 import infra.JdbcValidation;
+import model.vo.Bairro;
+import model.vo.Cidade;
 import model.vo.Contacto;
+import model.vo.Endereco;
 import model.vo.Fornecedor;
+import model.vo.Produto;
 
 public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
 
@@ -67,6 +71,24 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
                 }
             }
 
+            if (objecto.getEndereco() != null && objecto.getEndereco().getBairro() != null
+                    && objecto.getEndereco().getBairro().getIdBairro() != null) {
+                String sqlEnd = "INSERT INTO endereco (quarteirao, rua, numero_casa, id_bairro, id_pessoa) VALUES (?, ?, ?, ?, ?)";
+                try (PreparedStatement stmtE = conn.prepareStatement(sqlEnd, Statement.RETURN_GENERATED_KEYS)) {
+                    stmtE.setString(1, objecto.getEndereco().getQuarteirao());
+                    stmtE.setString(2, objecto.getEndereco().getRua());
+                    stmtE.setString(3, objecto.getEndereco().getNumeroCasa());
+                    stmtE.setLong(4, objecto.getEndereco().getBairro().getIdBairro());
+                    stmtE.setLong(5, idPessoa);
+                    stmtE.executeUpdate();
+                    try (ResultSet rs = stmtE.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            objecto.getEndereco().setIdEndereco(rs.getLong(1));
+                        }
+                    }
+                }
+            }
+
             conn.commit();
         } catch (SQLException e) {
             DBException failure = new DBException("Erro ao salvar fornecedor.", e);
@@ -90,12 +112,62 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
     @Override
     public void atualizar(Fornecedor objecto) {
         String sql = "UPDATE pessoa SET nome = ? WHERE id_pessoa = (SELECT id_pessoa FROM fornecedor WHERE id_fornecedor = ?)";
-        try (Connection conn = ConexaoDB.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, objecto.getNome());
-            stmt.setLong(2, objecto.getIdFornecedor());
-            stmt.executeUpdate();
+        Connection conn = null;
+        try (Connection resource = ConexaoDB.getConnection()) {
+            conn = resource;
+            conn.setAutoCommit(false);
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, objecto.getNome());
+                stmt.setLong(2, objecto.getIdFornecedor());
+                stmt.executeUpdate();
+            }
+
+            Long idPessoa = objecto.getIdPessoa();
+            if (idPessoa == null) {
+                try (PreparedStatement stP = conn.prepareStatement("SELECT id_pessoa FROM fornecedor WHERE id_fornecedor = ?")) {
+                    stP.setLong(1, objecto.getIdFornecedor());
+                    try (ResultSet rs = stP.executeQuery()) {
+                        if (rs.next()) {
+                            idPessoa = rs.getLong(1);
+                        }
+                    }
+                }
+            }
+            if (idPessoa != null && objecto.getContacto() != null && !objecto.getContacto().isEmpty()) {
+                try (PreparedStatement stDel = conn.prepareStatement("DELETE FROM contacto WHERE id_pessoa = ?")) {
+                    stDel.setLong(1, idPessoa);
+                    stDel.executeUpdate();
+                }
+                try (PreparedStatement stIns = conn.prepareStatement("INSERT INTO contacto (contacto, id_pessoa) VALUES (?, ?)")) {
+                    for (Contacto c : objecto.getContacto()) {
+                        if (c != null && c.getContacto() != null && !c.getContacto().trim().isEmpty()) {
+                            stIns.setString(1, c.getContacto().trim());
+                            stIns.setLong(2, idPessoa);
+                            stIns.executeUpdate();
+                        }
+                    }
+                }
+            }
+            if (idPessoa != null && objecto.getEndereco() != null && objecto.getEndereco().getBairro() != null
+                    && objecto.getEndereco().getBairro().getIdBairro() != null) {
+                try (PreparedStatement stDelE = conn.prepareStatement("DELETE FROM endereco WHERE id_pessoa = ?")) {
+                    stDelE.setLong(1, idPessoa);
+                    stDelE.executeUpdate();
+                }
+                String sqlEnd = "INSERT INTO endereco (quarteirao, rua, numero_casa, id_bairro, id_pessoa) VALUES (?, ?, ?, ?, ?)";
+                try (PreparedStatement stInsE = conn.prepareStatement(sqlEnd)) {
+                    stInsE.setString(1, objecto.getEndereco().getQuarteirao());
+                    stInsE.setString(2, objecto.getEndereco().getRua());
+                    stInsE.setString(3, objecto.getEndereco().getNumeroCasa());
+                    stInsE.setLong(4, objecto.getEndereco().getBairro().getIdBairro());
+                    stInsE.setLong(5, idPessoa);
+                    stInsE.executeUpdate();
+                }
+            }
+            conn.commit();
         } catch (SQLException e) {
+            DBException failure = new DBException("Erro ao atualizar fornecedor: " + e.getMessage(), e);
+            ConexaoDB.rollback(conn, failure);
             throw new DBException("Erro ao atualizar fornecedor: " + e.getMessage(), e);
         }
     }
@@ -116,6 +188,8 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
                 f.setIdPessoa(rs.getLong("id_pessoa"));
                 f.setNome(rs.getString("nome"));
                 carregarContactos(conn, f);
+                carregarEndereco(conn, f);
+                carregarProdutosFornecidos(conn, f);
                 lista.add(f);
             }
         } catch (SQLException e) {
@@ -141,6 +215,8 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
                     f.setIdPessoa(rs.getLong("id_pessoa"));
                     f.setNome(rs.getString("nome"));
                     carregarContactos(conn, f);
+                    carregarEndereco(conn, f);
+                    carregarProdutosFornecidos(conn, f);
                 }
             }
         } catch (SQLException e) {
@@ -168,6 +244,62 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
             }
         } catch (SQLException e) {
             throw new DBException("Erro ao carregar contactos do fornecedor.", e);
+        }
+    }
+
+    private void carregarEndereco(Connection conn, Fornecedor fornecedor) throws SQLException {
+        if (fornecedor == null || fornecedor.getIdPessoa() == null) {
+            return;
+        }
+        String sql = "SELECT e.id_endereco, e.quarteirao, e.rua, e.numero_casa, "
+                + "b.id_bairro, b.nome AS nome_bairro, c.id_cidade, c.nome AS nome_cidade "
+                + "FROM endereco e "
+                + "LEFT JOIN bairro b ON e.id_bairro = b.id_bairro "
+                + "LEFT JOIN cidade c ON b.id_cidade = c.id_cidade "
+                + "WHERE e.id_pessoa = ? LIMIT 1";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, fornecedor.getIdPessoa());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Endereco end = new Endereco();
+                    end.setIdEndereco(rs.getLong("id_endereco"));
+                    end.setQuarteirao(rs.getString("quarteirao"));
+                    end.setRua(rs.getString("rua"));
+                    end.setNumeroCasa(rs.getString("numero_casa"));
+                    Bairro b = new Bairro();
+                    b.setIdBairro(rs.getLong("id_bairro"));
+                    b.setNome(rs.getString("nome_bairro"));
+                    Cidade c = new Cidade();
+                    c.setIdCidade(rs.getLong("id_cidade"));
+                    c.setNome(rs.getString("nome_cidade"));
+                    b.setCidade(c);
+                    end.setBairro(b);
+                    fornecedor.setEndereco(end);
+                }
+            }
+        }
+    }
+
+    private void carregarProdutosFornecidos(Connection conn, Fornecedor fornecedor) throws SQLException {
+        if (fornecedor == null || fornecedor.getIdFornecedor() == null) {
+            return;
+        }
+        String sql = "SELECT p.id_produto, p.nome, p.preco FROM produto p "
+                + "INNER JOIN fornecedor_produto fp ON p.id_produto = fp.id_produto "
+                + "WHERE fp.id_fornecedor = ? ORDER BY p.nome";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, fornecedor.getIdFornecedor());
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<Produto> prods = new ArrayList<Produto>();
+                while (rs.next()) {
+                    Produto p = new Produto();
+                    p.setIdProduto(rs.getLong("id_produto"));
+                    p.setNome(rs.getString("nome"));
+                    p.setPreco(rs.getDouble("preco"));
+                    prods.add(p);
+                }
+                fornecedor.setProduto(prods);
+            }
         }
     }
 

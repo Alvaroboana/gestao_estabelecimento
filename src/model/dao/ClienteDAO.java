@@ -90,12 +90,46 @@ public class ClienteDAO implements GenericoDAO<Cliente, Long> {
     @Override
     public void atualizar(Cliente objecto) {
         String sql = "UPDATE pessoa SET nome = ? WHERE id_pessoa = (SELECT id_pessoa FROM cliente WHERE id_cliente = ?)";
-        try (Connection conn = ConexaoDB.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, objecto.getNome());
-            stmt.setLong(2, objecto.getIdCliente());
-            stmt.executeUpdate();
+        Connection conn = null;
+        try (Connection resource = ConexaoDB.getConnection()) {
+            conn = resource;
+            conn.setAutoCommit(false);
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, objecto.getNome());
+                stmt.setLong(2, objecto.getIdCliente());
+                stmt.executeUpdate();
+            }
+
+            Long idPessoa = objecto.getIdPessoa();
+            if (idPessoa == null) {
+                try (PreparedStatement stP = conn.prepareStatement("SELECT id_pessoa FROM cliente WHERE id_cliente = ?")) {
+                    stP.setLong(1, objecto.getIdCliente());
+                    try (ResultSet rs = stP.executeQuery()) {
+                        if (rs.next()) {
+                            idPessoa = rs.getLong(1);
+                        }
+                    }
+                }
+            }
+            if (idPessoa != null && objecto.getContacto() != null && !objecto.getContacto().isEmpty()) {
+                try (PreparedStatement stDel = conn.prepareStatement("DELETE FROM contacto WHERE id_pessoa = ?")) {
+                    stDel.setLong(1, idPessoa);
+                    stDel.executeUpdate();
+                }
+                try (PreparedStatement stIns = conn.prepareStatement("INSERT INTO contacto (contacto, id_pessoa) VALUES (?, ?)")) {
+                    for (Contacto c : objecto.getContacto()) {
+                        if (c != null && c.getContacto() != null && !c.getContacto().trim().isEmpty()) {
+                            stIns.setString(1, c.getContacto().trim());
+                            stIns.setLong(2, idPessoa);
+                            stIns.executeUpdate();
+                        }
+                    }
+                }
+            }
+            conn.commit();
         } catch (SQLException e) {
+            DBException failure = new DBException("Erro ao atualizar cliente: " + e.getMessage(), e);
+            ConexaoDB.rollback(conn, failure);
             throw new DBException("Erro ao atualizar cliente: " + e.getMessage(), e);
         }
     }

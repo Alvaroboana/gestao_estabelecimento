@@ -11,8 +11,11 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import model.vo.Bairro;
 import model.vo.Cargo;
+import model.vo.Cidade;
 import model.vo.Contacto;
+import model.vo.Endereco;
 import model.vo.EstadoFuncionario;
 import model.vo.Funcionario;
 
@@ -83,6 +86,24 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
                 }
             }
 
+            if (objecto.getEndereco() != null && objecto.getEndereco().getBairro() != null
+                    && objecto.getEndereco().getBairro().getIdBairro() != null) {
+                String sqlEnd = "INSERT INTO endereco (quarteirao, rua, numero_casa, id_bairro, id_pessoa) VALUES (?, ?, ?, ?, ?)";
+                try (PreparedStatement stmtEnd = conn.prepareStatement(sqlEnd, Statement.RETURN_GENERATED_KEYS)) {
+                    stmtEnd.setString(1, objecto.getEndereco().getQuarteirao());
+                    stmtEnd.setString(2, objecto.getEndereco().getRua());
+                    stmtEnd.setString(3, objecto.getEndereco().getNumeroCasa());
+                    stmtEnd.setLong(4, objecto.getEndereco().getBairro().getIdBairro());
+                    stmtEnd.setLong(5, infra.JdbcValidation.requireId(idPessoa, "pessoa.idPessoa"));
+                    stmtEnd.executeUpdate();
+                    try (ResultSet rs = stmtEnd.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            objecto.getEndereco().setIdEndereco(rs.getLong(1));
+                        }
+                    }
+                }
+            }
+
             conn.commit();
         } catch (SQLException e) {
             DBException failure = new DBException("Erro ao salvar funcionario.", e);
@@ -137,6 +158,54 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
                 stmtF.executeUpdate();
             }
 
+            Long idPessoa = objecto.getIdPessoa();
+            if (idPessoa == null) {
+                try (PreparedStatement stP = conn.prepareStatement("SELECT id_pessoa FROM funcionario WHERE id_funcionario = ?")) {
+                    stP.setLong(1, objecto.getIdFuncionario());
+                    try (ResultSet rs = stP.executeQuery()) {
+                        if (rs.next()) {
+                            idPessoa = rs.getLong(1);
+                        }
+                    }
+                }
+            }
+            if (idPessoa != null && objecto.getContacto() != null && !objecto.getContacto().isEmpty()) {
+                try (PreparedStatement stDel = conn.prepareStatement("DELETE FROM contacto WHERE id_pessoa = ?")) {
+                    stDel.setLong(1, idPessoa);
+                    stDel.executeUpdate();
+                }
+                try (PreparedStatement stIns = conn.prepareStatement("INSERT INTO contacto (contacto, id_pessoa) VALUES (?, ?)")) {
+                    for (Contacto c : objecto.getContacto()) {
+                        if (c != null && c.getContacto() != null && !c.getContacto().trim().isEmpty()) {
+                            stIns.setString(1, c.getContacto().trim());
+                            stIns.setLong(2, idPessoa);
+                            stIns.executeUpdate();
+                        }
+                    }
+                }
+            }
+            if (idPessoa != null && objecto.getEndereco() != null && objecto.getEndereco().getBairro() != null
+                    && objecto.getEndereco().getBairro().getIdBairro() != null) {
+                try (PreparedStatement stDelE = conn.prepareStatement("DELETE FROM endereco WHERE id_pessoa = ?")) {
+                    stDelE.setLong(1, idPessoa);
+                    stDelE.executeUpdate();
+                }
+                String sqlEnd = "INSERT INTO endereco (quarteirao, rua, numero_casa, id_bairro, id_pessoa) VALUES (?, ?, ?, ?, ?)";
+                try (PreparedStatement stInsE = conn.prepareStatement(sqlEnd, Statement.RETURN_GENERATED_KEYS)) {
+                    stInsE.setString(1, objecto.getEndereco().getQuarteirao());
+                    stInsE.setString(2, objecto.getEndereco().getRua());
+                    stInsE.setString(3, objecto.getEndereco().getNumeroCasa());
+                    stInsE.setLong(4, objecto.getEndereco().getBairro().getIdBairro());
+                    stInsE.setLong(5, idPessoa);
+                    stInsE.executeUpdate();
+                    try (ResultSet rs = stInsE.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            objecto.getEndereco().setIdEndereco(rs.getLong(1));
+                        }
+                    }
+                }
+            }
+
             conn.commit();
         } catch (SQLException e) {
             DBException failure = new DBException("Erro ao atualizar funcionario.", e);
@@ -160,6 +229,7 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
             while (rs.next()) {
                 Funcionario f = extrairFuncionario(rs);
                 carregarContactos(conn, f);
+                carregarEndereco(conn, f);
                 lista.add(f);
             }
         } catch (SQLException e) {
@@ -184,6 +254,7 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
                 if (rs.next()) {
                     f = extrairFuncionario(rs);
                     carregarContactos(conn, f);
+                    carregarEndereco(conn, f);
                 }
             }
         } catch (SQLException e) {
@@ -242,6 +313,39 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
             }
         } catch (SQLException e) {
             throw new DBException("Erro ao carregar contactos do funcionario.", e);
+        }
+    }
+
+    private void carregarEndereco(Connection conn, Funcionario funcionario) throws SQLException {
+        if (funcionario == null || funcionario.getIdPessoa() == null) {
+            return;
+        }
+        String sql = "SELECT e.id_endereco, e.quarteirao, e.rua, e.numero_casa, "
+                + "b.id_bairro, b.nome AS nome_bairro, c.id_cidade, c.nome AS nome_cidade "
+                + "FROM endereco e "
+                + "LEFT JOIN bairro b ON e.id_bairro = b.id_bairro "
+                + "LEFT JOIN cidade c ON b.id_cidade = c.id_cidade "
+                + "WHERE e.id_pessoa = ? LIMIT 1";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, funcionario.getIdPessoa());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Endereco end = new Endereco();
+                    end.setIdEndereco(rs.getLong("id_endereco"));
+                    end.setQuarteirao(rs.getString("quarteirao"));
+                    end.setRua(rs.getString("rua"));
+                    end.setNumeroCasa(rs.getString("numero_casa"));
+                    Bairro b = new Bairro();
+                    b.setIdBairro(rs.getLong("id_bairro"));
+                    b.setNome(rs.getString("nome_bairro"));
+                    Cidade c = new Cidade();
+                    c.setIdCidade(rs.getLong("id_cidade"));
+                    c.setNome(rs.getString("nome_cidade"));
+                    b.setCidade(c);
+                    end.setBairro(b);
+                    funcionario.setEndereco(end);
+                }
+            }
         }
     }
 

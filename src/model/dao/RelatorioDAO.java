@@ -109,36 +109,114 @@ public class RelatorioDAO {
         indicadores.put("vendasPendentes", 0);
         indicadores.put("estoqueBaixo", 0);
         indicadores.put("lotesAExpirar", 0);
+        indicadores.put("lotesExpirados", 0);
 
         try (Connection conn = ConexaoDB.getConnection()) {
-            // Vendas de hoje
             try (PreparedStatement st = conn.prepareStatement("SELECT COUNT(*) FROM venda WHERE DATE(data) = CURDATE() AND estado != 'ANULADA'")) {
                 try (ResultSet rs = st.executeQuery()) {
                     if (rs.next()) indicadores.put("vendasHoje", rs.getInt(1));
                 }
             }
-            // Vendas pendentes
             try (PreparedStatement st = conn.prepareStatement("SELECT COUNT(*) FROM venda WHERE estado = 'PENDENTE'")) {
                 try (ResultSet rs = st.executeQuery()) {
                     if (rs.next()) indicadores.put("vendasPendentes", rs.getInt(1));
                 }
             }
-            // Estoque baixo
             try (PreparedStatement st = conn.prepareStatement("SELECT COUNT(*) FROM vw_estoque_baixo")) {
                 try (ResultSet rs = st.executeQuery()) {
                     if (rs.next()) indicadores.put("estoqueBaixo", rs.getInt(1));
                 }
             }
-            // Lotes a expirar (7 dias)
-            try (PreparedStatement st = conn.prepareStatement("SELECT COUNT(*) FROM vw_lotes_proximos_validade WHERE dias_para_vencer <= 7 AND dias_para_vencer >= 0")) {
+            try (PreparedStatement st = conn.prepareStatement("SELECT COUNT(*) FROM vw_lotes_proximos_validade WHERE dias_para_validade <= 7 AND dias_para_validade >= 0")) {
                 try (ResultSet rs = st.executeQuery()) {
                     if (rs.next()) indicadores.put("lotesAExpirar", rs.getInt(1));
                 }
             }
+            try (PreparedStatement st = conn.prepareStatement("SELECT COUNT(*) FROM estoque WHERE quantidade > 0 AND data_validade IS NOT NULL AND data_validade < CURRENT_DATE")) {
+                try (ResultSet rs = st.executeQuery()) {
+                    if (rs.next()) indicadores.put("lotesExpirados", rs.getInt(1));
+                }
+            }
         } catch (SQLException e) {
-            // Retorna zeros graciosamente caso a tabela não exista ou o banco esteja offline
         }
         return indicadores;
+    }
+
+    public List<Map<String, Object>> vendasPorFuncionario() {
+        return consultarSemParametros(
+                "SELECT id_funcionario, nome_funcionario, quantidade_vendas, total_vendido "
+                        + "FROM vw_vendas_por_funcionario "
+                        + "ORDER BY total_vendido DESC, nome_funcionario ASC",
+                "vendas por funcionario");
+    }
+
+    public List<Map<String, Object>> resumoVendasDiario() {
+        return consultarSemParametros(
+                "SELECT dia, quantidade_vendas, total_vendido, quantidade_itens "
+                        + "FROM vw_resumo_vendas_diario "
+                        + "ORDER BY dia DESC",
+                "resumo diario de vendas");
+    }
+
+    public List<Map<String, Object>> lotesProximosValidade() {
+        return consultarSemParametros(
+                "SELECT id_estoque, id_produto, nome_produto, quantidade, data_entrada, "
+                        + "data_validade, dias_para_validade, id_funcionario "
+                        + "FROM vw_lotes_proximos_validade "
+                        + "ORDER BY dias_para_validade ASC, id_estoque ASC",
+                "lotes proximos da validade");
+    }
+
+    public List<Map<String, Object>> lotesExpirados() {
+        return consultarSemParametros(
+                "SELECT e.id_estoque, e.id_produto, p.nome AS nome_produto, e.quantidade, "
+                        + "e.data_entrada, e.data_validade, DATEDIFF(e.data_validade, CURRENT_DATE) AS dias_para_validade, "
+                        + "e.id_funcionario, pf.nome AS nome_funcionario "
+                        + "FROM estoque e "
+                        + "INNER JOIN produto p ON p.id_produto = e.id_produto "
+                        + "INNER JOIN funcionario f ON f.id_funcionario = e.id_funcionario "
+                        + "INNER JOIN pessoa pf ON pf.id_pessoa = f.id_pessoa "
+                        + "WHERE e.quantidade > 0 AND e.data_validade IS NOT NULL AND e.data_validade < CURRENT_DATE "
+                        + "ORDER BY e.data_validade ASC",
+                "lotes expirados");
+    }
+
+    public List<Map<String, Object>> resumoVendasPorEstado(LocalDateTime inicio, LocalDateTime fim) {
+        String sql = "SELECT estado, COUNT(*) AS quantidade, COALESCE(SUM(total), 0.0) AS total "
+                + "FROM venda "
+                + "WHERE (? IS NULL OR data >= ?) "
+                + "AND (? IS NULL OR data < ?) "
+                + "GROUP BY estado "
+                + "ORDER BY FIELD(estado, 'PENDENTE', 'CONCLUIDA', 'ANULADA', 'REEMBOLSADA')";
+        try (Connection conn = ConexaoDB.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            setNullableTimestamp(stmt, 1, inicio);
+            setNullableTimestamp(stmt, 2, inicio);
+            setNullableTimestamp(stmt, 3, fim);
+            setNullableTimestamp(stmt, 4, fim);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return mapear(rs);
+            }
+        } catch (SQLException e) {
+            throw new DBException("Erro ao consultar resumo de vendas por estado.", e);
+        }
+    }
+
+    public List<Map<String, Object>> itensPorVenda(Long idVenda) {
+        String sql = "SELECT id_item, id_venda, id_produto, nome_produto, nome_categoria, "
+                + "quantidade, preco, desconto, subtotal "
+                + "FROM vw_itens_vendidos_detalhados "
+                + "WHERE id_venda = ? "
+                + "ORDER BY id_item ASC";
+        try (Connection conn = ConexaoDB.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, idVenda);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return mapear(rs);
+            }
+        } catch (SQLException e) {
+            throw new DBException("Erro ao consultar itens da venda.", e);
+        }
     }
 
     public double obterTotalVendasFuncionarioMes(Long idFuncionario) {
@@ -162,7 +240,6 @@ public class RelatorioDAO {
                 }
             }
         } catch (SQLException e) {
-            // Em caso de falha de conexão, retorna 0.0
         }
         return 0.0;
     }

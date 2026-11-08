@@ -29,7 +29,6 @@ public class ConexaoDB {
                 try (Statement stmt = conn.createStatement()) {
                     stmt.execute("SET @id_utilizador_atual = " + idUtilizador);
                 } catch (SQLException ignore) {
-                    // Trata silenciosamente se a variável de sessão não for suportada
                 }
             }
 
