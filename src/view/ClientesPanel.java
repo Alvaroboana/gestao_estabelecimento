@@ -1,6 +1,9 @@
 package view;
 
 import com.formdev.flatlaf.FlatClientProperties;
+
+import controller.ClienteController;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -11,7 +14,9 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
@@ -39,21 +44,23 @@ import javax.swing.table.JTableHeader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.time.format.DateTimeFormatter;
 
-import model.bo.ClienteBO;
 import model.vo.Cliente;
 import model.vo.Contacto;
+import model.vo.EstadoVenda;
 import model.vo.Perfil;
 import model.vo.Utilizador;
+import model.vo.Venda;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignA;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignC;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignH;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignI;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignP;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignT;
 import util.AsyncTask;
 
-/**
- * Painel Clientes, Novo Cliente, Editar Cliente e Informações do Cliente em Java Swing fiel aos designs HTML:
- * - "ADMIN · Barra superior · Escuro — Clientes" (Clientes.dc.html)
- * - "ADMIN · Barra superior · Escuro — Cliente — novo" (ClienteNovo.dc.html)
- * - "ADMIN · Barra superior · Escuro — Cliente — editar" (ClienteEditar.dc.html)
- * - "ADMIN · Barra superior · Escuro — Cliente — informações" (ClienteInfo.dc.html)
- */
 public class ClientesPanel extends JPanel implements PainelRecarregavel {
     private static final long serialVersionUID = 1L;
 
@@ -74,20 +81,8 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         "ID", "Nome", "Contactos", "Total compras", "Última compra"
     };
 
-    private static final Object[][] DADOS_INICIAIS = {
-        {"1", "Ana Macie", "84 123 4567", "3.350,00 MT", "03/11/2026"},
-        {"2", "João Sitoe", "82 765 4321", "840,00 MT", "03/11/2026"},
-        {"3", "Maria Nhaca", "86 555 0102", "0,00 MT", "02/11/2026"}
-    };
-
     private static final String[] COLUNAS_HISTORICO_VENDAS = {
         "Venda", "Data", "Total", "Estado"
-    };
-
-    private static final Object[][] DADOS_HISTORICO_VENDAS = {
-        {"1042", "03/11/2026", "1.250,00 MT", "PENDENTE"},
-        {"1039", "02/11/2026", "2.100,00 MT", "REEMBOLSADA"},
-        {"1031", "28/10/2026", "1.350,00 MT", "CONCLUÍDA"}
     };
 
     private final DefaultTableModel modeloTabela;
@@ -104,14 +99,14 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
     private final JPanel cardInformacoesCliente;
     private final JPanel wrapperDireita;
 
-    // Controles do formulário "Novo cliente"
     private JTextField campoNomeNovo;
     private JTextField campoContactoNovo;
+    private JTextField campoContactoExtraNovo;
+    private JPanel blocoContactoExtraNovo;
     private JLabel linkAdicionarContactoNovo;
     private JButton botaoGuardarNovo;
     private JButton botaoCancelarNovo;
 
-    // Controles do formulário "Editar cliente"
     private JTextField campoNomeEditar;
     private JTextField campoContacto1Editar;
     private JTextField campoContacto2Editar;
@@ -120,7 +115,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
     private JButton botaoCancelarEditar;
     private JButton botaoEliminarEditar;
 
-    // Controles do card "Informações do cliente"
     private JLabel labelNomeInformacoes;
     private JTextField campoTotalComprasInformacoes;
     private JTextField campoUltimaCompraInformacoes;
@@ -128,10 +122,10 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
     private JButton botaoEditarInformacoes;
     private JButton botaoFecharInformacoes;
 
-    private final ClienteBO clienteBO;
-    private final controller.ClienteController clienteController = new controller.ClienteController();
-    private List<Object[]> dadosClientesCarregados = null;
-    private List<Cliente> listaClientesEntidades = null;
+    private final ClienteController clienteController = new ClienteController();
+    private List<Object[]> dadosClientesCarregados = new ArrayList<>();
+    private List<Cliente> listaClientesEntidades = new ArrayList<>();
+    private List<Venda> listaVendasReais = new ArrayList<>();
 
     private ModoPainelLateral modoLateral;
 
@@ -146,9 +140,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
     public ClientesPanel(ModoPainelLateral modoInicial) {
         UiStyle.instalarTemaEscuro();
         this.modoLateral = modoInicial != null ? modoInicial : ModoPainelLateral.NENHUM;
-        this.clienteBO = new ClienteBO();
 
-        // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
         setBackground(UiStyle.BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
@@ -159,9 +151,11 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         this.botaoHistorico = criarBotaoInformacoesOuHistorico("Histórico");
         this.botaoInformacoes = criarBotaoInformacoesOuHistorico("Informações");
         this.botaoEliminar = criarBotaoToolbar(
-
                 "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false
         );
+        this.botaoEliminar.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        this.botaoEliminar.setIconTextGap(6);
+        this.botaoEliminar.addActionListener(e -> eliminarClienteSelecionado());
         this.containerBotoesToolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         this.containerBotoesToolbar.setOpaque(false);
 
@@ -186,6 +180,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
 
         atualizarTabelaFiltrada();
         definirModoPainelLateral(this.modoLateral);
+        recarregarDados();
     }
 
     public JTable getTabela() {
@@ -335,16 +330,16 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         wrapperDireita.setVisible(visivel);
 
         if (this.modoLateral == ModoPainelLateral.NOVO_CLIENTE) {
-            wrapperDireita.add(cardNovoCliente, BorderLayout.NORTH);
+            wrapperDireita.add(UiStyle.envolverCardLateralComScroll(cardNovoCliente), BorderLayout.CENTER);
             tabela.clearSelection();
         } else if (this.modoLateral == ModoPainelLateral.EDITAR_CLIENTE) {
-            wrapperDireita.add(cardEditarCliente, BorderLayout.NORTH);
+            wrapperDireita.add(UiStyle.envolverCardLateralComScroll(cardEditarCliente), BorderLayout.CENTER);
             if (tabela.getRowCount() > 0 && tabela.getSelectedRow() < 0) {
                 tabela.setRowSelectionInterval(0, 0);
             }
             sincronizarDadosClienteParaEdicao();
         } else if (this.modoLateral == ModoPainelLateral.INFORMACOES_CLIENTE) {
-            wrapperDireita.add(cardInformacoesCliente, BorderLayout.NORTH);
+            wrapperDireita.add(UiStyle.envolverCardLateralComScroll(cardInformacoesCliente), BorderLayout.CENTER);
             if (tabela.getRowCount() > 0 && tabela.getSelectedRow() < 0) {
                 tabela.setRowSelectionInterval(0, 0);
             }
@@ -354,25 +349,12 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         }
 
         atualizarBotoesToolbar();
+        UiStyle.atualizarComponentesTema(wrapperDireita);
         revalidate();
         repaint();
     }
 
     private void atualizarBotoesToolbar() {
-        containerBotoesToolbar.removeAll();
-        containerBotoesToolbar.add(botaoNovoCliente);
-        containerBotoesToolbar.add(Box.createRigidArea(new Dimension(10, 0)));
-        containerBotoesToolbar.add(botaoEditar);
-        containerBotoesToolbar.add(Box.createRigidArea(new Dimension(10, 0)));
-        if (modoLateral != ModoPainelLateral.NENHUM) {
-            // Em ClienteNovo.dc.html: Novo cliente | Editar | Informações | Eliminar
-            containerBotoesToolbar.add(botaoInformacoes);
-        } else {
-            // Em Clientes.dc.html: Novo cliente | Editar | Histórico | Eliminar
-            containerBotoesToolbar.add(botaoHistorico);
-        }
-        containerBotoesToolbar.add(Box.createRigidArea(new Dimension(10, 0)));
-        containerBotoesToolbar.add(botaoEliminar);
     }
 
     private JPanel criarCabecalho() {
@@ -380,21 +362,61 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         cabecalho.setLayout(new BoxLayout(cabecalho, BoxLayout.Y_AXIS));
         cabecalho.setOpaque(false);
 
-        // <h1>Clientes</h1> (h1 { font-size:24px; margin:0 })
         JLabel titulo = new JLabel("Clientes");
         UiStyle.aplicarTexto(titulo, 24, true);
         titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
         cabecalho.add(titulo);
         cabecalho.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        // .tb { display:flex; gap:10px; align-items:center }
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6)) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Dimension getPreferredSize() {
+                int larguraDisp = getWidth();
+                if (larguraDisp <= 0 && getParent() != null) {
+                    larguraDisp = getParent().getWidth();
+                }
+                if (larguraDisp <= 0) {
+                    return super.getPreferredSize();
+                }
+                Insets in = getInsets();
+                int maxW = Math.max(200, larguraDisp - in.left - in.right);
+                int hgap = 8;
+                int vgap = 6;
+                int x = 0;
+                int y = in.top + vgap;
+                int rowH = 0;
+                for (Component c : getComponents()) {
+                    if (!c.isVisible()) {
+                        continue;
+                    }
+                    Dimension d = c.getPreferredSize();
+                    if (x > 0 && x + hgap + d.width > maxW) {
+                        y += rowH + vgap;
+                        x = 0;
+                        rowH = 0;
+                    }
+                    if (x > 0) {
+                        x += hgap;
+                    }
+                    x += d.width;
+                    rowH = Math.max(rowH, d.height);
+                }
+                y += rowH + vgap + in.bottom;
+                return new Dimension(larguraDisp, Math.max(ALTURA_INPUT, y));
+            }
+        };
         toolbar.setOpaque(false);
         toolbar.setAlignmentX(Component.LEFT_ALIGNMENT);
+        toolbar.setBorder(new EmptyBorder(-6, -8, -6, 0));
 
         toolbar.add(campoBuscarCliente);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
-        toolbar.add(containerBotoesToolbar);
+        toolbar.add(botaoNovoCliente);
+        toolbar.add(botaoEditar);
+        toolbar.add(botaoHistorico);
+        toolbar.add(botaoInformacoes);
+        toolbar.add(botaoEliminar);
 
         cabecalho.add(toolbar);
         return cabecalho;
@@ -408,9 +430,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         return linha;
     }
 
-    /**
-     * <span class="in">Buscar por nome</span>
-     */
     private CampoBuscaArredondado criarCampoBuscarCliente() {
         CampoBuscaArredondado campo = new CampoBuscaArredondado("Buscar por nome");
         Dimension dim = new Dimension(LARGURA_MIN_INPUT, ALTURA_INPUT);
@@ -441,22 +460,17 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
             Color fg,
             Color borda,
             boolean preencherFundo) {
-        BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
+        return new BotaoToolbarArredondado(
                 texto, bg, fg, borda, RAIO_COMPONENTE, preencherFundo
         );
-        botao.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"" + texto + "\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
-        return botao;
     }
 
     private JButton criarBotaoNovoCliente() {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 "Novo cliente", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.icone(MaterialDesignA.ACCOUNT_PLUS, 15, UiStyle.ACCENT_TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.NOVO_CLIENTE) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -471,6 +485,8 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 "Editar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PENCIL_OUTLINE, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.EDITAR_CLIENTE) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -485,6 +501,10 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 texto, UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.iconeDinamico(
+                "Histórico".equalsIgnoreCase(texto) ? MaterialDesignH.HISTORY : MaterialDesignI.INFORMATION_OUTLINE,
+                15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.INFORMACOES_CLIENTE) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -537,9 +557,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         return t;
     }
 
-    /**
-     * <div class="card" style="padding:0"><table>...</table></div>
-     */
     private JPanel criarCardTabela() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BorderLayout());
@@ -560,10 +577,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Novo cliente" fiel a ClienteNovo.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardNovoCliente() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD) {
             private static final long serialVersionUID = 1L;
@@ -589,9 +602,8 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
-        // <b>Novo cliente</b>
         JLabel titulo = new JLabel("Novo cliente");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -599,21 +611,24 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Nome * (máx. 100)</span><div class="in" style="min-width:0"></div></div>
         campoNomeNovo = new CampoFormularioArredondado("");
         JPanel blocoNome = criarCampoComLabel("Nome * (máx. 100)", campoNomeNovo);
         fixarLargura(blocoNome, larguraInterna, 60);
         card.add(blocoNome);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Contacto * (máx. 30)</span><div class="in" style="min-width:0"></div></div>
         campoContactoNovo = new CampoFormularioArredondado("");
         JPanel blocoContacto = criarCampoComLabel("Contacto * (máx. 30)", campoContactoNovo);
         fixarLargura(blocoContacto, larguraInterna, 60);
         card.add(blocoContacto);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <span class="k" style="color:#F5B638">+ Adicionar contacto</span>
+        campoContactoExtraNovo = new CampoFormularioArredondado("");
+        blocoContactoExtraNovo = criarCampoComLabel("Contacto 2 (opcional)", campoContactoExtraNovo);
+        fixarLargura(blocoContactoExtraNovo, larguraInterna, 60);
+        blocoContactoExtraNovo.setVisible(false);
+        card.add(blocoContactoExtraNovo);
+
         linkAdicionarContactoNovo = new JLabel("+ Adicionar contacto");
         linkAdicionarContactoNovo.setFont(UiStyle.fonte(12, Font.PLAIN));
         linkAdicionarContactoNovo.setForeground(UiStyle.ACCENT);
@@ -622,18 +637,19 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         linkAdicionarContactoNovo.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                JOptionPane.showMessageDialog(
-                        ClientesPanel.this,
-                        "Por favor, guarde o cliente primeiro. ApÃ³s salvar, selecione-o na tabela para adicionar contactos adicionais.",
-                        "Adicionar Contacto",
-                        JOptionPane.INFORMATION_MESSAGE
-                );
+                boolean visivel = !blocoContactoExtraNovo.isVisible();
+                blocoContactoExtraNovo.setVisible(visivel);
+                linkAdicionarContactoNovo.setText(visivel ? "- Remover 2º contacto" : "+ Adicionar contacto");
+                if (!visivel && campoContactoExtraNovo != null) {
+                    campoContactoExtraNovo.setText("");
+                }
+                card.revalidate();
+                card.repaint();
             }
         });
         card.add(linkAdicionarContactoNovo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt">Guardar</span><span class="bt s">Cancelar</span></div>
         JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -641,6 +657,8 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         botaoGuardarNovo = new BotaoToolbarArredondado(
                 "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarNovo.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoGuardarNovo.setIconTextGap(6);
         botaoGuardarNovo.addActionListener(e -> {
             String nome = (campoNomeNovo != null) ? campoNomeNovo.getText().trim() : "";
             if (nome.isEmpty()) {
@@ -648,17 +666,28 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
                 return;
             }
             String contacto = (campoContactoNovo != null) ? campoContactoNovo.getText().trim() : "";
+            if (contacto.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Informe o contacto principal do cliente.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String contactoExtra = (campoContactoExtraNovo != null && blocoContactoExtraNovo != null && blocoContactoExtraNovo.isVisible())
+                    ? campoContactoExtraNovo.getText().trim() : "";
             Cliente c = new Cliente();
             c.setNome(nome);
-            if (!contacto.isEmpty()) {
-                Contacto cont = new Contacto();
-                cont.setContacto(contacto);
-                c.setContacto(Arrays.asList(cont));
+            List<Contacto> listaCont = new ArrayList<>();
+            Contacto cont = new Contacto();
+            cont.setContacto(contacto);
+            listaCont.add(cont);
+            if (!contactoExtra.isEmpty()) {
+                Contacto cont2 = new Contacto();
+                cont2.setContacto(contactoExtra);
+                listaCont.add(cont2);
             }
+            c.setContacto(listaCont);
 
             AsyncTask.executar(
                 () -> {
-                    clienteBO.salvar(c);
+                    clienteController.salvar(c);
                     return null;
                 },
                 sucesso -> {
@@ -666,6 +695,9 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
                     definirModoPainelLateral(ModoPainelLateral.NENHUM);
                     if (campoNomeNovo != null) campoNomeNovo.setText("");
                     if (campoContactoNovo != null) campoContactoNovo.setText("");
+                    if (campoContactoExtraNovo != null) campoContactoExtraNovo.setText("");
+                    if (blocoContactoExtraNovo != null) blocoContactoExtraNovo.setVisible(false);
+                    if (linkAdicionarContactoNovo != null) linkAdicionarContactoNovo.setText("+ Adicionar contacto");
                     recarregarDados();
                 },
                 erro -> {
@@ -676,6 +708,8 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         botaoCancelarNovo = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botaoCancelarNovo.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelarNovo.setIconTextGap(6);
         botaoCancelarNovo.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         acoes.add(botaoGuardarNovo);
@@ -686,10 +720,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Editar cliente" fiel a ClienteEditar.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardEditarCliente() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD) {
             private static final long serialVersionUID = 1L;
@@ -715,9 +745,8 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
-        // <b>Editar cliente</b>
         JLabel titulo = new JLabel("Editar cliente");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -725,28 +754,24 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Nome * (máx. 100)</span><div class="in" style="min-width:0">Ana Macie</div></div>
-        campoNomeEditar = new CampoFormularioArredondado("Ana Macie");
+        campoNomeEditar = new CampoFormularioArredondado("");
         JPanel blocoNome = criarCampoComLabel("Nome * (máx. 100)", campoNomeEditar);
         fixarLargura(blocoNome, larguraInterna, 60);
         card.add(blocoNome);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Contacto 1 *</span><div class="in" style="min-width:0">84 123 4567</div></div>
-        campoContacto1Editar = new CampoFormularioArredondado("84 123 4567");
+        campoContacto1Editar = new CampoFormularioArredondado("");
         JPanel blocoContacto1 = criarCampoComLabel("Contacto 1 *", campoContacto1Editar);
         fixarLargura(blocoContacto1, larguraInterna, 60);
         card.add(blocoContacto1);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Contacto 2</span><div class="in" style="min-width:0">82 000 1234</div></div>
-        campoContacto2Editar = new CampoFormularioArredondado("82 000 1234");
+        campoContacto2Editar = new CampoFormularioArredondado("");
         JPanel blocoContacto2 = criarCampoComLabel("Contacto 2", campoContacto2Editar);
         fixarLargura(blocoContacto2, larguraInterna, 60);
         card.add(blocoContacto2);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <span class="k" style="color:#F5B638">+ Adicionar contacto</span>
         linkAdicionarContactoEditar = new JLabel("+ Adicionar contacto");
         linkAdicionarContactoEditar.setFont(UiStyle.fonte(12, Font.PLAIN));
         linkAdicionarContactoEditar.setForeground(UiStyle.ACCENT);
@@ -785,21 +810,23 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
                         );
                     }
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(ClientesPanel.this, "Identificador de cliente invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(ClientesPanel.this, "Identificador de cliente inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
         card.add(linkAdicionarContactoEditar);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt">Guardar alterações</span><span class="bt s">Cancelar</span><span class="bt d">Eliminar</span></div>
         JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         botaoGuardarAlteracoesEditar = new BotaoToolbarArredondado(
-                "Guardar alteraÃ§Ãµes", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarAlteracoesEditar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoGuardarAlteracoesEditar.setIconTextGap(5);
+        botaoGuardarAlteracoesEditar.setBorder(new EmptyBorder(9, 10, 9, 10));
         botaoGuardarAlteracoesEditar.addActionListener(e -> {
             int row = tabela.getSelectedRow();
             if (row < 0 || row >= tabela.getRowCount()) {
@@ -823,11 +850,21 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
                 }
                 c.setNome(nome);
                 String c1 = (campoContacto1Editar != null) ? campoContacto1Editar.getText().trim() : "";
+                if (c1.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Informe o contacto principal do cliente.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                String c2 = (campoContacto2Editar != null) ? campoContacto2Editar.getText().trim() : "";
                 List<Contacto> listaCont = new ArrayList<>();
                 if (!c1.isEmpty()) {
                     Contacto cont1 = new Contacto();
                     cont1.setContacto(c1);
                     listaCont.add(cont1);
+                }
+                if (!c2.isEmpty()) {
+                    Contacto cont2 = new Contacto();
+                    cont2.setContacto(c2);
+                    listaCont.add(cont2);
                 }
                 c.setContacto(listaCont);
 
@@ -835,7 +872,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
                 botaoGuardarAlteracoesEditar.setEnabled(false);
                 AsyncTask.executar(
                     () -> {
-                        clienteBO.atualizar(fCli);
+                        clienteController.atualizar(fCli);
                         return true;
                     },
                     res -> {
@@ -850,33 +887,35 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
                     }
                 );
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Identificador de cliente invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Identificador de cliente inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
             }
         });
 
         botaoCancelarEditar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botaoCancelarEditar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelarEditar.setIconTextGap(5);
+        botaoCancelarEditar.setBorder(new EmptyBorder(9, 10, 9, 10));
         botaoCancelarEditar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         botaoEliminarEditar = new BotaoToolbarArredondado(
                 "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        botaoEliminarEditar.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        botaoEliminarEditar.setIconTextGap(5);
+        botaoEliminarEditar.setBorder(new EmptyBorder(9, 10, 9, 10));
         botaoEliminarEditar.addActionListener(e -> eliminarClienteSelecionado());
         acoes.add(botaoGuardarAlteracoesEditar);
-        acoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
         acoes.add(botaoCancelarEditar);
-        acoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
         acoes.add(botaoEliminarEditar);
         card.add(acoes);
 
         return card;
     }
 
-    /**
-     * Card lateral "Informações do cliente" fiel a ClienteInfo.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardInformacoesCliente() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD) {
             private static final long serialVersionUID = 1L;
@@ -902,9 +941,8 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
-        // <b>Informações do cliente</b>
         JLabel titulo = new JLabel("Informações do cliente");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -912,7 +950,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="font-size:14px;font-weight:600">Ana Macie</div>
         labelNomeInformacoes = new JLabel("Ana Macie");
         labelNomeInformacoes.setFont(UiStyle.fonteSemiBold(14));
         labelNomeInformacoes.setForeground(UiStyle.TEXT);
@@ -920,10 +957,9 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         card.add(labelNomeInformacoes);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="fm">Total de compras (3.350,00 MT) | Última compra (03/11/2026)</div>
-        campoTotalComprasInformacoes = new CampoFormularioArredondado("3.350,00 MT");
+        campoTotalComprasInformacoes = new CampoFormularioArredondado("");
         campoTotalComprasInformacoes.setEditable(false);
-        campoUltimaCompraInformacoes = new CampoFormularioArredondado("03/11/2026");
+        campoUltimaCompraInformacoes = new CampoFormularioArredondado("");
         campoUltimaCompraInformacoes.setEditable(false);
         JPanel linhaResumo = new JPanel(new GridLayout(1, 2, 12, 0));
         linhaResumo.setOpaque(false);
@@ -933,7 +969,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         card.add(linhaResumo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <span class="k">Histórico de vendas</span>
         JLabel labelHistorico = new JLabel("Histórico de vendas");
         labelHistorico.setFont(UiStyle.fonte(12, Font.PLAIN));
         labelHistorico.setForeground(UiStyle.MUTED);
@@ -941,18 +976,20 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         card.add(labelHistorico);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="mt"><table>...</table></div>
         tabelaHistoricoVendasInformacoes = criarMiniTabelaHistoricoVendas();
         JPanel tabelaWrapper = new JPanel(new BorderLayout());
         tabelaWrapper.setOpaque(false);
-        tabelaWrapper.add(tabelaHistoricoVendasInformacoes.getTableHeader(), BorderLayout.NORTH);
-        tabelaWrapper.add(tabelaHistoricoVendasInformacoes, BorderLayout.CENTER);
-        int alturaTabela = 29 + (DADOS_HISTORICO_VENDAS.length * 30);
+        JScrollPane scrollHistorico = new JScrollPane(tabelaHistoricoVendasInformacoes);
+        scrollHistorico.setBorder(BorderFactory.createEmptyBorder());
+        scrollHistorico.setOpaque(false);
+        scrollHistorico.getViewport().setOpaque(false);
+        scrollHistorico.getViewport().setBackground(UiStyle.SURFACE);
+        tabelaWrapper.add(scrollHistorico, BorderLayout.CENTER);
+        int alturaTabela = 29 + (3 * 30);
         fixarLargura(tabelaWrapper, larguraInterna, alturaTabela);
         card.add(tabelaWrapper);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt s">Editar</span><span class="bt s">Fechar</span></div>
         JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -960,11 +997,15 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         botaoEditarInformacoes = new BotaoToolbarArredondado(
                 "Editar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botaoEditarInformacoes.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PENCIL_OUTLINE, 15, () -> UiStyle.TEXT));
+        botaoEditarInformacoes.setIconTextGap(6);
         botaoEditarInformacoes.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.EDITAR_CLIENTE));
 
         botaoFecharInformacoes = new BotaoToolbarArredondado(
                 "Fechar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botaoFecharInformacoes.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoFecharInformacoes.setIconTextGap(6);
         botaoFecharInformacoes.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         acoes.add(botaoEditarInformacoes);
@@ -976,7 +1017,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
     }
 
     private JTable criarMiniTabelaHistoricoVendas() {
-        DefaultTableModel modelo = new DefaultTableModel(DADOS_HISTORICO_VENDAS, COLUNAS_HISTORICO_VENDAS) {
+        DefaultTableModel modelo = new DefaultTableModel(new Object[0][COLUNAS_HISTORICO_VENDAS.length], COLUNAS_HISTORICO_VENDAS) {
             private static final long serialVersionUID = 1L;
 
             @Override
@@ -1023,13 +1064,13 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
             return;
         }
         String idStr = String.valueOf(tabela.getValueAt(row, 0));
-        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar o cliente #" + idStr + "?", "Confirmar ExclusÃ£o", JOptionPane.YES_NO_OPTION);
+        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar o cliente #" + idStr + "?", "Confirmar Exclusão", JOptionPane.YES_NO_OPTION);
         if (opt != JOptionPane.YES_OPTION) return;
         try {
             Long idCliente = Long.parseLong(idStr);
             AsyncTask.executar(
                 () -> {
-                    clienteBO.eliminar(idCliente);
+                    clienteController.eliminar(idCliente);
                     return true;
                 },
                 res -> {
@@ -1042,7 +1083,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
                 }
             );
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Identificador de cliente invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Identificador de cliente inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -1058,6 +1099,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
             return;
         }
 
+        String idStr = String.valueOf(modeloTabela.getValueAt(row, 0));
         String nome = String.valueOf(modeloTabela.getValueAt(row, 1));
         String totalCompras = String.valueOf(modeloTabela.getValueAt(row, 3));
         String ultimaCompra = String.valueOf(modeloTabela.getValueAt(row, 4));
@@ -1065,6 +1107,26 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         labelNomeInformacoes.setText(nome);
         campoTotalComprasInformacoes.setText(totalCompras);
         campoUltimaCompraInformacoes.setText(ultimaCompra);
+
+        if (tabelaHistoricoVendasInformacoes != null) {
+            DefaultTableModel modeloHist = (DefaultTableModel) tabelaHistoricoVendasInformacoes.getModel();
+            modeloHist.setRowCount(0);
+            try {
+                Long idCliente = Long.parseLong(idStr);
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                if (listaVendasReais != null) {
+                    for (Venda v : listaVendasReais) {
+                        if (v.getCliente() != null && idCliente.equals(v.getCliente().getIdCliente())) {
+                            String vId = String.valueOf(v.getIdVenda());
+                            String vData = v.getData() != null ? v.getData().format(dtf) : "-";
+                            String vTot = String.format(Locale.GERMANY, "%,.2f MT", v.getTotal() != null ? v.getTotal() : 0.0);
+                            String vEst = v.getEstado() != null ? v.getEstado().name() : "PENDENTE";
+                            modeloHist.addRow(new Object[] {vId, vData, vTot, vEst});
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
     }
 
     private void sincronizarDadosClienteParaEdicao() {
@@ -1082,19 +1144,36 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         String id = String.valueOf(modeloTabela.getValueAt(row, 0));
         String nome = String.valueOf(modeloTabela.getValueAt(row, 1));
         String contacto1 = String.valueOf(modeloTabela.getValueAt(row, 2));
+        String contacto2 = "";
+
+        try {
+            Long idCli = Long.parseLong(id);
+            if (listaClientesEntidades != null) {
+                for (Cliente c : listaClientesEntidades) {
+                    if (idCli.equals(c.getIdCliente())) {
+                        if (c.getContacto() != null && !c.getContacto().isEmpty()) {
+                            contacto1 = c.getContacto().get(0).getContacto() != null ? c.getContacto().get(0).getContacto() : "";
+                            if (c.getContacto().size() > 1 && c.getContacto().get(1).getContacto() != null) {
+                                contacto2 = c.getContacto().get(1).getContacto();
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
 
         campoNomeEditar.setText(nome);
-        campoContacto1Editar.setText(contacto1);
-        if ("1".equals(id)) {
-            campoContacto2Editar.setText("82 000 1234");
-        } else if ("2".equals(id)) {
-            campoContacto2Editar.setText("84 000 5678");
-        } else {
-            campoContacto2Editar.setText("82 000 9012");
-        }
+        campoContacto1Editar.setText("-".equals(contacto1) ? "" : contacto1);
+        campoContacto2Editar.setText(contacto2);
     }
 
     private JPanel criarCampoComLabel(String textoLabel, JComponent campo) {
+        if (campo instanceof javax.swing.text.JTextComponent
+                && campo.getClientProperty(FlatClientProperties.PLACEHOLDER_TEXT) == null) {
+            String dica = textoLabel.replaceAll("\\(.*?\\)", "").replace("*", "").trim().toLowerCase();
+            campo.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Introduzir " + dica);
+        }
         JPanel bloco = new JPanel(new BorderLayout(0, 6));
         bloco.setOpaque(false);
 
@@ -1122,7 +1201,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
     private void atualizarTabelaFiltrada() {
         String termo = campoBuscarCliente.getTextoReal().trim().toLowerCase();
         modeloTabela.setRowCount(0);
-        List<Object[]> fonteDados = (dadosClientesCarregados != null) ? dadosClientesCarregados : Arrays.asList(DADOS_INICIAIS);
+        List<Object[]> fonteDados = (dadosClientesCarregados != null) ? dadosClientesCarregados : new ArrayList<>();
 
         for (Object[] linha : fonteDados) {
             String nome = String.valueOf(linha[1]).toLowerCase();
@@ -1132,9 +1211,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * th { text-align:left; color:#A3ADC2; font-weight:600; padding:11px 14px; border-bottom:1px solid #2A3040 }
-     */
     private static final class RenderizadorCabecalho extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1155,9 +1231,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * td { padding:11px 14px; border-bottom:1px solid #242B3B }
-     */
     private static final class RenderizadorCelulaTexto extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1179,9 +1252,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * .mt th { padding:6px 8px; font-size:12px; color:#A3ADC2; font-weight:600; border-bottom:1px solid #2A3040 }
-     */
     private static final class RenderizadorMiniCabecalho extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1202,9 +1272,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * .mt td { padding:6px 8px; font-size:12px; border-bottom:1px solid #242B3B }
-     */
     private static final class RenderizadorMiniCelula extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1225,10 +1292,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Renderiza os chips da coluna Estado do histórico de vendas:
-     * PENDENTE (.ch.y), REEMBOLSADA (.ch.b), CONCLUÍDA (.ch.g), ANULADA (.ch.r).
-     */
     private static final class RenderizadorMiniChipEstado extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1293,14 +1356,14 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Campo de texto de formulário estilo .in com min-width:0 (ex: Nome * (máx. 100), Contacto * (máx. 30)).
-     */
     private static final class CampoFormularioArredondado extends JTextField {
         private static final long serialVersionUID = 1L;
 
         CampoFormularioArredondado(String valorInicial) {
-            super(valorInicial);
+            super("");
+            if (valorInicial != null && !valorInicial.isEmpty()) {
+                putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, valorInicial);
+            }
             setOpaque(false);
             setFont(UiStyle.fonte(13, Font.PLAIN));
             setForeground(UiStyle.MUTED);
@@ -1351,52 +1414,22 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Campo de texto estilo .in ("Buscar por nome").
-     */
     private static final class CampoBuscaArredondado extends JTextField {
         private static final long serialVersionUID = 1L;
 
-        private final String placeholder;
-        private boolean exibindoPlaceholder;
-
         CampoBuscaArredondado(String placeholder) {
-            super(placeholder);
-            this.placeholder = placeholder;
-            this.exibindoPlaceholder = true;
+            super("");
             setOpaque(false);
             setFont(UiStyle.fonte(13, Font.PLAIN));
-            setForeground(UiStyle.MUTED);
+            setForeground(UiStyle.TEXT);
             setCaretColor(UiStyle.TEXT);
             setBackground(UiStyle.INPUT_BG);
             setBorder(new EmptyBorder(0, 12, 0, 12));
             putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
-
-            addFocusListener(new FocusAdapter() {
-                @Override
-                public void focusGained(FocusEvent e) {
-                    if (exibindoPlaceholder) {
-                        exibindoPlaceholder = false;
-                        setText("");
-                        setForeground(UiStyle.TEXT);
-                    }
-                    repaint();
-                }
-
-                @Override
-                public void focusLost(FocusEvent e) {
-                    if (getText().trim().isEmpty()) {
-                        exibindoPlaceholder = true;
-                        setText(placeholder);
-                        setForeground(UiStyle.MUTED);
-                    }
-                    repaint();
-                }
-            });
         }
 
         String getTextoReal() {
-            return exibindoPlaceholder ? "" : getText();
+            return getText();
         }
 
         @Override
@@ -1427,9 +1460,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Botão da toolbar (.bt / .bt.s / .bt.d) com padding 9px 16px, altura 38px e border-radius 8px.
-     */
     private static final class BotaoToolbarArredondado extends JButton {
         private static final long serialVersionUID = 1L;
 
@@ -1459,8 +1489,17 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setBorder(new EmptyBorder(9, 16, 9, 16));
-            Dimension pref = getPreferredSize();
-            setPreferredSize(new Dimension(pref.width, ALTURA_INPUT));
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            Dimension d = super.getPreferredSize();
+            return new Dimension(d.width, ALTURA_INPUT);
+        }
+
+        @Override
+        public Dimension getMinimumSize() {
+            return getPreferredSize();
         }
 
         @Override
@@ -1471,27 +1510,33 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
+                boolean ehPrimario = UiStyle.ACCENT.equals(corFundo);
 
                 if (preencherFundo && corFundo != null) {
-                    Color atual = corFundo;
+                    Color baseBg = ehPrimario ? UiStyle.ACCENT : UiStyle.SECONDARY_BG;
+                    setForeground(ehPrimario ? UiStyle.ACCENT_TEXT : UiStyle.TEXT);
+                    Color atual = baseBg;
                     if (getModel().isPressed()) {
-                        atual = corFundo.darker();
+                        atual = baseBg.darker();
                     } else if (getModel().isRollover()) {
                         atual = new Color(
-                                Math.min(255, corFundo.getRed() + 10),
-                                Math.min(255, corFundo.getGreen() + 10),
-                                Math.min(255, corFundo.getBlue() + 10)
+                                Math.min(255, baseBg.getRed() + 10),
+                                Math.min(255, baseBg.getGreen() + 10),
+                                Math.min(255, baseBg.getBlue() + 10)
                         );
                     }
                     g2.setColor(atual);
                     g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
-                } else if (getModel().isRollover()) {
-                    g2.setColor(new Color(0x4F, 0x1B, 0x1B, 90));
-                    g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
+                } else {
+                    setForeground(UiStyle.DANGER_TEXT);
+                    if (getModel().isRollover()) {
+                        g2.setColor(new Color(0x4F, 0x1B, 0x1B, 40));
+                        g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
+                    }
                 }
 
                 if (corBorda != null) {
-                    g2.setColor(corBorda);
+                    g2.setColor(preencherFundo ? UiStyle.INPUT_BORDER : UiStyle.DANGER_BORDER);
                     g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
                 }
             } finally {
@@ -1501,9 +1546,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Card da tabela com padding:0, background #1B2030, border 1px #2A3040 e border-radius 14px.
-     */
     private static class PainelCardTabela extends JPanel {
         private static final long serialVersionUID = 1L;
 
@@ -1520,13 +1562,17 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
 
         @Override
         protected void paintComponent(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                super.paintComponent(g);
+                return;
+            }
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
-                g2.setColor(corFundo);
+                g2.setColor(UiStyle.SURFACE);
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
             } finally {
                 g2.dispose();
@@ -1535,14 +1581,34 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         }
 
         @Override
+        protected void paintChildren(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                super.paintChildren(g);
+                return;
+            }
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                int arco = raio * 2;
+                Shape clip = new RoundRectangle2D.Float(1, 1, Math.max(0, getWidth() - 2), Math.max(0, getHeight() - 2), arco, arco);
+                g2.clip(clip);
+                super.paintChildren(g2);
+            } finally {
+                g2.dispose();
+            }
+        }
+
+        @Override
         protected void paintBorder(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                return;
+            }
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
-                g2.setColor(corBorda);
+                g2.setColor(UiStyle.BORDER);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
             } finally {
                 g2.dispose();
@@ -1557,25 +1623,64 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
     @Override
     public void recarregarDados() {
         AsyncTask.executar(
-            () -> clienteBO.listarTodos(),
-            clientes -> {
-                this.listaClientesEntidades = clientes;
-                if (clientes != null && !clientes.isEmpty()) {
-                    List<Object[]> linhas = new ArrayList<>();
+            () -> {
+                List<Cliente> clientes = clienteController.listarTodos();
+                List<Venda> vendas = new ArrayList<>();
+                try {
+                    vendas = clienteController.listarVendas();
+                } catch (Exception ignored) {}
+                return new Object[] { clientes, vendas };
+            },
+            resultado -> {
+                Object[] arr = (Object[]) resultado;
+                @SuppressWarnings("unchecked")
+                List<Cliente> clientes = (List<Cliente>) arr[0];
+                @SuppressWarnings("unchecked")
+                List<Venda> vendas = (List<Venda>) arr[1];
+                this.listaClientesEntidades = clientes != null ? clientes : new ArrayList<>();
+                this.listaVendasReais = vendas != null ? vendas : new ArrayList<>();
+                List<Object[]> linhas = new ArrayList<>();
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                if (clientes != null) {
                     for (Cliente c : clientes) {
                         String idStr = String.valueOf(c.getIdCliente());
                         String nomeStr = c.getNome() != null ? c.getNome() : "";
-                        String contStr = (c.getContacto() != null && !c.getContacto().isEmpty() && c.getContacto().get(0) != null)
-                                ? c.getContacto().get(0).getContacto() : "-";
-                        String totStr = "0,00 MT";
-                        String ultStr = "-";
+                        String contStr = "-";
+                        if (c.getContacto() != null && !c.getContacto().isEmpty()) {
+                            List<String> nums = new ArrayList<>();
+                            for (Contacto ct : c.getContacto()) {
+                                if (ct != null && ct.getContacto() != null && !ct.getContacto().isBlank()) {
+                                    nums.add(ct.getContacto().trim());
+                                }
+                            }
+                            if (!nums.isEmpty()) {
+                                contStr = String.join(" / ", nums);
+                            }
+                        }
+                        double somaCompras = 0.0;
+                        java.time.LocalDateTime ultimaData = null;
+                        for (Venda v : this.listaVendasReais) {
+                            if (v.getCliente() != null && c.getIdCliente() != null && c.getIdCliente().equals(v.getCliente().getIdCliente())) {
+                                if (v.getEstado() == EstadoVenda.CONCLUIDA && v.getTotal() != null) {
+                                    somaCompras += v.getTotal();
+                                }
+                                if (v.getData() != null && (ultimaData == null || v.getData().isAfter(ultimaData))) {
+                                    ultimaData = v.getData();
+                                }
+                            }
+                        }
+                        String totStr = String.format(Locale.GERMANY, "%,.2f MT", somaCompras);
+                        String ultStr = ultimaData != null ? ultimaData.format(dtf) : "-";
                         linhas.add(new Object[] {idStr, nomeStr, contStr, totStr, ultStr});
                     }
-                    this.dadosClientesCarregados = linhas;
                 }
+                this.dadosClientesCarregados = linhas;
                 atualizarTabelaFiltrada();
             },
             erro -> {
+                this.listaClientesEntidades = new ArrayList<>();
+                this.listaVendasReais = new ArrayList<>();
+                this.dadosClientesCarregados = new ArrayList<>();
                 atualizarTabelaFiltrada();
             }
         );
@@ -1594,13 +1699,9 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
     @Override
     public void aplicarTema() {
         setBackground(UiStyle.BACKGROUND);
-        if (tabela != null) {
-            tabela.setBackground(UiStyle.SURFACE);
-            tabela.setForeground(UiStyle.TEXT);
-            tabela.setGridColor(UiStyle.TABLE_ROW_BORDER);
-            tabela.getTableHeader().setBackground(UiStyle.SURFACE);
-            tabela.getTableHeader().setForeground(UiStyle.MUTED);
-        }
-        repaint();
+        UiStyle.atualizarComponentesTema(this);
+        UiStyle.atualizarComponentesTema(cardNovoCliente);
+        UiStyle.atualizarComponentesTema(cardEditarCliente);
+        UiStyle.atualizarComponentesTema(cardInformacoesCliente);
     }
 }
