@@ -37,7 +37,6 @@ public class TesteReembolsoDAO {
         ItemVendidoDAO itemVendidoDAO = new ItemVendidoDAO();
         ReembolsoDAO reembolsoDAO = new ReembolsoDAO();
 
-        // Dados de apoio
         Cargo cargo = new Cargo();
         cargo.setNome("Cargo Reembolso " + System.currentTimeMillis());
         cargo.setSalarioBase(21000.0);
@@ -84,7 +83,6 @@ public class TesteReembolsoDAO {
         reembolso.setData(LocalDateTime.now());
 
         try {
-            // Cria dados de apoio
             System.out.println("-> Criando entidades de apoio (Cargo, Funcionario, Cliente, Categoria, Produto, Venda, ItemVendido)");
             cargoDAO.salvar(cargo);
             funcionario.setCargo(cargo);
@@ -107,7 +105,6 @@ public class TesteReembolsoDAO {
             reembolso.setItem(item);
             reembolso.setFuncionario(funcionario);
 
-            // 1. Salvar
             System.out.println("-> Salvando reembolso: Qtd " + reembolso.getQuantidade() + " | Valor: " + reembolso.getValor());
             reembolsoDAO.salvar(reembolso);
             if (reembolso.getIdReembolso() != null) {
@@ -117,7 +114,6 @@ public class TesteReembolsoDAO {
                 return;
             }
 
-            // 2. Buscar por ID
             System.out.println("-> Buscando reembolso por ID: " + reembolso.getIdReembolso());
             Reembolso buscado = reembolsoDAO.buscarPorId(reembolso.getIdReembolso());
             if (buscado != null && buscado.getMotivo().equals(reembolso.getMotivo())) {
@@ -132,7 +128,6 @@ public class TesteReembolsoDAO {
                 System.out.println("  [ERRO] Reembolso nao encontrado");
             }
 
-            // 3. Buscar por Item
             System.out.println("-> Buscando reembolsos pelo item ID: " + item.getIdItem());
             List<Reembolso> porItem = reembolsoDAO.buscarPorItem(item.getIdItem());
             if (porItem != null && !porItem.isEmpty()) {
@@ -141,7 +136,6 @@ public class TesteReembolsoDAO {
                 System.out.println("  [ERRO] Nenhum reembolso encontrado para o item");
             }
 
-            // 4. Buscar por Funcionario
             System.out.println("-> Buscando reembolsos pelo funcionario ID: " + funcionario.getIdFuncionario());
             List<Reembolso> porFunc = reembolsoDAO.buscarPorFuncionario(funcionario.getIdFuncionario());
             if (porFunc != null && !porFunc.isEmpty()) {
@@ -150,7 +144,6 @@ public class TesteReembolsoDAO {
                 System.out.println("  [ERRO] Nenhum reembolso encontrado para o funcionario");
             }
 
-            // 5. Atualizar
             System.out.println("-> Atualizando motivo e valor do reembolso");
             reembolso.setMotivo("Produto com defeito - Aprovado com desconto");
             reembolso.setValor(280.0);
@@ -162,7 +155,6 @@ public class TesteReembolsoDAO {
                 System.out.println("  [ERRO] Falha ao atualizar reembolso");
             }
 
-            // 6. Listar
             System.out.println("-> Listando todos os reembolsos");
             List<Reembolso> lista = reembolsoDAO.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -171,7 +163,6 @@ public class TesteReembolsoDAO {
                 System.out.println("  [ERRO] Nenhum reembolso encontrado na listagem");
             }
 
-            // 7. Eliminar
             System.out.println("-> Eliminando reembolso ID: " + reembolso.getIdReembolso());
             reembolsoDAO.eliminar(reembolso.getIdReembolso());
             Reembolso apagado = reembolsoDAO.buscarPorId(reembolso.getIdReembolso());
@@ -181,7 +172,6 @@ public class TesteReembolsoDAO {
                 System.out.println("  [ERRO] Falha ao eliminar reembolso");
             }
 
-            // Limpeza de entidades de apoio
             System.out.println("-> Limpando entidades de apoio (ItemVendido, Venda, Produto, Categoria, Cliente, Funcionario, Cargo)");
             itemVendidoDAO.eliminar(item.getIdItem());
             vendaDAO.eliminar(venda.getIdVenda());

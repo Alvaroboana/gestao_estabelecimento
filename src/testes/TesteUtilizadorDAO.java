@@ -42,14 +42,12 @@ public class TesteUtilizadorDAO {
         utilizador.setPerfil(Perfil.VENDEDOR);
 
         try {
-            // Cria dados de apoio
             System.out.println("-> Criando cargo e funcionario de apoio");
             cargoDAO.salvar(cargo);
             funcionario.setCargo(cargo);
             funcionarioDAO.salvar(funcionario);
             utilizador.setFuncionario(funcionario);
 
-            // 1. Salvar
             System.out.println("-> Salvando utilizador: " + utilizador.getUsername());
             utilizadorDAO.salvar(utilizador);
             if (utilizador.getIdUtilizador() != null) {
@@ -59,7 +57,6 @@ public class TesteUtilizadorDAO {
                 return;
             }
 
-            // 2. Buscar por ID
             System.out.println("-> Buscando utilizador por ID: " + utilizador.getIdUtilizador());
             Utilizador buscado = utilizadorDAO.buscarPorId(utilizador.getIdUtilizador());
             if (buscado != null && buscado.getUsername().equals(utilizador.getUsername())) {
@@ -71,7 +68,6 @@ public class TesteUtilizadorDAO {
                 System.out.println("  [ERRO] Utilizador nao encontrado");
             }
 
-            // 3. Buscar por Username
             System.out.println("-> Buscando utilizador por username: " + utilizador.getUsername());
             Utilizador buscadoPorUser = utilizadorDAO.buscarPorUsername(utilizador.getUsername());
             if (buscadoPorUser != null && buscadoPorUser.getIdUtilizador().equals(utilizador.getIdUtilizador())) {
@@ -80,7 +76,6 @@ public class TesteUtilizadorDAO {
                 System.out.println("  [ERRO] Falha ao buscar utilizador por username");
             }
 
-            // 4. Atualizar
             System.out.println("-> Atualizando perfil e senha do utilizador");
             utilizador.setPerfil(Perfil.GERENTE);
             utilizador.setPasswordHash("novo_hash_senha_456");
@@ -92,7 +87,6 @@ public class TesteUtilizadorDAO {
                 System.out.println("  [ERRO] Falha ao atualizar utilizador");
             }
 
-            // 5. Listar
             System.out.println("-> Listando utilizadores");
             List<Utilizador> lista = utilizadorDAO.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -101,7 +95,6 @@ public class TesteUtilizadorDAO {
                 System.out.println("  [ERRO] Nenhum utilizador encontrado na listagem");
             }
 
-            // 6. Eliminar utilizador
             System.out.println("-> Eliminando utilizador ID: " + utilizador.getIdUtilizador());
             utilizadorDAO.eliminar(utilizador.getIdUtilizador());
             Utilizador apagado = utilizadorDAO.buscarPorId(utilizador.getIdUtilizador());
@@ -111,7 +104,6 @@ public class TesteUtilizadorDAO {
                 System.out.println("  [ERRO] Falha ao eliminar utilizador");
             }
 
-            // Limpeza de entidades de apoio
             System.out.println("-> Limpando funcionario e cargo de apoio");
             funcionarioDAO.eliminar(funcionario.getIdFuncionario());
             cargoDAO.eliminar(cargo.getIdCargo());

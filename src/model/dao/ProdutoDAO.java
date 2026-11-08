@@ -25,33 +25,45 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
 
     @Override
     public void salvar(Produto objecto) {
-        String sql = "INSERT INTO produto (nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = ConexaoDB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, objecto.getNome());
+            String cb = objecto.getCodigoBarras();
+            if (cb != null) {
+                cb = cb.trim();
+                if (cb.isEmpty()) {
+                    cb = null;
+                }
+            }
+            stmt.setString(1, cb);
+            stmt.setString(2, objecto.getNome());
 
             double preco = 0.0;
             if (objecto.getPreco() != null) {
                 preco = objecto.getPreco();
             }
-            stmt.setDouble(2, preco);
-            stmt.setString(3, objecto.getDescricao());
-            stmt.setString(4, objecto.getUnidade());
+            stmt.setDouble(3, preco);
+            stmt.setString(4, objecto.getDescricao());
+            stmt.setString(5, objecto.getUnidade());
 
             String estadoNome = "ATIVO";
             if (objecto.getEstado() != null) {
                 estadoNome = objecto.getEstado().name();
             }
-            stmt.setString(5, estadoNome);
+            stmt.setString(6, estadoNome);
 
             int qtdMin = 0;
             if (objecto.getQuantidadeMinima() != null) {
                 qtdMin = objecto.getQuantidadeMinima();
             }
-            stmt.setInt(6, qtdMin);
+            stmt.setInt(7, qtdMin);
 
+<<<<<<< HEAD
+            stmt.setLong(8, JdbcValidation.requireId(
+=======
             stmt.setLong(7, JdbcValidation.requireId(
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                     objecto.getCategoria() == null ? null : objecto.getCategoria().getIdCategoria(),
                     "categoria.idCategoria"));
 
@@ -89,36 +101,51 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
 
     @Override
     public void atualizar(Produto objecto) {
-        String sql = "UPDATE produto SET nome = ?, preco = ?, descricao = ?, unidade = ?, " +
+        String sql = "UPDATE produto SET codigo_barras = ?, nome = ?, preco = ?, descricao = ?, unidade = ?, " +
                      "estado = ?, quantidade_minima = ?, id_categoria = ? WHERE id_produto = ?";
         try (Connection conn = ConexaoDB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, objecto.getNome());
+            String cb = objecto.getCodigoBarras();
+            if (cb != null) {
+                cb = cb.trim();
+                if (cb.isEmpty()) {
+                    cb = null;
+                }
+            }
+            stmt.setString(1, cb);
+            stmt.setString(2, objecto.getNome());
 
             double preco = 0.0;
             if (objecto.getPreco() != null) {
                 preco = objecto.getPreco();
             }
-            stmt.setDouble(2, preco);
-            stmt.setString(3, objecto.getDescricao());
-            stmt.setString(4, objecto.getUnidade());
+            stmt.setDouble(3, preco);
+            stmt.setString(4, objecto.getDescricao());
+            stmt.setString(5, objecto.getUnidade());
 
             String estadoNome = "ATIVO";
             if (objecto.getEstado() != null) {
                 estadoNome = objecto.getEstado().name();
             }
-            stmt.setString(5, estadoNome);
+            stmt.setString(6, estadoNome);
 
             int qtdMin = 0;
             if (objecto.getQuantidadeMinima() != null) {
                 qtdMin = objecto.getQuantidadeMinima();
             }
-            stmt.setInt(6, qtdMin);
+            stmt.setInt(7, qtdMin);
 
+<<<<<<< HEAD
+            stmt.setLong(8, JdbcValidation.requireId(
+                    objecto.getCategoria() == null ? null : objecto.getCategoria().getIdCategoria(),
+                    "categoria.idCategoria"));
+            stmt.setLong(9, objecto.getIdProduto());
+=======
             stmt.setLong(7, JdbcValidation.requireId(
                     objecto.getCategoria() == null ? null : objecto.getCategoria().getIdCategoria(),
                     "categoria.idCategoria"));
             stmt.setLong(8, objecto.getIdProduto());
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 
             stmt.executeUpdate();
             try (PreparedStatement stCb = conn.prepareStatement(

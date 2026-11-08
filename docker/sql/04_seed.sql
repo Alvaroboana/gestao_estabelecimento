@@ -1,5 +1,8 @@
 USE gestao;
 
+<<<<<<< HEAD
+
+=======
 -- =============================================================================
 -- 04_seed.sql — Carga inicial completa para Estabelecimento Comercial (Moçambique)
 -- Inclui: Cargos, Cidades, Bairros, Categorias, Funcionários, Utilizadores,
@@ -11,6 +14,7 @@ USE gestao;
 -- -----------------------------------------------------------------------------
 -- 1. CARGOS
 -- -----------------------------------------------------------------------------
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO cargo (nome, salario_base)
 SELECT 'Administrador', 35000.00
 WHERE NOT EXISTS (SELECT 1 FROM cargo WHERE nome = 'Administrador');
@@ -39,9 +43,12 @@ INSERT INTO cargo (nome, salario_base)
 SELECT 'Repositor de Stock', 9500.00
 WHERE NOT EXISTS (SELECT 1 FROM cargo WHERE nome = 'Repositor de Stock');
 
+<<<<<<< HEAD
+=======
 -- -----------------------------------------------------------------------------
 -- 2. CIDADES E BAIRROS DE MOÇAMBIQUE
 -- -----------------------------------------------------------------------------
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO cidade (nome)
 SELECT 'Maputo'
 WHERE NOT EXISTS (SELECT 1 FROM cidade WHERE nome = 'Maputo');
@@ -70,7 +77,10 @@ INSERT INTO cidade (nome)
 SELECT 'Nampula'
 WHERE NOT EXISTS (SELECT 1 FROM cidade WHERE nome = 'Nampula');
 
+<<<<<<< HEAD
+=======
 -- Bairros de Maputo
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO bairro (nome, id_cidade)
 SELECT 'Alto Maé', c.id_cidade FROM cidade c WHERE c.nome = 'Maputo'
 AND NOT EXISTS (SELECT 1 FROM bairro WHERE nome = 'Alto Maé');
@@ -123,7 +133,10 @@ INSERT INTO bairro (nome, id_cidade)
 SELECT 'Costa do Sol', c.id_cidade FROM cidade c WHERE c.nome = 'Maputo'
 AND NOT EXISTS (SELECT 1 FROM bairro WHERE nome = 'Costa do Sol');
 
+<<<<<<< HEAD
+=======
 -- Bairros da Matola
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO bairro (nome, id_cidade)
 SELECT 'Matola A', c.id_cidade FROM cidade c WHERE c.nome = 'Matola'
 AND NOT EXISTS (SELECT 1 FROM bairro WHERE nome = 'Matola A');
@@ -160,7 +173,10 @@ INSERT INTO bairro (nome, id_cidade)
 SELECT 'Khongolote', c.id_cidade FROM cidade c WHERE c.nome = 'Matola'
 AND NOT EXISTS (SELECT 1 FROM bairro WHERE nome = 'Khongolote');
 
+<<<<<<< HEAD
+=======
 -- Bairros de Boane, Marracuene, Xai-Xai, Beira e Nampula
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO bairro (nome, id_cidade)
 SELECT 'Boane Sede', c.id_cidade FROM cidade c WHERE c.nome = 'Boane'
 AND NOT EXISTS (SELECT 1 FROM bairro WHERE nome = 'Boane Sede');
@@ -189,9 +205,12 @@ INSERT INTO bairro (nome, id_cidade)
 SELECT 'Muhala Expansão', c.id_cidade FROM cidade c WHERE c.nome = 'Nampula'
 AND NOT EXISTS (SELECT 1 FROM bairro WHERE nome = 'Muhala Expansão');
 
+<<<<<<< HEAD
+=======
 -- -----------------------------------------------------------------------------
 -- 3. CATEGORIAS REAIS DE ESTABELECIMENTO COMERCIAL
 -- -----------------------------------------------------------------------------
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO categoria (nome)
 SELECT 'Cereais e Grãos'
 WHERE NOT EXISTS (SELECT 1 FROM categoria WHERE nome = 'Cereais e Grãos');
@@ -276,6 +295,9 @@ INSERT INTO categoria (nome)
 SELECT 'Mercearia Geral'
 WHERE NOT EXISTS (SELECT 1 FROM categoria WHERE nome = 'Mercearia Geral');
 
+<<<<<<< HEAD
+
+=======
 -- -----------------------------------------------------------------------------
 -- 4. FUNCIONÁRIOS E UTILIZADORES
 -- Senhas padrão:
@@ -289,6 +311,7 @@ WHERE NOT EXISTS (SELECT 1 FROM categoria WHERE nome = 'Mercearia Geral');
 -- -----------------------------------------------------------------------------
 
 -- 4.1 Administrador do Sistema (admin / Admin@123)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Administrador do Sistema'
 WHERE NOT EXISTS (SELECT 1 FROM funcionario f WHERE f.bi = '110100000001A');
@@ -302,7 +325,11 @@ AND NOT EXISTS (SELECT 1 FROM funcionario WHERE bi = '110100000001A')
 LIMIT 1;
 
 INSERT INTO utilizador (username, password_hash, perfil, id_funcionario)
+<<<<<<< HEAD
+SELECT 'admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'ADMIN', f.id_funcionario
+=======
 SELECT 'admin', '$2a$10$.5QKVdvnRy0/eA9jn/hUPuNlhEmkUXqqMliRr60EFtItlPLH5DCIy', 'ADMIN', f.id_funcionario
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 FROM funcionario f
 WHERE f.bi = '110100000001A'
 AND NOT EXISTS (SELECT 1 FROM utilizador WHERE username = 'admin')
@@ -319,6 +346,8 @@ WHERE f.bi = '110100000001A' AND b.nome = 'Alto Maé'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = f.id_pessoa)
 LIMIT 1;
 
+<<<<<<< HEAD
+=======
 /*utilizador (username, password_hash, perfil, id_funcionario)
 SELECT 'carlos', '$2a$10$zNNjTIfe75SpcWffHe9Se.tpBVfitZRicdoUMABvlVCXfdhLLPKoi', 'GERENTE', f.id_funcionario
 FROM funcionario f WHERE f.bi = '110100234512B'
@@ -330,6 +359,7 @@ SELECT '84 412 3456', f.id_pessoa FROM funcionario f WHERE f.bi = '110100234512B
 AND NOT EXISTS (SELECT 1 FROM contacto WHERE id_pessoa = f.id_pessoa);
 
 INSERT INTO ender-- 4.2 Carlos Alberto Mabjaia (carlos / Vendedor@123)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Carlos Alberto Mabjaia'
 WHERE NOT EXISTS (SELECT 1 FROM funcionario f WHERE f.bi = '110100234512B');
@@ -341,14 +371,31 @@ WHERE p.nome = 'Carlos Alberto Mabjaia' AND c.nome = 'Gerente'
 AND NOT EXISTS (SELECT 1 FROM funcionario WHERE bi = '110100234512B')
 LIMIT 1;
 
+<<<<<<< HEAD
+INSERT INTO utilizador (username, password_hash, perfil, id_funcionario)
+SELECT 'carlos', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'GERENTE', f.id_funcionario
+FROM funcionario f WHERE f.bi = '110100234512B'
+AND NOT EXISTS (SELECT 1 FROM utilizador WHERE username = 'carlos')
+LIMIT 1;
+
+INSERT INTO contacto (contacto, id_pessoa)
+SELECT '84 412 3456', f.id_pessoa FROM funcionario f WHERE f.bi = '110100234512B'
+AND NOT EXISTS (SELECT 1 FROM contacto WHERE id_pessoa = f.id_pessoa);
+
+INSERT INTO endereco (quarteirao, rua, numero_casa, id_bairro, id_pessoa)
+=======
 INSERT INTO eco (quarteirao, rua, numero_casa, id_bairro, id_pessoa)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 SELECT 'Q. 12', 'Av. Samora Machel', '88', b.id_bairro, f.id_pessoa
 FROM funcionario f CROSS JOIN bairro b
 WHERE f.bi = '110100234512B' AND b.nome = 'Fomento'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = f.id_pessoa)
 LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- 4.3 Ana Paula Macie — Vendedora (ana / Vendedor@123)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Ana Paula Macie'
 WHERE NOT EXISTS (SELECT 1 FROM funcionario f WHERE f.bi = '110100345623C');
@@ -361,7 +408,11 @@ AND NOT EXISTS (SELECT 1 FROM funcionario WHERE bi = '110100345623C')
 LIMIT 1;
 
 INSERT INTO utilizador (username, password_hash, perfil, id_funcionario)
+<<<<<<< HEAD
+SELECT 'ana', '$2a$10$.5QKVdvnRy0/eA9jn/hUPuNlhEmkUXqqMliRr60EFtItlPLH5DCIy', 'VENDEDOR', f.id_funcionario
+=======
 SELECT 'ana', '$2a$10$zNNjTIfe75SpcWffHe9Se.tpBVfitZRicdoUMABvlVCXfdhLLPKoi', 'VENDEDOR', f.id_funcionario
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 FROM funcionario f WHERE f.bi = '110100345623C'
 AND NOT EXISTS (SELECT 1 FROM utilizador WHERE username = 'ana')
 LIMIT 1;
@@ -377,7 +428,10 @@ WHERE f.bi = '110100345623C' AND b.nome = 'Malhangalene'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = f.id_pessoa)
 LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- 4.4 João Ernesto Sitoe — Vendedor (joao / Vendedor@123)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'João Ernesto Sitoe'
 WHERE NOT EXISTS (SELECT 1 FROM funcionario f WHERE f.bi = '110100456734D');
@@ -390,7 +444,11 @@ AND NOT EXISTS (SELECT 1 FROM funcionario WHERE bi = '110100456734D')
 LIMIT 1;
 
 INSERT INTO utilizador (username, password_hash, perfil, id_funcionario)
+<<<<<<< HEAD
+SELECT 'joao', '$2a$10$.5QKVdvnRy0/eA9jn/hUPuNlhEmkUXqqMliRr60EFtItlPLH5DCIy', 'VENDEDOR', f.id_funcionario
+=======
 SELECT 'joao', '$2a$10$zNNjTIfe75SpcWffHe9Se.tpBVfitZRicdoUMABvlVCXfdhLLPKoi', 'VENDEDOR', f.id_funcionario
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 FROM funcionario f WHERE f.bi = '110100456734D'
 AND NOT EXISTS (SELECT 1 FROM utilizador WHERE username = 'joao')
 LIMIT 1;
@@ -406,7 +464,10 @@ WHERE f.bi = '110100456734D' AND b.nome = 'Matola A'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = f.id_pessoa)
 LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- 4.5 Maria de Lurdes Nhaca — Operadora de Caixa (maria / Vendedor@123)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Maria de Lurdes Nhaca'
 WHERE NOT EXISTS (SELECT 1 FROM funcionario f WHERE f.bi = '110100567845E');
@@ -419,7 +480,11 @@ AND NOT EXISTS (SELECT 1 FROM funcionario WHERE bi = '110100567845E')
 LIMIT 1;
 
 INSERT INTO utilizador (username, password_hash, perfil, id_funcionario)
+<<<<<<< HEAD
+SELECT 'maria', '$2a$10$.5QKVdvnRy0/eA9jn/hUPuNlhEmkUXqqMliRr60EFtItlPLH5DCIy', 'VENDEDOR', f.id_funcionario
+=======
 SELECT 'maria', '$2a$10$zNNjTIfe75SpcWffHe9Se.tpBVfitZRicdoUMABvlVCXfdhLLPKoi', 'VENDEDOR', f.id_funcionario
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 FROM funcionario f WHERE f.bi = '110100567845E'
 AND NOT EXISTS (SELECT 1 FROM utilizador WHERE username = 'maria')
 LIMIT 1;
@@ -435,7 +500,10 @@ WHERE f.bi = '110100567845E' AND b.nome = 'Maxaquene'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = f.id_pessoa)
 LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- 4.6 Paulo Alexandre Cossa — Fiel de Armazém (paulo / Gerente@123)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Paulo Alexandre Cossa'
 WHERE NOT EXISTS (SELECT 1 FROM funcionario f WHERE f.bi = '110100678956F');
@@ -448,16 +516,23 @@ AND NOT EXISTS (SELECT 1 FROM funcionario WHERE bi = '110100678956F')
 LIMIT 1;
 
 INSERT INTO utilizador (username, password_hash, perfil, id_funcionario)
+<<<<<<< HEAD
+SELECT 'paulo', '$2a$10$.5QKVdvnRy0/eA9jn/hUPuNlhEmkUXqqMliRr60EFtItlPLH5DCIy', 'GERENTE', f.id_funcionario
+=======
 SELECT 'paulo', '$2a$10$2LYiO2AZEDMhvqvb2qca/.Yos80Y0UPRezfQZqhn77MoprmAdS2rW', 'GERENTE', f.id_funcionario
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 FROM funcionario f WHERE f.bi = '110100678956F'
 AND NOT EXISTS (SELECT 1 FROM utilizador WHERE username = 'paulo')
 LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Atualiza contas que estavam com o hash inválido antigo ($2a$10$N9qo8u...) para Vendedor@123
 UPDATE utilizador
 SET password_hash = '$2a$10$zNNjTIfe75SpcWffHe9Se.tpBVfitZRicdoUMABvlVCXfdhLLPKoi'
 WHERE password_hash = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
 
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO contacto (contacto, id_pessoa)
 SELECT '84 856 0123', f.id_pessoa FROM funcionario f WHERE f.bi = '110100678956F'
 AND NOT EXISTS (SELECT 1 FROM contacto WHERE id_pessoa = f.id_pessoa);
@@ -469,7 +544,10 @@ WHERE f.bi = '110100678956F' AND b.nome = 'Liberdade'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = f.id_pessoa)
 LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- 4.7 Nélio Fernando Mondlane — Funcionário ATIVO sem conta (disponível para criar conta em Utilizadores)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Nélio Fernando Mondlane'
 WHERE NOT EXISTS (SELECT 1 FROM funcionario f WHERE f.bi = '110100789067G');
@@ -492,7 +570,10 @@ WHERE f.bi = '110100789067G' AND b.nome = 'Zimpeto'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = f.id_pessoa)
 LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- 4.8 Helga Cristina Matsinhe — Funcionária ATIVA sem conta (disponível para criar conta)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Helga Cristina Matsinhe'
 WHERE NOT EXISTS (SELECT 1 FROM funcionario f WHERE f.bi = '110100890178H');
@@ -515,7 +596,10 @@ WHERE f.bi = '110100890178H' AND b.nome = 'Polana Cimento'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = f.id_pessoa)
 LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- 4.9 Celso Tomás Bila — Funcionário SUSPENSO (para testes de filtro de estado)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Celso Tomás Bila'
 WHERE NOT EXISTS (SELECT 1 FROM funcionario f WHERE f.bi = '110100901289I');
@@ -538,9 +622,12 @@ WHERE f.bi = '110100901289I' AND b.nome = 'Machava Sede'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = f.id_pessoa)
 LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- -----------------------------------------------------------------------------
 -- 5. CLIENTES (Consumidor Final + Clientes Frequentes de Maputo e Matola)
 -- -----------------------------------------------------------------------------
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Consumidor Final'
 WHERE NOT EXISTS (
@@ -555,7 +642,10 @@ WHERE LOWER(p.nome) = 'consumidor final'
 AND NOT EXISTS (SELECT 1 FROM cliente cl WHERE cl.id_pessoa = p.id_pessoa)
 LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Cliente 2: Amélia Francisca Tembe
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Amélia Francisca Tembe'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Amélia Francisca Tembe');
@@ -570,7 +660,10 @@ SELECT 'Q. 05', 'Av. Agostinho Neto', '214', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Amélia Francisca Tembe' AND b.nome = 'Central'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Cliente 3: Benedito Samuel Chissano
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Benedito Samuel Chissano'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Benedito Samuel Chissano');
@@ -585,7 +678,10 @@ SELECT 'Q. 11', 'Rua Kwame Nkrumah', '89', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Benedito Samuel Chissano' AND b.nome = 'Sommerschield'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Cliente 4: Cremilde Augusta Machel
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Cremilde Augusta Machel'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Cremilde Augusta Machel');
@@ -600,7 +696,10 @@ SELECT 'Q. 02', 'Av. Mao Tse Tung', '512', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Cremilde Augusta Machel' AND b.nome = 'Coop'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Cliente 5: Dércio Vasco Guambe
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Dércio Vasco Guambe'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Dércio Vasco Guambe');
@@ -615,7 +714,10 @@ SELECT 'Q. 14', 'Rua das Palmeiras', '67', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Dércio Vasco Guambe' AND b.nome = 'Fomento'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Cliente 6: Edna Patrícia Langa
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Edna Patrícia Langa'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Edna Patrícia Langa');
@@ -630,7 +732,10 @@ SELECT 'Q. 07', 'Rua de Bagamoyo', '150', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Edna Patrícia Langa' AND b.nome = 'Baixa'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Cliente 7: Filipe Armando Zandamela
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Filipe Armando Zandamela'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Filipe Armando Zandamela');
@@ -645,7 +750,10 @@ SELECT 'Q. 19', 'Av. Acordos de Lusaka', '930', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Filipe Armando Zandamela' AND b.nome = 'Magoanine'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Cliente 8: Graça Beatriz Uamusse
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Graça Beatriz Uamusse'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Graça Beatriz Uamusse');
@@ -660,7 +768,10 @@ SELECT 'Q. 10', 'Rua da Sé', '41', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Graça Beatriz Uamusse' AND b.nome = 'Matola C'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Cliente 9: Hélder Domingos Mucavele
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Hélder Domingos Mucavele'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Hélder Domingos Mucavele');
@@ -675,7 +786,10 @@ SELECT 'Q. 23', 'Rua Direita do Benfica', '302', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Hélder Domingos Mucavele' AND b.nome = 'Benfica'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Cliente 10: Inês Vitória Nhampossa
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Inês Vitória Nhampossa'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Inês Vitória Nhampossa');
@@ -690,7 +804,10 @@ SELECT 'Q. 01', 'Av. Marginal', '118', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Inês Vitória Nhampossa' AND b.nome = 'Costa do Sol'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Cliente 11: Restaurante Sabores da Baixa
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Restaurante Sabores da Baixa'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Restaurante Sabores da Baixa');
@@ -705,11 +822,15 @@ SELECT 'Q. 02', 'Av. 25 de Setembro', '1420', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Restaurante Sabores da Baixa' AND b.nome = 'Baixa'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+
+=======
 -- -----------------------------------------------------------------------------
 -- 6. FORNECEDORES REAIS DE MOÇAMBIQUE
 -- -----------------------------------------------------------------------------
 
 -- Fornecedor 1: Companhia Industrial da Matola (CIM)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Companhia Industrial da Matola (CIM)'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Companhia Industrial da Matola (CIM)');
@@ -724,7 +845,10 @@ SELECT 'Zona Industrial', 'Av. das Indústrias', '100', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Companhia Industrial da Matola (CIM)' AND b.nome = 'Matola A'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Fornecedor 2: Coca-Cola Sabco Moçambique
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Coca-Cola Sabco Moçambique'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Coca-Cola Sabco Moçambique');
@@ -739,7 +863,10 @@ SELECT 'Zona Industrial', 'Av. da União Africana', '450', b.id_bairro, p.id_pes
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Coca-Cola Sabco Moçambique' AND b.nome = 'Machava Sede'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Fornecedor 3: Tropigália Moçambique Distribuição
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Tropigália Moçambique Distribuição'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Tropigália Moçambique Distribuição');
@@ -754,7 +881,10 @@ SELECT 'Q. 06', 'Av. de Moçambique Km 6', '210', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Tropigália Moçambique Distribuição' AND b.nome = 'Zimpeto'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Fornecedor 4: Maeva Moçambique (Óleos e Sabões)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Maeva Moçambique (Óleos e Sabões)'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Maeva Moçambique (Óleos e Sabões)');
@@ -769,7 +899,10 @@ SELECT 'Q. 15', 'Estrada Nacional N4', '780', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Maeva Moçambique (Óleos e Sabões)' AND b.nome = 'Matola C'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Fornecedor 5: Parmalat / Lactalis Moçambique
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Parmalat Moçambique Lda'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Parmalat Moçambique Lda');
@@ -784,7 +917,10 @@ SELECT 'Q. 03', 'Av. do Trabalho', '1540', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Parmalat Moçambique Lda' AND b.nome = 'Alto Maé'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Fornecedor 6: Águas da Namaacha & Vumba Distribuidora
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Águas da Namaacha & Vumba Distribuidora'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Águas da Namaacha & Vumba Distribuidora');
@@ -799,7 +935,10 @@ SELECT 'Q. 08', 'Estrada de Boane Km 12', '50', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Águas da Namaacha & Vumba Distribuidora' AND b.nome = 'Belo Horizonte'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Fornecedor 7: Avícola Higest & Congelados Sul
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Avícola Higest & Congelados Sul'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Avícola Higest & Congelados Sul');
@@ -814,7 +953,10 @@ SELECT 'Q. 12', 'Estrada Velha da Matola', '320', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Avícola Higest & Congelados Sul' AND b.nome = 'Patrice Lumumba'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Fornecedor 8: Delta Trading & Higiene Moçambique
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Delta Trading & Higiene Moçambique'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Delta Trading & Higiene Moçambique');
@@ -829,7 +971,10 @@ SELECT 'Q. 04', 'Av. Guerra Popular', '890', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Delta Trading & Higiene Moçambique' AND b.nome = 'Baixa'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Fornecedor 9: Açucareira de Xinavane & Maragra
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Açucareira de Xinavane & Maragra'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Açucareira de Xinavane & Maragra');
@@ -844,7 +989,10 @@ SELECT 'Q. 01', 'Estrada Nacional N1', '12', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Açucareira de Xinavane & Maragra' AND b.nome = 'Marracuene Sede'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+=======
 -- Fornecedor 10: Recheio Cash & Carry Maputo
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO pessoa (nome)
 SELECT 'Recheio Cash & Carry Maputo'
 WHERE NOT EXISTS (SELECT 1 FROM pessoa WHERE nome = 'Recheio Cash & Carry Maputo');
@@ -859,11 +1007,15 @@ SELECT 'Q. 09', 'Av. Julius Nyerere', '2100', b.id_bairro, p.id_pessoa
 FROM pessoa p CROSS JOIN bairro b WHERE p.nome = 'Recheio Cash & Carry Maputo' AND b.nome = 'Polana Cimento'
 AND NOT EXISTS (SELECT 1 FROM endereco WHERE id_pessoa = p.id_pessoa) LIMIT 1;
 
+<<<<<<< HEAD
+
+=======
 -- -----------------------------------------------------------------------------
 -- 7. PRODUTOS REAIS DE ESTABELECIMENTO COMERCIAL EM MOÇAMBIQUE (COM EAN-13 E MT)
 -- -----------------------------------------------------------------------------
 
 -- === 7.1 CEREAIS E GRÃOS ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001001000011', 'Arroz Mariana 25kg', 1650.00, 'Saco de arroz branco longo tipo 1 Mariana 25kg', 'Saco', 'ATIVO', 15, c.id_categoria
 FROM categoria c WHERE c.nome = 'Cereais e Grãos' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001001000011');
@@ -904,7 +1056,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001001000103', 'Grão de Bico Seco 500g', 125.00, 'Grão de bico seleccionado pacote 500g', 'Pacote', 'ATIVO', 10, c.id_categoria
 FROM categoria c WHERE c.nome = 'Cereais e Grãos' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001001000103');
 
+<<<<<<< HEAD
+=======
 -- === 7.2 FARINHAS E MASSAS ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001002000010', 'Farinha de Milho Top Score 10kg', 590.00, 'Farinha de milho branca fortificada Top Score 10kg', 'Saco', 'ATIVO', 20, c.id_categoria
 FROM categoria c WHERE c.nome = 'Farinhas e Massas' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001002000010');
@@ -941,7 +1096,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001002000096', 'Flocos de Aveia Jungle Oats 1kg', 220.00, 'Aveia em flocos tradicional Jungle Oats caixa 1kg', 'Caixa', 'ATIVO', 12, c.id_categoria
 FROM categoria c WHERE c.nome = 'Farinhas e Massas' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001002000096');
 
+<<<<<<< HEAD
+=======
 -- === 7.3 ÓLEOS, AZEITES E GORDURAS ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001003000019', 'Óleo Alimentar Maeva 1L', 145.00, 'Óleo vegetal refinado de soja Maeva garrafa 1L', 'Garrafa', 'ATIVO', 30, c.id_categoria
 FROM categoria c WHERE c.nome = 'Óleos, Azeites e Gorduras' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001003000019');
@@ -974,7 +1132,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001003000088', 'Maionese Crosse & Blackwell 750g', 240.00, 'Maionese tradicional cremosa frasco 750g', 'Frasco', 'ATIVO', 12, c.id_categoria
 FROM categoria c WHERE c.nome = 'Óleos, Azeites e Gorduras' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001003000088');
 
+<<<<<<< HEAD
+=======
 -- === 7.4 AÇÚCAR, SAL E CONDIMENTOS ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001004000018', 'Açúcar Castanho Xinavane 1kg', 95.00, 'Açúcar castanho fortificado com vitamina A Xinavane 1kg', 'Pacote', 'ATIVO', 40, c.id_categoria
 FROM categoria c WHERE c.nome = 'Açúcar, Sal e Condimentos' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001004000018');
@@ -1011,7 +1172,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001004000094', 'Ketchup All Gold 700g', 185.00, 'Molho de tomate ketchup All Gold garrafa 700g', 'Garrafa', 'ATIVO', 15, c.id_categoria
 FROM categoria c WHERE c.nome = 'Açúcar, Sal e Condimentos' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001004000094');
 
+<<<<<<< HEAD
+=======
 -- === 7.5 ENLATADOS E CONSERVAS ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001005000017', 'Atum Ralado em Óleo 170g', 95.00, 'Conserva de atum ralado em óleo vegetal lata 170g', 'Lata', 'ATIVO', 30, c.id_categoria
 FROM categoria c WHERE c.nome = 'Enlatados e Conservas' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001005000017');
@@ -1040,7 +1204,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001005000079', 'Creme de Leite Nestlé 290g', 130.00, 'Natas / creme de leite esterilizado Nestlé lata 290g', 'Lata', 'ATIVO', 20, c.id_categoria
 FROM categoria c WHERE c.nome = 'Enlatados e Conservas' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001005000079');
 
+<<<<<<< HEAD
+=======
 -- === 7.6 LACTICÍNIOS ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001006000016', 'Leite UHT Meio Gordo Parmalat 1L', 110.00, 'Leite ultrapasteurizado meio gordo Parmalat pacote 1L', 'Litro', 'ATIVO', 40, c.id_categoria
 FROM categoria c WHERE c.nome = 'Lacticínios' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001006000016');
@@ -1073,7 +1240,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001006000085', 'Queijo Flamengo Fatiado 250g', 245.00, 'Queijo flamengo fatiado para sandes embalagem 250g', 'Pacote', 'ATIVO', 12, c.id_categoria
 FROM categoria c WHERE c.nome = 'Lacticínios' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001006000085');
 
+<<<<<<< HEAD
+=======
 -- === 7.7 ÁGUAS, SUMOS E REFRIGERANTES / BEBIDAS ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001007000015', 'Água Mineral da Namaacha 1.5L', 45.00, 'Água mineral natural sem gás Namaacha garrafa 1.5L', 'Garrafa', 'ATIVO', 60, c.id_categoria
 FROM categoria c WHERE c.nome = 'Águas, Sumos e Refrigerantes' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001007000015');
@@ -1130,7 +1300,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001007000145', 'Sumo Concentrado Mazoe Laranja 2L', 230.00, 'Concentrado de laranja para diluir Mazoe Orange Crush 2L', 'Garrafa', 'ATIVO', 15, c.id_categoria
 FROM categoria c WHERE c.nome = 'Águas, Sumos e Refrigerantes' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001007000145');
 
+<<<<<<< HEAD
+=======
 -- === 7.8 CAFÉ, CHÁ E ACHOCOLATADOS ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001008000014', 'Café Solúvel Nescafé Clássico 200g', 380.00, 'Café solúvel 100% puro Nescafé frasco de vidro 200g', 'Frasco', 'ATIVO', 12, c.id_categoria
 FROM categoria c WHERE c.nome = 'Café, Chá e Achocolatados' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001008000014');
@@ -1151,7 +1324,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001008000052', 'Achocolatado em Pó Milo Nestlé 400g', 340.00, 'Bebida energética de malte e cacau Milo lata 400g', 'Lata', 'ATIVO', 15, c.id_categoria
 FROM categoria c WHERE c.nome = 'Café, Chá e Achocolatados' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001008000052');
 
+<<<<<<< HEAD
+=======
 -- === 7.9 BOLACHAS, DOCES E SNACKS ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001009000013', 'Bolacha Maria Bakers 200g', 55.00, 'Bolacha Maria tradicional crocante pacote 200g', 'Pacote', 'ATIVO', 40, c.id_categoria
 FROM categoria c WHERE c.nome = 'Bolachas, Doces e Snacks' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001009000013');
@@ -1176,7 +1352,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001009000068', 'Chocolate Cadbury Dairy Milk 80g', 115.00, 'Tablete de chocolate de leite Cadbury 80g', 'Unidade', 'ATIVO', 20, c.id_categoria
 FROM categoria c WHERE c.nome = 'Bolachas, Doces e Snacks' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001009000068');
 
+<<<<<<< HEAD
+=======
 -- === 7.10 PADARIA, TALHO, AVES, CHARCUTARIA E CONGELADOS ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001010000012', 'Pão de Forma Branco Fatiado 700g', 75.00, 'Pão de forma macio fatiado para sandes e torradas 700g', 'Unidade', 'ATIVO', 20, c.id_categoria
 FROM categoria c WHERE c.nome = 'Padaria e Pastelaria' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001010000012');
@@ -1217,7 +1396,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001011000066', 'Batata Pré-Frita Congelada McCain 1kg', 225.00, 'Batata palito pré-frita congelada pronta para fritar 1kg', 'Pacote', 'ATIVO', 15, c.id_categoria
 FROM categoria c WHERE c.nome = 'Talho, Aves e Congelados' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001011000066');
 
+<<<<<<< HEAD
+=======
 -- === 7.11 FRUTAS, LEGUMES E HORTÍCOLAS ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001012000010', 'Batata Reno Saco 10kg', 480.00, 'Saco de batata reno fresca seleccionada 10kg', 'Saco', 'ATIVO', 15, c.id_categoria
 FROM categoria c WHERE c.nome = 'Frutas, Legumes e Hortícolas' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001012000010');
@@ -1234,7 +1416,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001012000041', 'Alho em Rede 250g', 85.00, 'Cabeças de alho branco seleccionadas rede 250g', 'Pacote', 'ATIVO', 20, c.id_categoria
 FROM categoria c WHERE c.nome = 'Frutas, Legumes e Hortícolas' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001012000041');
 
+<<<<<<< HEAD
+=======
 -- === 7.12 HIGIENE PESSOAL E PERFUMARIA ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001013000019', 'Sabonete Antibacteriano Protex Herbal 150g', 65.00, 'Sabonete de protecção antibacteriana Protex 150g', 'Unidade', 'ATIVO', 40, c.id_categoria
 FROM categoria c WHERE c.nome = 'Higiene Pessoal e Perfumaria' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001013000019');
@@ -1271,7 +1456,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001013000095', 'Papel Higiénico Folha Dupla Pack 4 Rolos', 110.00, 'Papel higiénico folha dupla pacote com 4 rolos', 'Pacote', 'ATIVO', 30, c.id_categoria
 FROM categoria c WHERE c.nome = 'Higiene e Limpeza' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001013000095');
 
+<<<<<<< HEAD
+=======
 -- === 7.13 LIMPEZA DOMÉSTICA E LAVANDARIA ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001014000018', 'Sabão em Pó OMO Multiactivo 1kg', 195.00, 'Detergente em pó para roupa OMO 1kg', 'Pacote', 'ATIVO', 35, c.id_categoria
 FROM categoria c WHERE c.nome = 'Limpeza Doméstica e Lavandaria' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001014000018');
@@ -1312,7 +1500,10 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001014000100', 'Esponja Lava-Louça Dupla Face Pack 3un', 65.00, 'Esponjas abrasivas multiuso pacote com 3 unidades', 'Pacote', 'ATIVO', 25, c.id_categoria
 FROM categoria c WHERE c.nome = 'Limpeza Doméstica e Lavandaria' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001014000100');
 
+<<<<<<< HEAD
+=======
 -- === 7.14 BEBÉ E INFANTIL, DESCARTÁVEIS E PAPELARIA ===
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria)
 SELECT '6001015000017', 'Fraldas Descartáveis Pampers M Pack 44un', 890.00, 'Fraldas descartáveis ultra absorventes tamanho médio 44 unidades', 'Pacote', 'ATIVO', 10, c.id_categoria
 FROM categoria c WHERE c.nome = 'Bebé e Infantil' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001015000017');
@@ -1353,11 +1544,15 @@ INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, qua
 SELECT '6001017000039', 'Caderno Escolar 80 Folhas A4', 75.00, 'Caderno pautado capa dura 80 folhas formato A4', 'Unidade', 'ATIVO', 20, c.id_categoria
 FROM categoria c WHERE c.nome = 'Papelaria, Pilhas e Iluminação' AND NOT EXISTS (SELECT 1 FROM produto WHERE codigo_barras = '6001017000039');
 
+<<<<<<< HEAD
+
+=======
 -- -----------------------------------------------------------------------------
 -- 8. ASSOCIAÇÕES FORNECEDOR - PRODUTO (fornecedor_produto)
 -- -----------------------------------------------------------------------------
 
 -- CIM fornece Farinhas e Massas
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO fornecedor_produto (id_produto, id_fornecedor)
 SELECT pr.id_produto, fn.id_fornecedor
 FROM produto pr
@@ -1371,7 +1566,10 @@ WHERE cat.nome IN ('Farinhas e Massas', 'Padaria e Pastelaria')
       WHERE fp.id_produto = pr.id_produto AND fp.id_fornecedor = fn.id_fornecedor
   );
 
+<<<<<<< HEAD
+=======
 -- Tropigália fornece Cereais, Enlatados, Café, Bolachas e Condimentos
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO fornecedor_produto (id_produto, id_fornecedor)
 SELECT pr.id_produto, fn.id_fornecedor
 FROM produto pr
@@ -1385,7 +1583,10 @@ WHERE cat.nome IN ('Cereais e Grãos', 'Enlatados e Conservas', 'Café, Chá e A
       WHERE fp.id_produto = pr.id_produto AND fp.id_fornecedor = fn.id_fornecedor
   );
 
+<<<<<<< HEAD
+=======
 -- Maeva fornece Óleos, Azeites, Gorduras e Sabões
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO fornecedor_produto (id_produto, id_fornecedor)
 SELECT pr.id_produto, fn.id_fornecedor
 FROM produto pr
@@ -1399,7 +1600,10 @@ WHERE cat.nome IN ('Óleos, Azeites e Gorduras', 'Higiene e Limpeza')
       WHERE fp.id_produto = pr.id_produto AND fp.id_fornecedor = fn.id_fornecedor
   );
 
+<<<<<<< HEAD
+=======
 -- Parmalat fornece Lacticínios
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO fornecedor_produto (id_produto, id_fornecedor)
 SELECT pr.id_produto, fn.id_fornecedor
 FROM produto pr
@@ -1413,7 +1617,10 @@ WHERE cat.nome = 'Lacticínios'
       WHERE fp.id_produto = pr.id_produto AND fp.id_fornecedor = fn.id_fornecedor
   );
 
+<<<<<<< HEAD
+=======
 -- Coca-Cola fornece Bebidas
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO fornecedor_produto (id_produto, id_fornecedor)
 SELECT pr.id_produto, fn.id_fornecedor
 FROM produto pr
@@ -1427,7 +1634,10 @@ WHERE cat.nome = 'Bebidas'
       WHERE fp.id_produto = pr.id_produto AND fp.id_fornecedor = fn.id_fornecedor
   );
 
+<<<<<<< HEAD
+=======
 -- Águas da Namaacha & Vumba fornece Águas e Sumos
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO fornecedor_produto (id_produto, id_fornecedor)
 SELECT pr.id_produto, fn.id_fornecedor
 FROM produto pr
@@ -1441,7 +1651,10 @@ WHERE cat.nome = 'Águas, Sumos e Refrigerantes'
       WHERE fp.id_produto = pr.id_produto AND fp.id_fornecedor = fn.id_fornecedor
   );
 
+<<<<<<< HEAD
+=======
 -- Avícola Higest fornece Talho, Aves, Congelados, Charcutaria e Ovos
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO fornecedor_produto (id_produto, id_fornecedor)
 SELECT pr.id_produto, fn.id_fornecedor
 FROM produto pr
@@ -1455,7 +1668,10 @@ WHERE cat.nome IN ('Talho, Aves e Congelados', 'Charcutaria e Frios', 'Mercearia
       WHERE fp.id_produto = pr.id_produto AND fp.id_fornecedor = fn.id_fornecedor
   );
 
+<<<<<<< HEAD
+=======
 -- Delta Trading fornece Higiene Pessoal, Limpeza Doméstica, Bebé e Utilidades
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO fornecedor_produto (id_produto, id_fornecedor)
 SELECT pr.id_produto, fn.id_fornecedor
 FROM produto pr
@@ -1469,7 +1685,10 @@ WHERE cat.nome IN ('Higiene Pessoal e Perfumaria', 'Limpeza Doméstica e Lavanda
       WHERE fp.id_produto = pr.id_produto AND fp.id_fornecedor = fn.id_fornecedor
   );
 
+<<<<<<< HEAD
+=======
 -- Açucareira de Xinavane fornece Açúcar
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO fornecedor_produto (id_produto, id_fornecedor)
 SELECT pr.id_produto, fn.id_fornecedor
 FROM produto pr
@@ -1482,7 +1701,10 @@ WHERE pr.codigo_barras IN ('6001004000018', '6001004000025', '6001004000032')
       WHERE fp.id_produto = pr.id_produto AND fp.id_fornecedor = fn.id_fornecedor
   );
 
+<<<<<<< HEAD
+=======
 -- Recheio Cash & Carry como segundo fornecedor para produtos de alta rotação
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO fornecedor_produto (id_produto, id_fornecedor)
 SELECT pr.id_produto, fn.id_fornecedor
 FROM produto pr
@@ -1499,6 +1721,9 @@ WHERE pr.codigo_barras IN (
       WHERE fp.id_produto = pr.id_produto AND fp.id_fornecedor = fn.id_fornecedor
   );
 
+<<<<<<< HEAD
+
+=======
 -- -----------------------------------------------------------------------------
 -- 9. LOTES DE ESTOQUE
 -- Inclui:
@@ -1510,6 +1735,7 @@ WHERE pr.codigo_barras IN (
 -- -----------------------------------------------------------------------------
 
 -- 9.1 Lote principal para todos os produtos (excepto os reservados para estoque baixo)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO estoque (quantidade, data_entrada, data_validade, id_produto, id_funcionario)
 SELECT
     85,
@@ -1523,7 +1749,10 @@ WHERE f.bi = '110100000001A'
   AND pr.codigo_barras NOT IN ('6001003000057', '6001008000014', '6001015000017', '6001006000047')
   AND NOT EXISTS (SELECT 1 FROM estoque e WHERE e.id_produto = pr.id_produto);
 
+<<<<<<< HEAD
+=======
 -- 9.2 Produtos deliberadamente com ESTOQUE BAIXO (abaixo de quantidade_minima)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO estoque (quantidade, data_entrada, data_validade, id_produto, id_funcionario)
 SELECT
     3,
@@ -1537,7 +1766,10 @@ WHERE f.bi = '110100000001A'
   AND pr.codigo_barras IN ('6001003000057', '6001008000014', '6001015000017', '6001006000047')
   AND NOT EXISTS (SELECT 1 FROM estoque e WHERE e.id_produto = pr.id_produto);
 
+<<<<<<< HEAD
+=======
 -- 9.3 Segundo lote FEFO (validade mais próxima: +45 dias) para produtos de alta rotação
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO estoque (quantidade, data_entrada, data_validade, id_produto, id_funcionario)
 SELECT
     40,
@@ -1554,7 +1786,10 @@ WHERE f.bi = '110100678956F'
   )
   AND (SELECT COUNT(*) FROM estoque e WHERE e.id_produto = pr.id_produto) < 2;
 
+<<<<<<< HEAD
+=======
 -- 9.4 Lotes A EXPIRAR em breve (daqui a 10 dias) para alertas de validade próxima
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO estoque (quantidade, data_entrada, data_validade, id_produto, id_funcionario)
 SELECT
     18,
@@ -1568,7 +1803,10 @@ WHERE f.bi = '110100678956F'
   AND pr.codigo_barras IN ('6001006000054', '6001006000061', '6001010000012')
   AND (SELECT COUNT(*) FROM estoque e WHERE e.id_produto = pr.id_produto) < 2;
 
+<<<<<<< HEAD
+=======
 -- 9.5 Lotes EXPIRADOS (respeitando ck_estoque_datas: data_validade >= DATE(data_entrada))
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO estoque (quantidade, data_entrada, data_validade, id_produto, id_funcionario)
 SELECT
     6,
@@ -1582,6 +1820,9 @@ WHERE f.bi = '110100678956F'
   AND pr.codigo_barras IN ('6001006000085', '6001011000035')
   AND (SELECT COUNT(*) FROM estoque e WHERE e.id_produto = pr.id_produto) < 2;
 
+<<<<<<< HEAD
+
+=======
 -- -----------------------------------------------------------------------------
 -- 10. VENDAS, ITENS VENDIDOS E REEMBOLSOS
 -- Inclui:
@@ -1592,6 +1833,7 @@ WHERE f.bi = '110100678956F'
 -- -----------------------------------------------------------------------------
 
 -- Venda 1: CONCLUIDA — Cliente Amélia Francisca Tembe (Total: 2560.00 MT)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO venda (data, total, estado, id_cliente, id_funcionario)
 SELECT
     DATE_SUB(NOW(), INTERVAL 5 DAY),
@@ -1632,7 +1874,10 @@ CROSS JOIN produto pr
 WHERE p.nome = 'Amélia Francisca Tembe' AND v.total = 2560.00 AND pr.codigo_barras = '6001002000058'
   AND NOT EXISTS (SELECT 1 FROM item_vendido iv WHERE iv.id_venda = v.id_venda AND iv.id_produto = pr.id_produto);
 
+<<<<<<< HEAD
+=======
 -- Venda 2: CONCLUIDA — Cliente Benedito Samuel Chissano (Total: 1475.00 MT)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO venda (data, total, estado, id_cliente, id_funcionario)
 SELECT
     DATE_SUB(NOW(), INTERVAL 3 DAY),
@@ -1673,7 +1918,10 @@ CROSS JOIN produto pr
 WHERE p.nome = 'Benedito Samuel Chissano' AND v.total = 1475.00 AND pr.codigo_barras = '6001010000036'
   AND NOT EXISTS (SELECT 1 FROM item_vendido iv WHERE iv.id_venda = v.id_venda AND iv.id_produto = pr.id_produto);
 
+<<<<<<< HEAD
+=======
 -- Venda 3: CONCLUIDA — Restaurante Sabores da Baixa (Total: 6420.00 MT)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO venda (data, total, estado, id_cliente, id_funcionario)
 SELECT
     DATE_SUB(NOW(), INTERVAL 2 DAY),
@@ -1723,7 +1971,10 @@ CROSS JOIN produto pr
 WHERE p.nome = 'Restaurante Sabores da Baixa' AND v.total = 6420.00 AND pr.codigo_barras = '6001012000027'
   AND NOT EXISTS (SELECT 1 FROM item_vendido iv WHERE iv.id_venda = v.id_venda AND iv.id_produto = pr.id_produto);
 
+<<<<<<< HEAD
+=======
 -- Venda 4: CONCLUIDA (Hoje) — Cremilde Augusta Machel (Total: 945.00 MT)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO venda (data, total, estado, id_cliente, id_funcionario)
 SELECT
     DATE_SUB(NOW(), INTERVAL 2 HOUR),
@@ -1764,7 +2015,10 @@ CROSS JOIN produto pr
 WHERE p.nome = 'Cremilde Augusta Machel' AND v.total = 945.00 AND pr.codigo_barras = '6001011000066'
   AND NOT EXISTS (SELECT 1 FROM item_vendido iv WHERE iv.id_venda = v.id_venda AND iv.id_produto = pr.id_produto);
 
+<<<<<<< HEAD
+=======
 -- Venda 5: PENDENTE — Cliente Dércio Vasco Guambe (Total: 1185.00 MT — pronta para Concluir/Editar pendente)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO venda (data, total, estado, id_cliente, id_funcionario)
 SELECT
     DATE_SUB(NOW(), INTERVAL 1 HOUR),
@@ -1805,7 +2059,10 @@ CROSS JOIN produto pr
 WHERE p.nome = 'Dércio Vasco Guambe' AND v.total = 1185.00 AND pr.codigo_barras = '6001008000052'
   AND NOT EXISTS (SELECT 1 FROM item_vendido iv WHERE iv.id_venda = v.id_venda AND iv.id_produto = pr.id_produto);
 
+<<<<<<< HEAD
+=======
 -- Venda 6: PENDENTE — Cliente Edna Patrícia Langa (Total: 755.00 MT — pronta para Concluir/Editar pendente)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO venda (data, total, estado, id_cliente, id_funcionario)
 SELECT
     DATE_SUB(NOW(), INTERVAL 35 MINUTE),
@@ -1846,7 +2103,10 @@ CROSS JOIN produto pr
 WHERE p.nome = 'Edna Patrícia Langa' AND v.total = 755.00 AND pr.codigo_barras = '6001002000065'
   AND NOT EXISTS (SELECT 1 FROM item_vendido iv WHERE iv.id_venda = v.id_venda AND iv.id_produto = pr.id_produto);
 
+<<<<<<< HEAD
+=======
 -- Venda 7: ANULADA — Cliente Filipe Armando Zandamela (Total: 540.00 MT)
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO venda (data, total, estado, id_cliente, id_funcionario)
 SELECT
     DATE_SUB(NOW(), INTERVAL 4 DAY),
@@ -1869,7 +2129,10 @@ CROSS JOIN produto pr
 WHERE p.nome = 'Filipe Armando Zandamela' AND v.total = 540.00 AND pr.codigo_barras = '6001005000024'
   AND NOT EXISTS (SELECT 1 FROM item_vendido iv WHERE iv.id_venda = v.id_venda AND iv.id_produto = pr.id_produto);
 
+<<<<<<< HEAD
+=======
 -- Reembolso de exemplo sobre 1 garrafa de Óleo Maeva 2L da Venda 1
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 INSERT INTO reembolso (quantidade, valor, motivo, data, id_item, id_funcionario)
 SELECT
     1,
@@ -1886,6 +2149,9 @@ WHERE v.total = 2560.00
   AND pr.codigo_barras = '6001003000026'
   AND f.bi = '110100234512B'
   AND NOT EXISTS (SELECT 1 FROM reembolso r WHERE r.id_item = iv.id_item);
+<<<<<<< HEAD
+=======
 WHERE NOT EXISTS (
     SELECT 1 FROM funcionario f WHERE f.bi = '110100000001A'
 );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49

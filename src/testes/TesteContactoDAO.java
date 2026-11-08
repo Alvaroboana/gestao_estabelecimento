@@ -22,7 +22,6 @@ public class TesteContactoDAO {
         contacto.setContacto("84" + (System.currentTimeMillis() % 10000000));
 
         try {
-            // Cria pessoa de suporte
             System.out.println("-> Criando pessoa para associar contacto");
             pessoaDAO.salvar(pessoa);
             if (pessoa.getIdPessoa() == null) {
@@ -30,7 +29,6 @@ public class TesteContactoDAO {
                 return;
             }
 
-            // 1. Salvar
             System.out.println("-> Salvando contacto: " + contacto.getContacto());
             contactoDAO.salvarComPessoa(contacto, pessoa.getIdPessoa());
             if (contacto.getIdContacto() != null) {
@@ -40,7 +38,6 @@ public class TesteContactoDAO {
                 return;
             }
 
-            // 2. Buscar por ID
             System.out.println("-> Buscando contacto por ID: " + contacto.getIdContacto());
             Contacto buscado = contactoDAO.buscarPorId(contacto.getIdContacto());
             if (buscado != null && buscado.getContacto().equals(contacto.getContacto())) {
@@ -49,7 +46,6 @@ public class TesteContactoDAO {
                 System.out.println("  [ERRO] Contacto nao encontrado");
             }
 
-            // 3. Buscar por Pessoa
             System.out.println("-> Buscando contactos pela pessoa ID: " + pessoa.getIdPessoa());
             List<Contacto> listaPessoa = contactoDAO.buscarPorPessoa(pessoa.getIdPessoa());
             if (listaPessoa != null && !listaPessoa.isEmpty()) {
@@ -58,7 +54,6 @@ public class TesteContactoDAO {
                 System.out.println("  [ERRO] Nenhum contacto encontrado para a pessoa");
             }
 
-            // 4. Atualizar
             System.out.println("-> Atualizando valor do contacto");
             contacto.setContacto("85" + (System.currentTimeMillis() % 10000000));
             contactoDAO.atualizar(contacto);
@@ -69,7 +64,6 @@ public class TesteContactoDAO {
                 System.out.println("  [ERRO] Falha ao atualizar contacto");
             }
 
-            // 5. Listar
             System.out.println("-> Listando contactos");
             List<Contacto> lista = contactoDAO.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -78,7 +72,6 @@ public class TesteContactoDAO {
                 System.out.println("  [ERRO] Nenhum contacto encontrado na listagem");
             }
 
-            // 6. Eliminar contacto
             System.out.println("-> Eliminando contacto ID: " + contacto.getIdContacto());
             contactoDAO.eliminar(contacto.getIdContacto());
             Contacto apagado = contactoDAO.buscarPorId(contacto.getIdContacto());
@@ -88,7 +81,6 @@ public class TesteContactoDAO {
                 System.out.println("  [ERRO] Falha ao eliminar contacto");
             }
 
-            // Limpeza: eliminar pessoa de teste
             System.out.println("-> Eliminando pessoa de teste ID: " + pessoa.getIdPessoa());
             pessoaDAO.eliminar(pessoa.getIdPessoa());
 

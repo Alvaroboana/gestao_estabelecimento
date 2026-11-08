@@ -16,7 +16,6 @@ public class TesteCargoDAO {
         cargo.setSalarioBase(18500.0);
 
         try {
-            // 1. Salvar
             System.out.println("-> Salvando cargo: " + cargo.getNome());
             dao.salvar(cargo);
             if (cargo.getIdCargo() != null) {
@@ -26,7 +25,6 @@ public class TesteCargoDAO {
                 return;
             }
 
-            // 2. Buscar por ID
             System.out.println("-> Buscando cargo por ID: " + cargo.getIdCargo());
             Cargo buscado = dao.buscarPorId(cargo.getIdCargo());
             if (buscado != null && buscado.getNome().equals(cargo.getNome())) {
@@ -35,7 +33,6 @@ public class TesteCargoDAO {
                 System.out.println("  [ERRO] Cargo nao encontrado");
             }
 
-            // 3. Atualizar
             System.out.println("-> Atualizando cargo");
             cargo.setNome(cargo.getNome() + " Senior");
             cargo.setSalarioBase(25000.0);
@@ -47,7 +44,6 @@ public class TesteCargoDAO {
                 System.out.println("  [ERRO] Falha ao atualizar cargo");
             }
 
-            // 4. Listar
             System.out.println("-> Listando todos os cargos");
             List<Cargo> lista = dao.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -56,7 +52,6 @@ public class TesteCargoDAO {
                 System.out.println("  [ERRO] Nenhum cargo encontrado");
             }
 
-            // 5. Eliminar
             System.out.println("-> Eliminando cargo ID: " + cargo.getIdCargo());
             dao.eliminar(cargo.getIdCargo());
             Cargo apagado = dao.buscarPorId(cargo.getIdCargo());

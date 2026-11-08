@@ -68,6 +68,15 @@ import org.kordamp.ikonli.materialdesign2.MaterialDesignU;
 import util.AsyncTask;
 import util.GeradorFaturaPDF;
 import util.ServidorLeitorCodigoBarras;
+<<<<<<< HEAD
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import java.awt.image.BufferedImage;
+import javax.swing.ImageIcon;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+=======
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 
 public class VendasPanel extends JPanel implements PainelRecarregavel {
     private static final long serialVersionUID = 1L;
@@ -486,7 +495,12 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     private void carregarVendaPendenteParaEdicao() {
         int row = tabela.getSelectedRow();
         if (row < 0 || row >= tabela.getRowCount()) {
+<<<<<<< HEAD
+            JOptionPane.showMessageDialog(this, "Selecione uma venda PENDENTE na tabela para editar os itens.", "Aviso",
+                    JOptionPane.WARNING_MESSAGE);
+=======
             JOptionPane.showMessageDialog(this, "Selecione uma venda PENDENTE na tabela para editar os itens.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             return;
         }
         try {
@@ -498,7 +512,13 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                 vendaAlvo = vendaController.buscarPorId(idVenda);
             }
             if (vendaAlvo == null || vendaAlvo.getEstado() != EstadoVenda.PENDENTE) {
+<<<<<<< HEAD
+                JOptionPane.showMessageDialog(this,
+                        "Apenas vendas com estado PENDENTE podem ser reabertas para edição.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
+=======
                 JOptionPane.showMessageDialog(this, "Apenas vendas com estado PENDENTE podem ser reabertas para edição.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 return;
             }
             this.vendaEmEdicaoPendente = vendaAlvo;
@@ -508,6 +528,25 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             }
             if (vendaAlvo.getItemVendido() != null) {
                 for (ItemVendido it : vendaAlvo.getItemVendido()) {
+<<<<<<< HEAD
+                    if (it == null)
+                        continue;
+                    ItemVendido copia = new ItemVendido(it.getQuantidade(), it.getPreco(), it.getDesconto(), vendaAlvo,
+                            it.getProduto());
+                    itensCarrinho.add(copia);
+                    double sub = Math.max(0.0,
+                            (it.getPreco() != null ? it.getPreco() : 0.0)
+                                    * (it.getQuantidade() != null ? it.getQuantidade() : 1)
+                                    - (it.getDesconto() != null ? it.getDesconto() : 0.0));
+                    String nomeProd = (it.getProduto() != null && it.getProduto().getNome() != null)
+                            ? it.getProduto().getNome()
+                            : "Item";
+                    modeloItensVenda.addRow(new Object[] {
+                            nomeProd,
+                            String.valueOf(it.getQuantidade() != null ? it.getQuantidade() : 1),
+                            String.format(Locale.GERMANY, "%,.2f MT", sub),
+                            "✕"
+=======
                     if (it == null) continue;
                     ItemVendido copia = new ItemVendido(it.getQuantidade(), it.getPreco(), it.getDesconto(), vendaAlvo, it.getProduto());
                     itensCarrinho.add(copia);
@@ -519,6 +558,7 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                         String.valueOf(it.getQuantidade() != null ? it.getQuantidade() : 1),
                         String.format(Locale.GERMANY, "%,.2f MT", sub),
                         "✕"
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                     });
                 }
             }
@@ -528,7 +568,12 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             atualizarTotalNV();
             definirModoPainelLateral(ModoPainelLateral.NOVA_VENDA);
         } catch (Exception ex) {
+<<<<<<< HEAD
+            JOptionPane.showMessageDialog(this, "Erro ao abrir venda pendente: " + ex.getMessage(), "Erro",
+                    JOptionPane.ERROR_MESSAGE);
+=======
             JOptionPane.showMessageDialog(this, "Erro ao abrir venda pendente: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         }
     }
 
@@ -747,13 +792,37 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         linhaCodigoBarras.setOpaque(false);
         linhaCodigoBarras.add(campoCodigoBarrasNV, BorderLayout.CENTER);
         linhaCodigoBarras.add(btnLeitorCelular, BorderLayout.EAST);
+<<<<<<< HEAD
+        JPanel blocoCodigoBarras = criarCampoComLabel("Código de barras (Leitor USB / Enter ou Celular)",
+                linhaCodigoBarras);
+=======
         JPanel blocoCodigoBarras = criarCampoComLabel("Código de barras (Leitor USB / Enter ou Celular)", linhaCodigoBarras);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         fixarLargura(blocoCodigoBarras, larguraInterna, 60);
         card.add(blocoCodigoBarras);
         card.add(Box.createRigidArea(new Dimension(0, 8)));
 
         campoFiltroProdutoNV = new JTextField();
         estilizarCampo(campoFiltroProdutoNV);
+<<<<<<< HEAD
+        campoFiltroProdutoNV
+                .setToolTipText("Digite parte do nome, ID ou código de barras para filtrar a lista de produtos");
+        campoFiltroProdutoNV.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                filtrarComboProdutosNV();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                filtrarComboProdutosNV();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                filtrarComboProdutosNV();
+            }
+=======
         campoFiltroProdutoNV.setToolTipText("Digite parte do nome, ID ou código de barras para filtrar a lista de produtos");
         campoFiltroProdutoNV.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -762,6 +831,7 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             public void removeUpdate(DocumentEvent e) { filtrarComboProdutosNV(); }
             @Override
             public void changedUpdate(DocumentEvent e) { filtrarComboProdutosNV(); }
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         });
         JPanel blocoFiltroProd = criarCampoComLabel("Pesquisar produto (nome, ID ou código)", campoFiltroProdutoNV);
         fixarLargura(blocoFiltroProd, larguraInterna, 60);
@@ -956,9 +1026,17 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             try {
                 String descTxt = campoDescontoNV.getText() != null ? campoDescontoNV.getText().trim() : "0";
                 if (descTxt.endsWith("%")) {
+<<<<<<< HEAD
+                    double perc = Double
+                            .parseDouble(descTxt.substring(0, descTxt.length() - 1).trim().replace(",", "."));
+                    if (perc < 0 || perc > 100) {
+                        JOptionPane.showMessageDialog(this, "O desconto percentual deve estar entre 0% e 100%.",
+                                "Aviso", JOptionPane.WARNING_MESSAGE);
+=======
                     double perc = Double.parseDouble(descTxt.substring(0, descTxt.length() - 1).trim().replace(",", "."));
                     if (perc < 0 || perc > 100) {
                         JOptionPane.showMessageDialog(this, "O desconto percentual deve estar entre 0% e 100%.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                         return;
                     }
                     desconto = (bruto * perc) / 100.0;
@@ -966,11 +1044,22 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                     desconto = Double.parseDouble(descTxt.replace(",", "."));
                 }
             } catch (NumberFormatException ignored) {
+<<<<<<< HEAD
+                JOptionPane.showMessageDialog(this, "Desconto inválido. Informe valor em MT ou percentagem (ex.: 10%).",
+                        "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (desconto < 0 || desconto > bruto) {
+                JOptionPane.showMessageDialog(this,
+                        "O desconto não pode ser negativo nem superior ao subtotal do item.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
+=======
                 JOptionPane.showMessageDialog(this, "Desconto inválido. Informe valor em MT ou percentagem (ex.: 10%).", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (desconto < 0 || desconto > bruto) {
                 JOptionPane.showMessageDialog(this, "O desconto não pode ser negativo nem superior ao subtotal do item.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 return;
             }
             double subtotal = bruto - desconto;
@@ -990,7 +1079,10 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             atualizarTotalNV();
         });
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         botaoFinalizar.addActionListener(e -> submeterNovaVenda(true, botaoFinalizar, botaoGuardarPendente));
 
         botaoGuardarPendente.addActionListener(e -> submeterNovaVenda(false, botaoFinalizar, botaoGuardarPendente));
@@ -1055,7 +1147,12 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             if (dig > 0) {
                 valorRecebido = dig;
             }
+<<<<<<< HEAD
+        } catch (Exception ignored) {
+        }
+=======
         } catch (Exception ignored) {}
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         final double finalRecebido = valorRecebido;
         final double finalTroco = Math.max(0.0, finalRecebido - (venda.getTotal() != null ? venda.getTotal() : 0.0));
 
@@ -1086,6 +1183,16 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                                 this,
                                 "Venda #" + venda.getIdVenda() + " guardada como PENDENTE!",
                                 "Sucesso",
+<<<<<<< HEAD
+                                JOptionPane.INFORMATION_MESSAGE);
+                    }
+                    itensCarrinho.clear();
+                    modeloItensVenda.setRowCount(0);
+                    if (campoValorRecebidoNV != null)
+                        campoValorRecebidoNV.setText("0");
+                    if (campoDescontoNV != null)
+                        campoDescontoNV.setText("0");
+=======
                                 JOptionPane.INFORMATION_MESSAGE
                         );
                     }
@@ -1093,6 +1200,7 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                     modeloItensVenda.setRowCount(0);
                     if (campoValorRecebidoNV != null) campoValorRecebidoNV.setText("0");
                     if (campoDescontoNV != null) campoDescontoNV.setText("0");
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                     atualizarTotalNV();
                     definirNovaVendaVisivel(false);
                     recarregarDados();
@@ -1122,14 +1230,24 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     }
 
     private void filtrarComboProdutosNV() {
+<<<<<<< HEAD
+        if (comboProdutoNV == null)
+            return;
+=======
         if (comboProdutoNV == null) return;
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         String termo = (campoFiltroProdutoNV != null && campoFiltroProdutoNV.getText() != null)
                 ? campoFiltroProdutoNV.getText().trim().toLowerCase()
                 : "";
         listaProdutosFiltradosNV.clear();
         comboProdutoNV.removeAllItems();
         for (Produto p : listaProdutosNV) {
+<<<<<<< HEAD
+            if (p == null)
+                continue;
+=======
             if (p == null) continue;
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             String nome = p.getNome() != null ? p.getNome().toLowerCase() : "";
             String idStr = p.getIdProduto() != null ? String.valueOf(p.getIdProduto()) : "";
             String cb = p.getCodigoBarras() != null ? p.getCodigoBarras().toLowerCase() : "";
@@ -1145,7 +1263,12 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     }
 
     private void atualizarInfoProdutoSelecionadoNV() {
+<<<<<<< HEAD
+        if (labelInfoProdutoNV == null || comboProdutoNV == null)
+            return;
+=======
         if (labelInfoProdutoNV == null || comboProdutoNV == null) return;
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         int idx = comboProdutoNV.getSelectedIndex();
         List<Produto> fonte = !listaProdutosFiltradosNV.isEmpty() ? listaProdutosFiltradosNV : listaProdutosNV;
         if (idx < 0 || idx >= fonte.size()) {
@@ -1159,6 +1282,19 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         labelInfoProdutoNV.setText(String.format(
                 Locale.GERMANY,
                 "Preço unit.: %,.2f MT/%s  |  Stock disponível: %d %s",
+<<<<<<< HEAD
+                preco, un, stock, un));
+    }
+
+    public void processarCodigoBarras(String codigo) {
+        if (codigo == null || codigo.trim().isEmpty())
+            return;
+        String cod = codigo.trim();
+        Produto encontrado = null;
+        for (Produto p : listaProdutosNV) {
+            if (p == null)
+                continue;
+=======
                 preco, un, stock, un
         ));
     }
@@ -1169,6 +1305,7 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         Produto encontrado = null;
         for (Produto p : listaProdutosNV) {
             if (p == null) continue;
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             if ((p.getCodigoBarras() != null && p.getCodigoBarras().equalsIgnoreCase(cod))
                     || (p.getIdProduto() != null && String.valueOf(p.getIdProduto()).equals(cod))) {
                 encontrado = p;
@@ -1178,10 +1315,19 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         if (encontrado == null) {
             try {
                 encontrado = vendaController.buscarProdutoPorCodigoBarras(cod);
+<<<<<<< HEAD
+            } catch (Exception ignored) {
+            }
+        }
+        if (encontrado == null) {
+            JOptionPane.showMessageDialog(this, "Nenhum produto encontrado para o código: " + cod,
+                    "Leitor de Código de Barras", JOptionPane.WARNING_MESSAGE);
+=======
             } catch (Exception ignored) {}
         }
         if (encontrado == null) {
             JOptionPane.showMessageDialog(this, "Nenhum produto encontrado para o código: " + cod, "Leitor de Código de Barras", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             return;
         }
         double preco = encontrado.getPreco() != null ? encontrado.getPreco() : 0.0;
@@ -1206,10 +1352,17 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         novoItem.setDesconto(0.0);
         itensCarrinho.add(novoItem);
         modeloItensVenda.addRow(new Object[] {
+<<<<<<< HEAD
+                encontrado.getNome(),
+                "1",
+                String.format(Locale.GERMANY, "%,.2f MT", preco),
+                "✕"
+=======
             encontrado.getNome(),
             "1",
             String.format(Locale.GERMANY, "%,.2f MT", preco),
             "✕"
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         });
         atualizarTotalNV();
     }
@@ -1217,6 +1370,60 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
     private void abrirDialogoLeitorCelular() {
         try {
             String url = ServidorLeitorCodigoBarras.iniciarOuAtualizarOuvinte(this::processarCodigoBarras);
+<<<<<<< HEAD
+
+            JPanel painelQr = new JPanel();
+            painelQr.setLayout(new BoxLayout(painelQr, BoxLayout.Y_AXIS));
+            painelQr.setOpaque(false);
+
+            JLabel labelInstrucoes = new JLabel("<html><div style='text-align: center;'>"
+                    + "Leitor Mobile ativo na rede local!<br><br>"
+                    + "1. Conecte o telemóvel na mesma rede Wi-Fi/Hotspot deste computador.<br>"
+                    + "2. <b>Aponte a câmara para o QR Code abaixo</b>:</div></html>");
+            labelInstrucoes.setForeground(UiStyle.TEXT);
+            labelInstrucoes.setAlignmentX(Component.CENTER_ALIGNMENT);
+            painelQr.add(labelInstrucoes);
+            painelQr.add(Box.createRigidArea(new Dimension(0, 16)));
+
+            try {
+                QRCodeWriter qrCodeWriter = new QRCodeWriter();
+                // Gera o QR Code com 200x200 pixels
+                BitMatrix bitMatrix = qrCodeWriter.encode(url, BarcodeFormat.QR_CODE, 200, 200);
+                BufferedImage imagemQr = MatrixToImageWriter.toBufferedImage(bitMatrix);
+
+                JLabel labelImagemQr = new JLabel(new ImageIcon(imagemQr));
+                labelImagemQr.setAlignmentX(Component.CENTER_ALIGNMENT);
+                painelQr.add(labelImagemQr);
+            } catch (Exception e) {
+                System.err.println("Erro ao gerar QR Code: " + e.getMessage());
+            }
+
+            painelQr.add(Box.createRigidArea(new Dimension(0, 16)));
+
+            JTextField campoLink = new JTextField(url);
+            campoLink.setEditable(false);
+            campoLink.setHorizontalAlignment(JTextField.CENTER);
+            campoLink.setBackground(UiStyle.INPUT_BG);
+            campoLink.setForeground(UiStyle.TEXT);
+            campoLink.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(UiStyle.INPUT_BORDER),
+                    new EmptyBorder(8, 8, 8, 8)));
+            campoLink.setAlignmentX(Component.CENTER_ALIGNMENT);
+            campoLink.setMaximumSize(new Dimension(300, 35));
+            painelQr.add(campoLink);
+
+            JLabel labelDica = new JLabel("<html><br><div style='font-size: 11px; text-align: center;'>"
+                    + "Cada código lido será adicionado automaticamente ao carrinho desta venda.</div></html>");
+            labelDica.setForeground(UiStyle.MUTED);
+            labelDica.setAlignmentX(Component.CENTER_ALIGNMENT);
+            painelQr.add(labelDica);
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    painelQr,
+                    "Leitor de Código de Barras no Telemóvel",
+                    JOptionPane.PLAIN_MESSAGE);
+=======
             JOptionPane.showMessageDialog(
                     this,
                     "Leitor Mobile ativo na rede local!\n\n"
@@ -1226,13 +1433,18 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                     "Leitor de Código de Barras no Telemóvel",
                     JOptionPane.INFORMATION_MESSAGE
             );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(
                     this,
                     "Não foi possível iniciar o servidor do leitor mobile: " + ex.getMessage(),
                     "Erro",
+<<<<<<< HEAD
+                    JOptionPane.ERROR_MESSAGE);
+=======
                     JOptionPane.ERROR_MESSAGE
             );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         }
     }
 
@@ -1240,6 +1452,35 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         JTextField campoNome = new JTextField();
         JTextField campoContacto = new JTextField();
         Object[] msg = {
+<<<<<<< HEAD
+                "Nome do cliente *:", campoNome,
+                "Contacto *:", campoContacto
+        };
+        int op = JOptionPane.showConfirmDialog(this, msg, "Novo Cliente Rápido", JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE);
+        if (op != JOptionPane.OK_OPTION)
+            return;
+        String nome = campoNome.getText() != null ? campoNome.getText().trim() : "";
+        String contacto = campoContacto.getText() != null ? campoContacto.getText().trim() : "";
+        if (nome.isEmpty() || contacto.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Informe o nome e o contacto do cliente.", "Validação",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        AsyncTask.executar(
+                () -> vendaController.salvarClienteRapido(nome, contacto),
+                criado -> {
+                    if (criado != null) {
+                        listaClientesNV.add(criado);
+                        if (comboClienteNV != null) {
+                            comboClienteNV.addItem(criado.getNome());
+                            comboClienteNV.setSelectedItem(criado.getNome());
+                        }
+                    }
+                },
+                err -> JOptionPane.showMessageDialog(this, "Erro ao criar cliente: " + err.getMessage(), "Erro",
+                        JOptionPane.ERROR_MESSAGE));
+=======
             "Nome do cliente *:", campoNome,
             "Contacto *:", campoContacto
         };
@@ -1264,12 +1505,18 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             },
             err -> JOptionPane.showMessageDialog(this, "Erro ao criar cliente: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
         );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     }
 
     private void exibirReciboVendaSelecionada() {
         int row = tabela.getSelectedRow();
         if (row < 0 || row >= tabela.getRowCount()) {
+<<<<<<< HEAD
+            JOptionPane.showMessageDialog(this, "Selecione uma venda na tabela para visualizar o recibo.", "Aviso",
+                    JOptionPane.WARNING_MESSAGE);
+=======
             JOptionPane.showMessageDialog(this, "Selecione uma venda na tabela para visualizar o recibo.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             return;
         }
         try {
@@ -1285,12 +1532,22 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                 exibirDialogoRecibo(vendaAlvo, tot, 0.0);
             }
         } catch (Exception ex) {
+<<<<<<< HEAD
+            JOptionPane.showMessageDialog(this, "Erro ao gerar recibo: " + ex.getMessage(), "Erro",
+                    JOptionPane.ERROR_MESSAGE);
+=======
             JOptionPane.showMessageDialog(this, "Erro ao gerar recibo: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         }
     }
 
     private void exibirDialogoRecibo(Venda venda, double valorRecebido, double troco) {
+<<<<<<< HEAD
+        if (venda == null)
+            return;
+=======
         if (venda == null) return;
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         StringBuilder sb = new StringBuilder();
         sb.append("==========================================\n");
@@ -1299,11 +1556,22 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         sb.append("==========================================\n");
         sb.append("Venda Nº   : #").append(venda.getIdVenda() != null ? venda.getIdVenda() : "-").append("\n");
         sb.append("Data/Hora  : ").append(venda.getData() != null ? venda.getData().format(dtf) : "-").append("\n");
+<<<<<<< HEAD
+        sb.append("Estado     : ").append(venda.getEstado() != null ? venda.getEstado().name() : "CONCLUIDA")
+                .append("\n");
+        String cliNome = (venda.getCliente() != null && venda.getCliente().getNome() != null)
+                ? venda.getCliente().getNome()
+                : "Consumidor Final";
+        String funcNome = (venda.getFuncionario() != null && venda.getFuncionario().getNome() != null)
+                ? venda.getFuncionario().getNome()
+                : "-";
+=======
         sb.append("Estado     : ").append(venda.getEstado() != null ? venda.getEstado().name() : "CONCLUIDA").append("\n");
         String cliNome = (venda.getCliente() != null && venda.getCliente().getNome() != null)
                 ? venda.getCliente().getNome() : "Consumidor Final";
         String funcNome = (venda.getFuncionario() != null && venda.getFuncionario().getNome() != null)
                 ? venda.getFuncionario().getNome() : "-";
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         sb.append("Cliente    : ").append(cliNome).append("\n");
         sb.append("Operador   : ").append(funcNome).append("\n");
         sb.append("------------------------------------------\n");
@@ -1312,9 +1580,17 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         double somaDescontos = 0.0;
         if (venda.getItemVendido() != null) {
             for (ItemVendido it : venda.getItemVendido()) {
+<<<<<<< HEAD
+                if (it == null)
+                    continue;
+                String nomeProd = (it.getProduto() != null && it.getProduto().getNome() != null)
+                        ? it.getProduto().getNome()
+                        : "Item";
+=======
                 if (it == null) continue;
                 String nomeProd = (it.getProduto() != null && it.getProduto().getNome() != null)
                         ? it.getProduto().getNome() : "Item";
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 if (nomeProd.length() > 18) {
                     nomeProd = nomeProd.substring(0, 18);
                 }
@@ -1332,7 +1608,12 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         }
         sb.append("------------------------------------------\n");
         if (somaDescontos > 0) {
+<<<<<<< HEAD
+            sb.append(String.format("Total Descontos : %21s MT\n",
+                    String.format(Locale.GERMANY, "%,.2f", somaDescontos)));
+=======
             sb.append(String.format("Total Descontos : %21s MT\n", String.format(Locale.GERMANY, "%,.2f", somaDescontos)));
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         }
         double total = venda.getTotal() != null ? venda.getTotal() : 0.0;
         sb.append(String.format("TOTAL A PAGAR   : %21s MT\n", String.format(Locale.GERMANY, "%,.2f", total)));
@@ -1350,7 +1631,11 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         area.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JScrollPane scroll = new JScrollPane(area);
+<<<<<<< HEAD
+        Object[] opcoes = { "Exportar Fatura PDF", "Imprimir Recibo", "Fechar" };
+=======
         Object[] opcoes = {"Exportar Fatura PDF", "Imprimir Recibo", "Fechar"};
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         int esc = JOptionPane.showOptionDialog(
                 this,
                 scroll,
@@ -1359,8 +1644,12 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 opcoes,
+<<<<<<< HEAD
+                opcoes[0]);
+=======
                 opcoes[0]
         );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         if (esc == JOptionPane.YES_OPTION) {
             JFileChooser chooser = new JFileChooser();
             chooser.setDialogTitle("Guardar Fatura / Recibo em PDF");
@@ -1373,19 +1662,36 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                 }
                 try {
                     GeradorFaturaPDF.gerar(venda, valorRecebido, troco, dest);
+<<<<<<< HEAD
+                    JOptionPane.showMessageDialog(this, "Fatura PDF gerada com sucesso em:\n" + dest.getAbsolutePath(),
+                            "Fatura PDF", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception exPdf) {
+                    JOptionPane.showMessageDialog(this, "Erro ao gerar Fatura PDF: " + exPdf.getMessage(), "Erro",
+                            JOptionPane.ERROR_MESSAGE);
+=======
                     JOptionPane.showMessageDialog(this, "Fatura PDF gerada com sucesso em:\n" + dest.getAbsolutePath(), "Fatura PDF", JOptionPane.INFORMATION_MESSAGE);
                 } catch (Exception exPdf) {
                     JOptionPane.showMessageDialog(this, "Erro ao gerar Fatura PDF: " + exPdf.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 }
             }
         } else if (esc == JOptionPane.NO_OPTION) {
             try {
                 area.print();
             } catch (Exception exPrint) {
+<<<<<<< HEAD
+                JOptionPane.showMessageDialog(this, "Não foi possível imprimir: " + exPrint.getMessage(), "Impressão",
+                        JOptionPane.WARNING_MESSAGE);
+            }
+        }
+    }
+
+=======
                 JOptionPane.showMessageDialog(this, "Não foi possível imprimir: " + exPrint.getMessage(), "Impressão", JOptionPane.WARNING_MESSAGE);
             }
         }
     }
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     private void recalcularTroco() {
         if (labelTrocoVendaNV == null || labelTotalVendaNV == null)
             return;
@@ -2446,7 +2752,12 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 int arco = raio * 2;
+<<<<<<< HEAD
+                Shape clip = new RoundRectangle2D.Float(1, 1, Math.max(0, getWidth() - 2), Math.max(0, getHeight() - 2),
+                        arco, arco);
+=======
                 Shape clip = new RoundRectangle2D.Float(1, 1, Math.max(0, getWidth() - 2), Math.max(0, getHeight() - 2), arco, arco);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 g2.clip(clip);
                 super.paintChildren(g2);
             } finally {
