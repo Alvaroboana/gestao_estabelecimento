@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS utilizador (
     username VARCHAR(50) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     perfil ENUM('ADMIN', 'GERENTE', 'VENDEDOR') NOT NULL,
+    troca_senha_obrigatoria BOOLEAN NOT NULL DEFAULT FALSE,
     id_funcionario BIGINT NOT NULL UNIQUE,
     CONSTRAINT fk_utilizador_funcionario FOREIGN KEY (id_funcionario) 
         REFERENCES funcionario(id_funcionario) ON DELETE CASCADE
@@ -105,6 +106,7 @@ CREATE TABLE IF NOT EXISTS categoria (
 
 CREATE TABLE IF NOT EXISTS produto (
     id_produto BIGINT PRIMARY KEY AUTO_INCREMENT,
+    codigo_barras VARCHAR(32) UNIQUE NULL,
     nome VARCHAR(100) NOT NULL,
     preco DECIMAL(10, 2) NOT NULL CHECK (preco >= 0),
     descricao TEXT NULL,
