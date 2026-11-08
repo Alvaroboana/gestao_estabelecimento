@@ -11,6 +11,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -33,6 +34,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -43,23 +45,31 @@ import java.util.Arrays;
 import java.util.Locale;
 import controller.FornecedorController;
 import controller.ProdutoController;
-import model.bo.ProdutoBO;
 import model.vo.Categoria;
 import model.vo.Contacto;
+import model.vo.Estoque;
 import model.vo.Fornecedor;
 import model.vo.EstadoProduto;
 import model.vo.Perfil;
 import model.vo.Produto;
+import model.vo.SessaoUtilizador;
 import model.vo.Utilizador;
+import java.awt.Shape;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignC;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignD;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignP;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignT;
 import util.AsyncTask;
+import util.ServidorLeitorCodigoBarras;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import java.awt.image.BufferedImage;
+import javax.swing.ImageIcon;
 
-/**
- * Painel Produtos, Novo Produto, Editar Produto e Fornecedores do Produto em Java Swing fiel aos designs HTML:
- * - "ADMIN · Barra superior · Escuro — Produtos" (Produtos.dc.html)
- * - "ADMIN · Barra superior · Escuro — Produto — novo" (ProdutoNovo.dc.html)
- * - "ADMIN · Barra superior · Escuro — Produto — editar" (ProdutoEditar.dc.html)
- * - "ADMIN · Barra superior · Escuro — Produto — fornecedores" (ProdutoFornecedores.dc.html)
- */
 public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     private static final long serialVersionUID = 1L;
 
@@ -74,28 +84,22 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     private static final int RAIO_COMPONENTE = 8;
     private static final int ALTURA_INPUT = 38;
     private static final int LARGURA_MIN_INPUT = 200;
-    private static final int LARGURA_CARD_FORMULARIO = 360;
+    private static final int LARGURA_CARD_FORMULARIO = 420;
     private static final int LARGURA_CARD_FORNECEDORES = 420;
 
     private static final String[] COLUNAS = {
-        "ID", "Nome", "Categoria", "Preço", "Estoque", "Estado"
-    };
-
-    private static final Object[][] DADOS_INICIAIS = {
-        {"1", "Arroz 25kg", "Cereais", "1.800,00 MT", "4", "ATIVO"},
-        {"2", "Óleo 5L", "Mercearia", "650,00 MT", "2", "ATIVO"},
-        {"3", "Leite 1L", "Lacticínios", "85,00 MT", "120", "ATIVO"},
-        {"4", "Biscoito", "Snacks", "40,00 MT", "0", "DESCONTINUADO"}
+            "ID", "Nome", "Categoria", "Preço / Un.", "Estoque", "Mín.", "Próx. Validade", "Fornec.", "Estado"
     };
 
     private static final String[] COLUNAS_FORNECEDORES_PRODUTO = {
-        "Fornecedor", "Contactos", ""
+            "Fornecedor", "Contactos", ""
     };
 
-    private static final Object[][] DADOS_FORNECEDORES_PRODUTO = {
-        {"Distribuidora Sol", "84 000 1111", "Remover"},
-        {"Mercearia Atlas", "86 444 5555", "Remover"}
+    private static final int TAMANHO_MAXIMO_UNIDADE = 20;
+    private static final String[] UNIDADES_PADRAO = {
+            "Unidade", "Kg", "Grama", "Litro", "Caixa", "Pacote", "Saco", "Dúzia"
     };
+    private final List<String> listaUnidades = new ArrayList<>(Arrays.asList(UNIDADES_PADRAO));
 
     private final DefaultTableModel modeloTabela;
     private final JTable tabela;
@@ -110,23 +114,27 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     private final JPanel cardFornecedoresProduto;
     private final JPanel wrapperDireita;
 
-    // Controles do formulário "Novo produto"
     private JTextField campoNomeNovoProduto;
     private BotaoSeletorFormulario seletorCategoriaNovo;
-    private BotaoSeletorFormulario seletorEstadoNovo;
+    private BotaoSeletorFormulario seletorUnidadeNovo;
+    private JTextField campoQuantidadeMinimaNovoProduto;
+    private JTextField campoDescricaoNovoProduto;
+    private JTextField campoCodigoBarrasNovoProduto;
     private JTextField campoPrecoNovoProduto;
     private BotaoSeletorFormulario seletorFornecedorNovo;
     private JTextField campoQuantidadeNovoProduto;
     private JTextField campoValidadeNovoProduto;
 
-    // Controles do formulário "Editar produto"
     private JTextField campoNomeEditarProduto;
     private BotaoSeletorFormulario seletorCategoriaEditar;
+    private BotaoSeletorFormulario seletorUnidadeEditar;
     private BotaoSeletorFormulario seletorEstadoEditar;
     private JTextField campoPrecoEditarProduto;
+    private JTextField campoQuantidadeMinimaEditarProduto;
+    private JTextField campoDescricaoEditarProduto;
+    private JTextField campoCodigoBarrasEditarProduto;
     private BotaoSeletorFormulario seletorFornecedorEditar;
 
-    // Controles do card "Fornecedores do produto"
     private JLabel labelNomeProdutoFornecedores;
     private BotaoSeletorFormulario seletorAssociarFornecedor;
     private JButton botaoAssociarFornecedor;
@@ -137,11 +145,11 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     private Fornecedor fornecedorSelecionadoParaAssociar = null;
     private Long idProdutoAtualFornecedores = null;
 
-    private final ProdutoBO produtoBO;
     private final ProdutoController produtoController;
     private final FornecedorController fornecedorController;
-    private List<Object[]> dadosProdutosCarregados = null;
-    private List<Produto> listaProdutosEntidades = null;
+    private List<Object[]> dadosProdutosCarregados = new ArrayList<>();
+    private List<Produto> listaProdutosEntidades = new ArrayList<>();
+    private List<Categoria> listaCategoriasReais = new ArrayList<>();
 
     private ModoPainelLateral modoLateral;
     private String categoriaFiltro = "Todas";
@@ -157,11 +165,9 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     public ProdutosPanel(ModoPainelLateral modoInicial) {
         UiStyle.instalarTemaEscuro();
         this.modoLateral = modoInicial != null ? modoInicial : ModoPainelLateral.NENHUM;
-        this.produtoBO = new ProdutoBO();
         this.produtoController = new ProdutoController();
         this.fornecedorController = new FornecedorController();
 
-        // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
         setBackground(UiStyle.BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
@@ -171,7 +177,10 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         this.botaoNovoProduto = criarBotaoNovoProduto();
         this.botaoEditar = criarBotaoEditarProduto();
         this.botaoFornecedores = criarBotaoFornecedoresProduto();
-        this.botaoDescontinuar = criarBotaoToolbar("Descontinuar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false);
+        this.botaoDescontinuar = criarBotaoToolbar("Descontinuar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT,
+                UiStyle.DANGER_BORDER, false);
+        this.botaoDescontinuar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CANCEL, 15, () -> UiStyle.DANGER_TEXT));
+        this.botaoDescontinuar.setIconTextGap(6);
         this.botaoDescontinuar.addActionListener(e -> descontinuarProdutoSelecionado());
 
         this.modeloTabela = criarModeloTabela();
@@ -195,6 +204,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
         atualizarTabelaFiltrada();
         definirModoPainelLateral(this.modoLateral);
+        recarregarDados();
     }
 
     public JTable getTabela() {
@@ -280,16 +290,19 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         wrapperDireita.setVisible(visivel);
 
         if (this.modoLateral == ModoPainelLateral.NOVO_PRODUTO) {
-            wrapperDireita.add(cardNovoProduto, BorderLayout.NORTH);
+            UiStyle.atualizarComponentesTema(cardNovoProduto);
+            wrapperDireita.add(UiStyle.envolverCardLateralComScroll(cardNovoProduto), BorderLayout.CENTER);
             tabela.clearSelection();
         } else if (this.modoLateral == ModoPainelLateral.EDITAR_PRODUTO) {
-            wrapperDireita.add(cardEditarProduto, BorderLayout.NORTH);
+            UiStyle.atualizarComponentesTema(cardEditarProduto);
+            wrapperDireita.add(UiStyle.envolverCardLateralComScroll(cardEditarProduto), BorderLayout.CENTER);
             if (tabela.getRowCount() > 0 && tabela.getSelectedRow() < 0) {
                 tabela.setRowSelectionInterval(0, 0);
             }
             sincronizarDadosProdutoParaEdicao();
         } else if (this.modoLateral == ModoPainelLateral.FORNECEDORES_PRODUTO) {
-            wrapperDireita.add(cardFornecedoresProduto, BorderLayout.NORTH);
+            UiStyle.atualizarComponentesTema(cardFornecedoresProduto);
+            wrapperDireita.add(UiStyle.envolverCardLateralComScroll(cardFornecedoresProduto), BorderLayout.CENTER);
             if (tabela.getRowCount() > 0 && tabela.getSelectedRow() < 0) {
                 tabela.setRowSelectionInterval(0, 0);
             }
@@ -307,40 +320,66 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         cabecalho.setLayout(new BoxLayout(cabecalho, BoxLayout.Y_AXIS));
         cabecalho.setOpaque(false);
 
-        // <h1>Produtos</h1> (h1 { font-size:24px; margin:0 })
         JLabel titulo = new JLabel("Produtos");
         UiStyle.aplicarTexto(titulo, 24, true);
         titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
         cabecalho.add(titulo);
         cabecalho.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        // .tb { display:flex; gap:10px; align-items:center }
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6)) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Dimension getPreferredSize() {
+                int larguraDisp = getWidth();
+                if (larguraDisp <= 0 && getParent() != null) {
+                    larguraDisp = getParent().getWidth();
+                }
+                if (larguraDisp <= 0) {
+                    return super.getPreferredSize();
+                }
+                Insets in = getInsets();
+                int maxW = Math.max(200, larguraDisp - in.left - in.right);
+                int hgap = 8;
+                int vgap = 6;
+                int x = 0;
+                int y = in.top + vgap;
+                int rowH = 0;
+                for (Component c : getComponents()) {
+                    if (!c.isVisible()) {
+                        continue;
+                    }
+                    Dimension d = c.getPreferredSize();
+                    if (x > 0 && x + hgap + d.width > maxW) {
+                        y += rowH + vgap;
+                        x = 0;
+                        rowH = 0;
+                    }
+                    if (x > 0) {
+                        x += hgap;
+                    }
+                    x += d.width;
+                    rowH = Math.max(rowH, d.height);
+                }
+                y += rowH + vgap + in.bottom;
+                return new Dimension(larguraDisp, Math.max(ALTURA_INPUT, y));
+            }
+        };
         toolbar.setOpaque(false);
         toolbar.setAlignmentX(Component.LEFT_ALIGNMENT);
+        toolbar.setBorder(new EmptyBorder(-6, -8, -6, 0));
 
         toolbar.add(campoBuscarProduto);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
         toolbar.add(seletorCategoria);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
         toolbar.add(botaoNovoProduto);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
         toolbar.add(botaoEditar);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
         toolbar.add(botaoFornecedores);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
         toolbar.add(botaoDescontinuar);
 
         cabecalho.add(toolbar);
         return cabecalho;
     }
 
-    /**
-     * <div class="row" style="align-items:flex-start">
-     *   <div class="card" style="flex:1;padding:0">...</div>
-     *   <div class="card" style="width:360px;height:fit-content;display:flex;flex-direction:column;gap:12px">...</div>
-     * </div>
-     */
     private JPanel criarCorpoPrincipal() {
         JPanel linha = new JPanel(new BorderLayout(16, 0));
         linha.setOpaque(false);
@@ -349,9 +388,6 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         return linha;
     }
 
-    /**
-     * <span class="in">Buscar produto</span>
-     */
     private CampoBuscaArredondado criarCampoBuscarProduto() {
         CampoBuscaArredondado campo = new CampoBuscaArredondado("Buscar produto");
         Dimension dim = new Dimension(LARGURA_MIN_INPUT, ALTURA_INPUT);
@@ -376,20 +412,25 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         return campo;
     }
 
-    /**
-     * <span class="in">Categoria: Todas ▾</span>
-     */
     private BotaoSeletorCategoria criarSeletorCategoria() {
-        BotaoSeletorCategoria botao = new BotaoSeletorCategoria("Categoria: Todas ▾");
+        BotaoSeletorCategoria botao = new BotaoSeletorCategoria("Categoria: Todas");
         Dimension dim = new Dimension(LARGURA_MIN_INPUT, ALTURA_INPUT);
         botao.setPreferredSize(dim);
         botao.setMinimumSize(dim);
 
-        String[] opcoes = {"Todas", "Cereais", "Mercearia", "Lacticínios", "Snacks"};
         botao.addActionListener(e -> {
             JPopupMenu menu = new JPopupMenu();
             menu.setBackground(UiStyle.SURFACE);
             menu.setBorder(BorderFactory.createLineBorder(UiStyle.BORDER));
+            List<String> opcoes = new ArrayList<>();
+            opcoes.add("Todas");
+            if (listaCategoriasReais != null) {
+                for (Categoria cat : listaCategoriasReais) {
+                    if (cat.getNome() != null) {
+                        opcoes.add(cat.getNome());
+                    }
+                }
+            }
             for (String opcao : opcoes) {
                 JMenuItem item = new JMenuItem(opcao);
                 item.setFont(UiStyle.fonte(13, Font.PLAIN));
@@ -397,20 +438,21 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 item.setForeground(UiStyle.TEXT);
                 item.addActionListener(ev -> {
                     categoriaFiltro = opcao;
-                    botao.setText("Categoria: " + opcao + " ▾");
+                    botao.setText("Categoria: " + opcao);
                     atualizarTabelaFiltrada();
                 });
                 menu.add(item);
             }
-            menu.show(botao, 0, botao.getHeight() + 2);
+            UiStyle.mostrarPopupSincronizado(menu, botao);
         });
         return botao;
     }
 
     private JButton criarBotaoNovoProduto() {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
-                "Novo produto", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
-        );
+                "Novo produto", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true);
+        botao.setIcon(UiStyle.icone(MaterialDesignP.PLUS, 15, UiStyle.ACCENT_TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.NOVO_PRODUTO) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -423,8 +465,9 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
     private JButton criarBotaoEditarProduto() {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
-                "Editar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
-        );
+                "Editar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PENCIL_OUTLINE, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.EDITAR_PRODUTO) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -437,8 +480,9 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
     private JButton criarBotaoFornecedoresProduto() {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
-                "Fornecedores", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
-        );
+                "Fornecedores", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRUCK_DELIVERY, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.FORNECEDORES_PRODUTO) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -455,16 +499,8 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             Color fg,
             Color borda,
             boolean preencherFundo) {
-        BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
-                texto, bg, fg, borda, RAIO_COMPONENTE, preencherFundo
-        );
-        botao.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"" + texto + "\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
-        return botao;
+        return new BotaoToolbarArredondado(
+                texto, bg, fg, borda, RAIO_COMPONENTE, preencherFundo);
     }
 
     private DefaultTableModel criarModeloTabela() {
@@ -505,7 +541,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         RenderizadorCelulaTexto renderizadorTexto = new RenderizadorCelulaTexto();
         RenderizadorCelulaEstado renderizadorEstado = new RenderizadorCelulaEstado();
         for (int i = 0; i < t.getColumnModel().getColumnCount(); i++) {
-            if (i == 5) {
+            if (i == 8) {
                 t.getColumnModel().getColumn(i).setCellRenderer(renderizadorEstado);
             } else {
                 t.getColumnModel().getColumn(i).setCellRenderer(renderizadorTexto);
@@ -514,9 +550,6 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         return t;
     }
 
-    /**
-     * <div class="card" style="padding:0"><table>...</table></div>
-     */
     private JPanel criarCardTabela() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BorderLayout());
@@ -537,18 +570,13 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Novo produto" fiel a ProdutoNovo.dc.html:
-     * <div class="card" style="width:360px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardNovoProduto() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_FORMULARIO - 32; // 328px
+        int larguraInterna = LARGURA_CARD_FORMULARIO - 32;
 
-        // <b>Novo produto</b>
         JLabel titulo = new JLabel("Novo produto");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -556,119 +584,221 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Nome *</span><div class="in" style="min-width:0"></div></div>
         campoNomeNovoProduto = new CampoFormularioArredondado("");
         JPanel blocoNome = criarCampoComLabel("Nome *", campoNomeNovoProduto);
         fixarLargura(blocoNome, larguraInterna, 60);
         card.add(blocoNome);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="fm"> (.fm { display:grid; grid-template-columns:1fr 1fr; gap:12px })
-        // Categoria * -> Cereais ▾ | Estado -> ATIVO ▾
-        JPanel linhaCatEstado = new JPanel(new GridLayout(1, 2, 12, 0));
-        linhaCatEstado.setOpaque(false);
-
         seletorCategoriaNovo = new BotaoSeletorFormulario(
-                "Cereais ▾",
-                new String[] {"Cereais", "Mercearia", "Lacticínios", "Snacks"}
-        );
-        seletorEstadoNovo = new BotaoSeletorFormulario(
-                "ATIVO ▾",
-                new String[] {"ATIVO", "DESCONTINUADO"}
-        );
-        linhaCatEstado.add(criarCampoComLabel("Categoria *", seletorCategoriaNovo));
-        linhaCatEstado.add(criarCampoComLabel("Estado", seletorEstadoNovo));
-        fixarLargura(linhaCatEstado, larguraInterna, 60);
-        card.add(linhaCatEstado);
+                "Cereais",
+                new String[] { "Cereais", "Mercearia", "Lacticínios", "Snacks" });
+        seletorUnidadeNovo = new BotaoSeletorFormulario(
+                "Unidade",
+                listaUnidades.toArray(new String[0]));
+        JPanel blocoCategoriaNovo = criarCampoComLabel("Categoria *", comBotaoNovaCategoria(seletorCategoriaNovo));
+        fixarLargura(blocoCategoriaNovo, larguraInterna, 60);
+        card.add(blocoCategoriaNovo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Preço (MT) *</span><div class="in" style="min-width:0"></div></div>
+        JPanel blocoUnidadeNovo = criarCampoComLabel("Unidade *", comBotaoNovaUnidade(seletorUnidadeNovo));
+        fixarLargura(blocoUnidadeNovo, larguraInterna, 60);
+        card.add(blocoUnidadeNovo);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel linhaPrecoMinimo = new JPanel(new GridLayout(1, 2, 12, 0));
+        linhaPrecoMinimo.setOpaque(false);
         campoPrecoNovoProduto = new CampoFormularioArredondado("");
-        JPanel blocoPreco = criarCampoComLabel("Preço (MT) *", campoPrecoNovoProduto);
-        fixarLargura(blocoPreco, larguraInterna, 60);
-        card.add(blocoPreco);
+        campoQuantidadeMinimaNovoProduto = new CampoFormularioArredondado("");
+        campoQuantidadeMinimaNovoProduto.setText("5");
+        linhaPrecoMinimo.add(criarCampoComLabel("Preço (MT) *", campoPrecoNovoProduto));
+        linhaPrecoMinimo.add(criarCampoComLabel("Qtd. mínima *", campoQuantidadeMinimaNovoProduto));
+        fixarLargura(linhaPrecoMinimo, larguraInterna, 60);
+        card.add(linhaPrecoMinimo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Fornecedor</span><div class="in" style="min-width:0">Distribuidora Sol ▾</div></div>
+        campoDescricaoNovoProduto = new CampoFormularioArredondado("");
+        JPanel blocoDescricao = criarCampoComLabel("Descrição", campoDescricaoNovoProduto);
+        fixarLargura(blocoDescricao, larguraInterna, 60);
+        card.add(blocoDescricao);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoCodigoBarrasNovoProduto = new CampoFormularioArredondado("");
+        campoCodigoBarrasNovoProduto.setToolTipText("Digite o código, use o leitor USB ou clique em Leitor Celular");
+        JPanel blocoCodigoBarras = criarCampoComLabel(
+                "Código de barras (opcional — Digitar / Leitor USB / Celular)",
+                comBotaoLeitorCodigoBarras(campoCodigoBarrasNovoProduto));
+        fixarLargura(blocoCodigoBarras, larguraInterna, 60);
+        card.add(blocoCodigoBarras);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
         seletorFornecedorNovo = new BotaoSeletorFormulario(
-                "Distribuidora Sol ▾",
-                new String[] {"Distribuidora Sol", "Moagens do Sul", "Lacticínios Frescos"}
-        );
-        JPanel blocoFornecedor = criarCampoComLabel("Fornecedor", seletorFornecedorNovo);
+                "Nenhum",
+                new String[] { "Nenhum" });
+        JPanel blocoFornecedor = criarCampoComLabel("Fornecedor", comBotaoNovoFornecedor(seletorFornecedorNovo));
         fixarLargura(blocoFornecedor, larguraInterna, 60);
         card.add(blocoFornecedor);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="fm"> Quantidade -> 0 | Validade -> dd/mm/aaaa
         JPanel linhaQtdValidade = new JPanel(new GridLayout(1, 2, 12, 0));
         linhaQtdValidade.setOpaque(false);
-
-        campoQuantidadeNovoProduto = new CampoFormularioArredondado("0");
+        campoQuantidadeNovoProduto = new CampoFormularioArredondado("");
         campoValidadeNovoProduto = new CampoFormularioArredondado("dd/mm/aaaa");
         linhaQtdValidade.add(criarCampoComLabel("Quantidade", campoQuantidadeNovoProduto));
         linhaQtdValidade.add(criarCampoComLabel("Validade", campoValidadeNovoProduto));
         fixarLargura(linhaQtdValidade, larguraInterna, 60);
         card.add(linhaQtdValidade);
-        card.add(Box.createRigidArea(new Dimension(0, 18))); // gap:12px + margin-top:6px
+        card.add(Box.createRigidArea(new Dimension(0, 18)));
 
-        // <div class="tb" style="margin-top:6px"><span class="bt">Guardar</span><span class="bt s">Cancelar</span></div>
         JPanel barraBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraBotoes.setOpaque(false);
 
         BotaoToolbarArredondado botaoGuardar = new BotaoToolbarArredondado(
-                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
-        );
+                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true);
+        botaoGuardar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoGuardar.setIconTextGap(6);
         botaoGuardar.addActionListener(e -> {
-            String nome = (campoNomeNovoProduto != null) ? campoNomeNovoProduto.getText().trim() : "";
+            String nome = campoNomeNovoProduto.getText().trim();
             if (nome.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Informe o nome do produto.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                avisoNovoProduto("Informe o nome do produto.");
                 return;
             }
-            String precoStr = (campoPrecoNovoProduto != null) ? campoPrecoNovoProduto.getText().trim().replace(",", ".") : "";
-            double preco = 0.0;
+
+            double preco;
             try {
-                if (!precoStr.isEmpty()) {
-                    preco = Double.parseDouble(precoStr);
+                preco = Double.parseDouble(campoPrecoNovoProduto.getText().trim().replace(",", "."));
+            } catch (NumberFormatException ex) {
+                avisoNovoProduto("Informe um preço válido.");
+                return;
+            }
+            if (preco <= 0) {
+                avisoNovoProduto("O preço deve ser maior que zero.");
+                return;
+            }
+
+            String unidade = textoSeletor(seletorUnidadeNovo);
+            if (unidade.isEmpty()) {
+                avisoNovoProduto("Seleccione a unidade do produto.");
+                return;
+            }
+
+            int qtdMinima;
+            try {
+                qtdMinima = Integer.parseInt(campoQuantidadeMinimaNovoProduto.getText().trim());
+                if (qtdMinima < 0) {
+                    throw new NumberFormatException();
                 }
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Preço inválido.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                avisoNovoProduto("A quantidade mínima deve ser um número inteiro (0 ou mais).");
                 return;
             }
+
+            int qTmp = 0;
+            String qStr = campoQuantidadeNovoProduto.getText().trim();
+            if (!qStr.isEmpty()) {
+                try {
+                    qTmp = Integer.parseInt(qStr);
+                    if (qTmp < 0) {
+                        throw new NumberFormatException();
+                    }
+                } catch (NumberFormatException ex) {
+                    avisoNovoProduto("A quantidade deve ser um número inteiro (0 ou mais).");
+                    return;
+                }
+            }
+            final int qtdInicial = qTmp;
+
+            java.time.LocalDate vTmp = null;
+            String vStr = campoValidadeNovoProduto.getText().trim();
+            if (!vStr.isEmpty()) {
+                try {
+                    vTmp = java.time.LocalDate.parse(vStr, java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                } catch (java.time.format.DateTimeParseException ex) {
+                    avisoNovoProduto("Validade inválida. Use o formato dd/mm/aaaa.");
+                    return;
+                }
+                if (vTmp.isBefore(java.time.LocalDate.now())) {
+                    avisoNovoProduto("A data de validade já passou.");
+                    return;
+                }
+            }
+            final java.time.LocalDate validadeInicial = vTmp;
 
             Produto p = new Produto();
             p.setNome(nome);
             p.setPreco(preco);
-            p.setEstado(EstadoProduto.ATIVO);
-            p.setQuantidadeMinima(5);
-            Categoria cat = new Categoria();
-            cat.setIdCategoria(1L);
-            if (seletorCategoriaNovo != null) {
-                cat.setNome(seletorCategoriaNovo.getText().replace(" ▾", ""));
+            p.setUnidade(unidade);
+            p.setQuantidadeMinima(qtdMinima);
+            String descricao = campoDescricaoNovoProduto.getText().trim();
+            p.setDescricao(descricao.isEmpty() ? null : descricao);
+            if (campoCodigoBarrasNovoProduto != null) {
+                String cbNovo = campoCodigoBarrasNovoProduto.getText();
+                p.setCodigoBarras(cbNovo != null && !cbNovo.trim().isEmpty() ? cbNovo.trim() : null);
             }
-            p.setCategoria(cat);
+            p.setEstado(EstadoProduto.ATIVO);
+            Categoria categoriaEscolhida = buscarCategoriaPorNome(textoSeletor(seletorCategoriaNovo));
+            if (categoriaEscolhida == null) {
+                avisoNovoProduto("Seleccione uma categoria válida.");
+                return;
+            }
+            p.setCategoria(categoriaEscolhida);
 
+            final String fornNome = textoSeletor(seletorFornecedorNovo);
+
+            botaoGuardar.setEnabled(false);
             AsyncTask.executar(
-                () -> {
-                    produtoBO.salvar(p);
-                    return null;
-                },
-                sucesso -> {
-                    JOptionPane.showMessageDialog(this, "Produto cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
-                    if (campoNomeNovoProduto != null) campoNomeNovoProduto.setText("");
-                    if (campoPrecoNovoProduto != null) campoPrecoNovoProduto.setText("");
-                    recarregarDados();
-                },
-                erro -> {
-                    JOptionPane.showMessageDialog(this, "Erro ao salvar produto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
-                }
-            );
+                    () -> {
+                        Utilizador user = SessaoUtilizador.getUtilizador();
+                        if (qtdInicial > 0 && (user == null || user.getFuncionario() == null)) {
+                            throw new IllegalStateException(
+                                    "Sessão sem funcionário associado: não é possível registar o stock inicial.");
+                        }
+
+                        produtoController.salvar(p);
+
+                        if (p.getIdProduto() != null && !fornNome.isEmpty() && !"Nenhum".equalsIgnoreCase(fornNome)
+                                && listaTodosFornecedores != null) {
+                            for (Fornecedor f : listaTodosFornecedores) {
+                                if (f.getNome() != null && f.getNome().equalsIgnoreCase(fornNome)) {
+                                    produtoController.associarFornecedor(p.getIdProduto(), f.getIdFornecedor());
+                                    break;
+                                }
+                            }
+                        }
+                        if (p.getIdProduto() != null && qtdInicial > 0) {
+                            Estoque lote = new Estoque();
+                            lote.setProduto(p);
+                            lote.setFuncionario(user.getFuncionario());
+                            lote.setQuantidade(qtdInicial);
+                            lote.setDataEntrada(java.time.LocalDate.now());
+                            lote.setDataValidade(validadeInicial);
+                            produtoController.salvarLoteInicial(lote);
+                        }
+                        return null;
+                    },
+                    sucesso -> {
+                        botaoGuardar.setEnabled(true);
+                        JOptionPane.showMessageDialog(this, "Produto cadastrado com sucesso!", "Sucesso",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        limparFormularioNovoProduto();
+                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                        recarregarDados();
+                    },
+                    erro -> {
+                        botaoGuardar.setEnabled(true);
+                        JOptionPane.showMessageDialog(this, "Erro ao salvar produto: " + erro.getMessage(), "Erro",
+                                JOptionPane.ERROR_MESSAGE);
+                    });
         });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
-                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
-        );
-        botaoCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botaoCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelar.setIconTextGap(6);
+        botaoCancelar.addActionListener(e -> {
+            limparFormularioNovoProduto();
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+        });
 
         barraBotoes.add(botaoGuardar);
         barraBotoes.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -684,18 +814,36 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Editar produto" fiel a ProdutoEditar.dc.html:
-     * <div class="card" style="width:360px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
+    private void avisoNovoProduto(String mensagem) {
+        JOptionPane.showMessageDialog(this, mensagem, "Aviso", JOptionPane.WARNING_MESSAGE);
+    }
+
+    private static String textoSeletor(BotaoSeletorFormulario seletor) {
+        if (seletor == null || seletor.getText() == null) {
+            return "";
+        }
+        return seletor.getText().replace(" ▾", "").replace("▾", "").trim();
+    }
+
+    private void limparFormularioNovoProduto() {
+        campoNomeNovoProduto.setText("");
+        campoPrecoNovoProduto.setText("");
+        campoDescricaoNovoProduto.setText("");
+        if (campoCodigoBarrasNovoProduto != null)
+            campoCodigoBarrasNovoProduto.setText("");
+        campoQuantidadeNovoProduto.setText("");
+        campoValidadeNovoProduto.setText("");
+        campoQuantidadeMinimaNovoProduto.setText("5");
+        seletorUnidadeNovo.setText("Unidade");
+    }
+
     private JPanel criarCardEditarProduto() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_FORMULARIO - 32; // 328px
+        int larguraInterna = LARGURA_CARD_FORMULARIO - 32;
 
-        // <b>Editar produto</b>
         JLabel titulo = new JLabel("Editar produto");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -703,121 +851,203 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Nome *</span><div class="in" style="min-width:0">Arroz 25kg</div></div>
-        campoNomeEditarProduto = new CampoFormularioArredondado("Arroz 25kg");
+        campoNomeEditarProduto = new CampoFormularioArredondado("");
         JPanel blocoNome = criarCampoComLabel("Nome *", campoNomeEditarProduto);
         fixarLargura(blocoNome, larguraInterna, 60);
         card.add(blocoNome);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="fm"> Categoria * -> Cereais ▾ | Estado -> ATIVO ▾
-        JPanel linhaCatEstado = new JPanel(new GridLayout(1, 2, 12, 0));
-        linhaCatEstado.setOpaque(false);
-
         seletorCategoriaEditar = new BotaoSeletorFormulario(
-                "Cereais ▾",
-                new String[] {"Cereais", "Mercearia", "Lacticínios", "Snacks"}
-        );
+                "Cereais",
+                new String[] { "Cereais", "Mercearia", "Lacticínios", "Snacks" });
+        seletorUnidadeEditar = new BotaoSeletorFormulario(
+                "Unidade",
+                listaUnidades.toArray(new String[0]));
+        JPanel blocoCatEditar = criarCampoComLabel("Categoria *", comBotaoNovaCategoria(seletorCategoriaEditar));
+        fixarLargura(blocoCatEditar, larguraInterna, 60);
+        card.add(blocoCatEditar);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel blocoUnidEditar = criarCampoComLabel("Unidade *", comBotaoNovaUnidade(seletorUnidadeEditar));
+        fixarLargura(blocoUnidEditar, larguraInterna, 60);
+        card.add(blocoUnidEditar);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel linhaPrecoMinimoEditar = new JPanel(new GridLayout(1, 2, 12, 0));
+        linhaPrecoMinimoEditar.setOpaque(false);
+        campoPrecoEditarProduto = new CampoFormularioArredondado("");
+        campoQuantidadeMinimaEditarProduto = new CampoFormularioArredondado("");
+        linhaPrecoMinimoEditar.add(criarCampoComLabel("Preço (MT) *", campoPrecoEditarProduto));
+        linhaPrecoMinimoEditar.add(criarCampoComLabel("Qtd. mínima *", campoQuantidadeMinimaEditarProduto));
+        fixarLargura(linhaPrecoMinimoEditar, larguraInterna, 60);
+        card.add(linhaPrecoMinimoEditar);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoDescricaoEditarProduto = new CampoFormularioArredondado("");
+        JPanel blocoDescricaoEditar = criarCampoComLabel("Descrição", campoDescricaoEditarProduto);
+        fixarLargura(blocoDescricaoEditar, larguraInterna, 60);
+        card.add(blocoDescricaoEditar);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoCodigoBarrasEditarProduto = new CampoFormularioArredondado("");
+        campoCodigoBarrasEditarProduto.setToolTipText("Digite o código, use o leitor USB ou clique em Leitor Celular");
+        JPanel blocoCodigoBarrasEditar = criarCampoComLabel(
+                "Código de barras (opcional — Digitar / Leitor USB / Celular)",
+                comBotaoLeitorCodigoBarras(campoCodigoBarrasEditarProduto));
+        fixarLargura(blocoCodigoBarrasEditar, larguraInterna, 60);
+        card.add(blocoCodigoBarrasEditar);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
         seletorEstadoEditar = new BotaoSeletorFormulario(
-                "ATIVO ▾",
-                new String[] {"ATIVO", "DESCONTINUADO"}
-        );
-        linhaCatEstado.add(criarCampoComLabel("Categoria *", seletorCategoriaEditar));
-        linhaCatEstado.add(criarCampoComLabel("Estado", seletorEstadoEditar));
-        fixarLargura(linhaCatEstado, larguraInterna, 60);
-        card.add(linhaCatEstado);
-        card.add(Box.createRigidArea(new Dimension(0, 12)));
-
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Preço (MT) *</span><div class="in" style="min-width:0">1.800,00</div></div>
-        campoPrecoEditarProduto = new CampoFormularioArredondado("1.800,00");
-        JPanel blocoPreco = criarCampoComLabel("Preço (MT) *", campoPrecoEditarProduto);
-        fixarLargura(blocoPreco, larguraInterna, 60);
-        card.add(blocoPreco);
-        card.add(Box.createRigidArea(new Dimension(0, 12)));
-
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Fornecedor</span><div class="in" style="min-width:0">Distribuidora Sol ▾</div></div>
+                "ATIVO",
+                new String[] { "ATIVO", "DESCONTINUADO" });
         seletorFornecedorEditar = new BotaoSeletorFormulario(
-                "Distribuidora Sol ▾",
-                new String[] {"Distribuidora Sol", "Moagens do Sul", "Lacticínios Frescos"}
-        );
-        JPanel blocoFornecedor = criarCampoComLabel("Fornecedor", seletorFornecedorEditar);
-        fixarLargura(blocoFornecedor, larguraInterna, 60);
-        card.add(blocoFornecedor);
-        card.add(Box.createRigidArea(new Dimension(0, 18))); // gap:12px + margin-top:6px
+                "Nenhum",
+                new String[] { "Nenhum" });
+        JPanel blocoEstadoEditar = criarCampoComLabel("Estado", seletorEstadoEditar);
+        fixarLargura(blocoEstadoEditar, larguraInterna, 60);
+        card.add(blocoEstadoEditar);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb" style="margin-top:6px">
-        //   <span class="bt">Guardar alterações</span>
-        //   <span class="bt s">Cancelar</span>
-        //   <span class="bt d">Descontinuar</span>
-        // </div>
+        JPanel blocoFornEditar = criarCampoComLabel("Fornecedor", comBotaoNovoFornecedor(seletorFornecedorEditar));
+        fixarLargura(blocoFornEditar, larguraInterna, 60);
+        card.add(blocoFornEditar);
+        card.add(Box.createRigidArea(new Dimension(0, 18)));
+
         JPanel barraBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraBotoes.setOpaque(false);
 
         BotaoToolbarArredondado botaoGuardarAlteracoes = new BotaoToolbarArredondado(
-                "Guardar alteraÃ§Ãµes", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true, 12
-        );
+                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true, 10);
+        botaoGuardarAlteracoes.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 14, UiStyle.ACCENT_TEXT));
+        botaoGuardarAlteracoes.setIconTextGap(5);
         botaoGuardarAlteracoes.addActionListener(e -> {
             int row = tabela.getSelectedRow();
             if (row < 0 || row >= tabela.getRowCount()) {
-                JOptionPane.showMessageDialog(this, "Selecione um produto para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Selecione um produto para editar.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
             String idStr = String.valueOf(tabela.getValueAt(row, 0));
             try {
                 Long idProduto = Long.parseLong(idStr);
                 Produto p = (listaProdutosEntidades != null) ? listaProdutosEntidades.stream()
-                    .filter(item -> item.getIdProduto() != null && item.getIdProduto().equals(idProduto))
-                    .findFirst().orElse(null) : null;
+                        .filter(item -> item.getIdProduto() != null && item.getIdProduto().equals(idProduto))
+                        .findFirst().orElse(null) : null;
                 if (p == null) {
                     p = new Produto();
                     p.setIdProduto(idProduto);
                 }
-                p.setNome(campoNomeEditarProduto.getText().trim());
+                Categoria catEdit = buscarCategoriaPorNome(textoSeletor(seletorCategoriaEditar));
+                if (catEdit == null) {
+                    JOptionPane.showMessageDialog(this, "Seleccione uma categoria válida.", "Aviso",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                String nomeEdit = campoNomeEditarProduto.getText().trim();
+                if (nomeEdit.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Informe o nome do produto.", "Aviso",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                p.setNome(nomeEdit);
                 try {
-                    String prcStr = campoPrecoEditarProduto.getText().trim().replace(" MT", "").replace(".", "").replace(",", ".");
-                    p.setPreco(Double.parseDouble(prcStr));
-                } catch (NumberFormatException ignored) {}
-                String estadoStr = seletorEstadoEditar.getText().replace(" â–¾", "").trim();
+                    String prcStr = campoPrecoEditarProduto.getText().trim().replace(" MT", "").replace(".", "")
+                            .replace(",", ".");
+                    double novoPreco = Double.parseDouble(prcStr);
+                    if (novoPreco <= 0) {
+                        JOptionPane.showMessageDialog(this, "O preço deve ser maior que zero.", "Aviso",
+                                JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                    p.setPreco(novoPreco);
+                } catch (NumberFormatException exP) {
+                    JOptionPane.showMessageDialog(this, "Informe um preço válido.", "Aviso",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                String unidadeEdit = textoSeletor(seletorUnidadeEditar);
+                if (!unidadeEdit.isEmpty()) {
+                    p.setUnidade(unidadeEdit);
+                }
+                if (campoQuantidadeMinimaEditarProduto != null) {
+                    try {
+                        int qMin = Integer.parseInt(campoQuantidadeMinimaEditarProduto.getText().trim());
+                        if (qMin < 0)
+                            throw new NumberFormatException();
+                        p.setQuantidadeMinima(qMin);
+                    } catch (NumberFormatException exMin) {
+                        JOptionPane.showMessageDialog(this, "A quantidade mínima deve ser um número inteiro >= 0.",
+                                "Aviso", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                }
+                if (campoDescricaoEditarProduto != null) {
+                    String descEdit = campoDescricaoEditarProduto.getText().trim();
+                    p.setDescricao(descEdit.isEmpty() ? null : descEdit);
+                }
+                if (campoCodigoBarrasEditarProduto != null) {
+                    String cbEdit = campoCodigoBarrasEditarProduto.getText();
+                    p.setCodigoBarras(cbEdit != null && !cbEdit.trim().isEmpty() ? cbEdit.trim() : null);
+                }
+                String estadoStr = seletorEstadoEditar.getText().replace(" ▾", "").replace("▾", "").trim();
                 try {
                     p.setEstado(EstadoProduto.valueOf(estadoStr));
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
+                p.setCategoria(catEdit);
+                final String fornEditNome = textoSeletor(seletorFornecedorEditar);
 
                 final Produto fProd = p;
                 botaoGuardarAlteracoes.setEnabled(false);
                 AsyncTask.executar(
-                    () -> {
-                        produtoBO.atualizar(fProd);
-                        return true;
-                    },
-                    res -> {
-                        JOptionPane.showMessageDialog(this, "Produto atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
-                        recarregarDados();
-                        botaoGuardarAlteracoes.setEnabled(true);
-                    },
-                    erro -> {
-                        JOptionPane.showMessageDialog(this, "Erro ao atualizar produto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
-                        botaoGuardarAlteracoes.setEnabled(true);
-                    }
-                );
+                        () -> {
+                            produtoController.atualizar(fProd);
+                            if (fProd.getIdProduto() != null && !fornEditNome.isEmpty()
+                                    && !"Nenhum".equalsIgnoreCase(fornEditNome) && listaTodosFornecedores != null) {
+                                for (Fornecedor f : listaTodosFornecedores) {
+                                    if (f.getNome() != null && f.getNome().equalsIgnoreCase(fornEditNome)) {
+                                        produtoController.associarFornecedor(fProd.getIdProduto(), f.getIdFornecedor());
+                                        break;
+                                    }
+                                }
+                            }
+                            return true;
+                        },
+                        res -> {
+                            JOptionPane.showMessageDialog(this, "Produto atualizado com sucesso!", "Sucesso",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                            recarregarDados();
+                            botaoGuardarAlteracoes.setEnabled(true);
+                        },
+                        erro -> {
+                            JOptionPane.showMessageDialog(this, "Erro ao atualizar produto: " + erro.getMessage(),
+                                    "Erro", JOptionPane.ERROR_MESSAGE);
+                            botaoGuardarAlteracoes.setEnabled(true);
+                        });
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Identificador de produto invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Identificador de produto inválido.", "Erro",
+                        JOptionPane.ERROR_MESSAGE);
             }
         });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
-                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 12
-        );
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 10);
+        botaoCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 14, () -> UiStyle.TEXT));
+        botaoCancelar.setIconTextGap(5);
         botaoCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         BotaoToolbarArredondado botaoDescontinuarCard = new BotaoToolbarArredondado(
-                "Descontinuar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false, 12
-        );
+                "Descontinuar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE,
+                false, 10);
+        botaoDescontinuarCard.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CANCEL, 14, () -> UiStyle.DANGER_TEXT));
+        botaoDescontinuarCard.setIconTextGap(5);
         botaoDescontinuarCard.addActionListener(e -> descontinuarProdutoSelecionado());
         barraBotoes.add(botaoGuardarAlteracoes);
-        barraBotoes.add(Box.createRigidArea(new Dimension(8, 0)));
+        barraBotoes.add(Box.createRigidArea(new Dimension(6, 0)));
         barraBotoes.add(botaoCancelar);
-        barraBotoes.add(Box.createRigidArea(new Dimension(8, 0)));
+        barraBotoes.add(Box.createRigidArea(new Dimension(6, 0)));
         barraBotoes.add(botaoDescontinuarCard);
         fixarLargura(barraBotoes, larguraInterna, 38);
         card.add(barraBotoes);
@@ -830,18 +1060,13 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Fornecedores do produto" fiel a ProdutoFornecedores.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardFornecedoresProduto() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_FORNECEDORES - 32; // 388px
+        int larguraInterna = LARGURA_CARD_FORNECEDORES - 32;
 
-        // <b>Fornecedores do produto</b>
         JLabel titulo = new JLabel("Fornecedores do produto");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -849,7 +1074,6 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="font-size:14px;font-weight:600">Arroz 25kg</div>
         labelNomeProdutoFornecedores = new JLabel("Arroz 25kg");
         labelNomeProdutoFornecedores.setFont(UiStyle.fonteSemiBold(14));
         labelNomeProdutoFornecedores.setForeground(UiStyle.TEXT);
@@ -857,7 +1081,6 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         card.add(labelNomeProdutoFornecedores);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <span class="k">Fornecedores associados</span>
         JLabel labelAssociados = new JLabel("Fornecedores associados");
         labelAssociados.setFont(UiStyle.fonte(12, Font.PLAIN));
         labelAssociados.setForeground(UiStyle.MUTED);
@@ -865,63 +1088,65 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         card.add(labelAssociados);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="mt"><table>...</table></div>
         JPanel miniTabelaFornecedores = criarMiniTabelaFornecedores(larguraInterna);
         card.add(miniTabelaFornecedores);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Associar fornecedor</span><div class="in" style="min-width:0">Lacticínios Norte ▾</div></div>
         seletorAssociarFornecedor = new BotaoSeletorFormulario(
-                "Lacticínios Norte ▾",
-                new String[] {"Lacticínios Norte", "Distribuidora Sol", "Mercearia Atlas"}
-        );
+                "Lacticínios Norte",
+                new String[] { "Lacticínios Norte", "Distribuidora Sol", "Mercearia Atlas" });
         JPanel blocoAssociar = criarCampoComLabel("Associar fornecedor", seletorAssociarFornecedor);
         fixarLargura(blocoAssociar, larguraInterna, 60);
         card.add(blocoAssociar);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt">+ Associar</span><span class="bt s">Fechar</span></div>
         JPanel barraBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraBotoes.setOpaque(false);
 
         botaoAssociarFornecedor = new BotaoToolbarArredondado(
-                "+ Associar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
-        );
+                "+ Associar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true);
+        botaoAssociarFornecedor.setIcon(UiStyle.icone(MaterialDesignP.PLUS, 15, UiStyle.ACCENT_TEXT));
+        botaoAssociarFornecedor.setIconTextGap(6);
         botaoAssociarFornecedor.addActionListener(e -> {
             if (idProdutoAtualFornecedores == null) {
-                JOptionPane.showMessageDialog(this, "Selecione um produto na tabela primeiro.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Selecione um produto na tabela primeiro.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
             String textoSel = seletorAssociarFornecedor != null ? seletorAssociarFornecedor.getText() : "";
             if (textoSel == null || textoSel.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Selecione um fornecedor para associar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Selecione um fornecedor para associar.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            final String nomeSel = textoSel.replace(" â–¾", "").replace(" â–¾", "").replace(" -", "").replace(" ?", "").trim();
+            final String nomeSel = textoSel.replace(" ▾", "").replace("▾", "").trim();
             Fornecedor fornecedorEncontrado = (listaTodosFornecedores != null) ? listaTodosFornecedores.stream()
-                .filter(f -> f.getNome() != null && f.getNome().equalsIgnoreCase(nomeSel))
-                .findFirst().orElse(null) : null;
+                    .filter(f -> f.getNome() != null && f.getNome().equalsIgnoreCase(nomeSel))
+                    .findFirst().orElse(null) : null;
             if (fornecedorEncontrado == null) {
-                JOptionPane.showMessageDialog(this, "Fornecedor nÃ£o encontrado na lista.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Fornecedor não encontrado na lista.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
             final Long idForn = fornecedorEncontrado.getIdFornecedor();
             AsyncTask.executar(
-                () -> {
-                    produtoController.associarFornecedor(idProdutoAtualFornecedores, idForn);
-                    return true;
-                },
-                sucesso -> {
-                    JOptionPane.showMessageDialog(this, "Fornecedor associado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                    carregarFornecedoresDoProduto(idProdutoAtualFornecedores);
-                },
-                erro -> JOptionPane.showMessageDialog(this, "Erro ao associar fornecedor: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
-            );
+                    () -> {
+                        produtoController.associarFornecedor(idProdutoAtualFornecedores, idForn);
+                        return true;
+                    },
+                    sucesso -> {
+                        JOptionPane.showMessageDialog(this, "Fornecedor associado com sucesso!", "Sucesso",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        carregarFornecedoresDoProduto(idProdutoAtualFornecedores);
+                    },
+                    erro -> JOptionPane.showMessageDialog(this, "Erro ao associar fornecedor: " + erro.getMessage(),
+                            "Erro", JOptionPane.ERROR_MESSAGE));
         });
 
         BotaoToolbarArredondado botaoFechar = new BotaoToolbarArredondado(
-                "Fechar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
-        );
+                "Fechar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+        botaoFechar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoFechar.setIconTextGap(6);
         botaoFechar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         barraBotoes.add(botaoAssociarFornecedor);
@@ -956,25 +1181,30 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 int col = miniTabelaFornecedores.columnAtPoint(e.getPoint());
                 int row = miniTabelaFornecedores.rowAtPoint(e.getPoint());
                 if (col == 2 && row >= 0 && row < miniTabelaFornecedores.getRowCount()) {
-                    if (idProdutoAtualFornecedores == null || listaFornecedoresDoProduto == null || row >= listaFornecedoresDoProduto.size()) {
+                    if (idProdutoAtualFornecedores == null || listaFornecedoresDoProduto == null
+                            || row >= listaFornecedoresDoProduto.size()) {
                         return;
                     }
                     Fornecedor f = listaFornecedoresDoProduto.get(row);
-                    int opt = JOptionPane.showConfirmDialog(ProdutosPanel.this, 
-                        "Deseja desassociar o fornecedor \"" + f.getNome() + "\" deste produto?", 
-                        "Confirmar RemoÃ§Ã£o", JOptionPane.YES_NO_OPTION);
+                    int opt = JOptionPane.showConfirmDialog(ProdutosPanel.this,
+                            "Deseja desassociar o fornecedor \"" + f.getNome() + "\" deste produto?",
+                            "Confirmar Remoção", JOptionPane.YES_NO_OPTION);
                     if (opt == JOptionPane.YES_OPTION) {
                         AsyncTask.executar(
-                            () -> {
-                                produtoController.desassociarFornecedor(idProdutoAtualFornecedores, f.getIdFornecedor());
-                                return true;
-                            },
-                            sucesso -> {
-                                JOptionPane.showMessageDialog(ProdutosPanel.this, "Fornecedor desassociado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                                carregarFornecedoresDoProduto(idProdutoAtualFornecedores);
-                            },
-                            erro -> JOptionPane.showMessageDialog(ProdutosPanel.this, "Erro ao desassociar: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
-                        );
+                                () -> {
+                                    produtoController.desassociarFornecedor(idProdutoAtualFornecedores,
+                                            f.getIdFornecedor());
+                                    return true;
+                                },
+                                sucesso -> {
+                                    JOptionPane.showMessageDialog(ProdutosPanel.this,
+                                            "Fornecedor desassociado com sucesso!", "Sucesso",
+                                            JOptionPane.INFORMATION_MESSAGE);
+                                    carregarFornecedoresDoProduto(idProdutoAtualFornecedores);
+                                },
+                                erro -> JOptionPane.showMessageDialog(ProdutosPanel.this,
+                                        "Erro ao desassociar: " + erro.getMessage(), "Erro",
+                                        JOptionPane.ERROR_MESSAGE));
                     }
                 }
             }
@@ -1008,27 +1238,452 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         JPanel container = new JPanel(new BorderLayout());
         container.setOpaque(false);
         container.add(header, BorderLayout.NORTH);
-        container.add(miniTabela, BorderLayout.CENTER);
+        JScrollPane scrollMini = new JScrollPane(miniTabela);
+        scrollMini.setBorder(BorderFactory.createEmptyBorder());
+        scrollMini.setOpaque(false);
+        scrollMini.getViewport().setOpaque(false);
+        scrollMini.getViewport().setBackground(UiStyle.SURFACE);
+        container.add(scrollMini, BorderLayout.CENTER);
 
-        int alturaTotal = 29 + (DADOS_FORNECEDORES_PRODUTO.length * 29);
+        int alturaTotal = 29 + (3 * 29);
         fixarLargura(container, larguraInterna, alturaTotal);
         return container;
+    }
+
+    private Categoria buscarCategoriaPorNome(String nome) {
+        if (listaCategoriasReais == null || nome == null) {
+            return null;
+        }
+        for (Categoria c : listaCategoriasReais) {
+            if (c != null && c.getNome() != null && c.getNome().equalsIgnoreCase(nome.trim())) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+    private JComponent comBotaoNovaCategoria(BotaoSeletorFormulario seletor) {
+        return comBotoesMaisEMenos(
+                seletor,
+                "Nova categoria",
+                mais -> abrirDialogoNovaCategoria(seletor, mais),
+                "Eliminar categoria seleccionada",
+                menos -> eliminarCategoriaSelecionada(seletor, menos));
+    }
+
+    private JComponent comBotaoNovaUnidade(BotaoSeletorFormulario seletor) {
+        return comBotoesMaisEMenos(
+                seletor,
+                "Nova unidade",
+                mais -> abrirDialogoNovaUnidade(seletor),
+                "Remover unidade seleccionada",
+                menos -> removerUnidadeSelecionada(seletor));
+    }
+
+    private JComponent comBotaoNovoFornecedor(BotaoSeletorFormulario seletor) {
+        return comBotaoMais(seletor, "Novo fornecedor", mais -> abrirDialogoNovoFornecedorRapido(seletor));
+    }
+
+    private JComponent comBotaoLeitorCodigoBarras(JTextField campoAlvo) {
+        JPanel linha = new JPanel(new BorderLayout(6, 0));
+        linha.setOpaque(false);
+
+        BotaoToolbarArredondado btnLeitor = new BotaoToolbarArredondado(
+                "Leitor Celular", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 10);
+        btnLeitor.setToolTipText("Escanear código de barras pelo telemóvel na rede Wi-Fi");
+        btnLeitor.addActionListener(e -> abrirLeitorCodigoBarrasParaCampo(campoAlvo));
+
+        linha.add(campoAlvo, BorderLayout.CENTER);
+        linha.add(btnLeitor, BorderLayout.EAST);
+        return linha;
+    }
+
+    /*
+     * private void abrirLeitorCodigoBarrasParaCampo(JTextField campoAlvo) {
+     * try {
+     * String url = ServidorLeitorCodigoBarras.iniciarOuAtualizarOuvinte(codigo -> {
+     * if (codigo != null && !codigo.trim().isEmpty() && campoAlvo != null) {
+     * campoAlvo.setText(codigo.trim());
+     * campoAlvo.setForeground(UiStyle.TEXT);
+     * campoAlvo.repaint();
+     * }
+     * });
+     * JOptionPane.showMessageDialog(
+     * this,
+     * "Leitor Mobile ativo para preencher o Código de Barras do produto!\n\n"
+     * +
+     * "1. Também pode usar diretamente qualquer leitor USB (basta clicar no campo e apontar o leitor).\n"
+     * +
+     * "2. Para usar o telemóvel, conecte-o na mesma rede Wi-Fi/Hotspot e aceda a:\n\n   "
+     * + url + "\n\n"
+     * +
+     * "O código lido será preenchido automaticamente no campo 'Código de barras'.",
+     * "Scanner de Código de Barras (USB / Telemóvel)",
+     * JOptionPane.INFORMATION_MESSAGE
+     * );
+     * } catch (Exception ex) {
+     * JOptionPane.showMessageDialog(
+     * this,
+     * "Não foi possível iniciar o servidor do leitor móvel: " + ex.getMessage(),
+     * "Erro",
+     * JOptionPane.ERROR_MESSAGE
+     * );
+     * }
+     * }
+     */
+
+    private void abrirLeitorCodigoBarrasParaCampo(JTextField campoAlvo) {
+        try {
+            String url = ServidorLeitorCodigoBarras.iniciarOuAtualizarOuvinte(codigo -> {
+                if (codigo != null && !codigo.trim().isEmpty() && campoAlvo != null) {
+                    campoAlvo.setText(codigo.trim());
+                    campoAlvo.setForeground(UiStyle.TEXT);
+                    campoAlvo.repaint();
+                }
+            });
+
+            JPanel painelQr = new JPanel();
+            painelQr.setLayout(new BoxLayout(painelQr, BoxLayout.Y_AXIS));
+            painelQr.setOpaque(false);
+
+            JLabel labelInstrucoes = new JLabel("<html><div style='text-align: center;'>"
+                    + "Leitor Mobile ativo na rede local!<br><br>"
+                    + "1. Conecte o telemóvel na mesma rede Wi-Fi/Hotspot deste computador.<br>"
+                    + "2. <b>Aponte a câmara para o QR Code abaixo</b>:</div></html>");
+            labelInstrucoes.setForeground(UiStyle.TEXT);
+            labelInstrucoes.setAlignmentX(Component.CENTER_ALIGNMENT);
+            painelQr.add(labelInstrucoes);
+            painelQr.add(Box.createRigidArea(new Dimension(0, 16)));
+
+            try {
+                QRCodeWriter qrCodeWriter = new QRCodeWriter();
+                // Gera o QR Code com 200x200 pixels
+                BitMatrix bitMatrix = qrCodeWriter.encode(url, BarcodeFormat.QR_CODE, 200, 200);
+                BufferedImage imagemQr = MatrixToImageWriter.toBufferedImage(bitMatrix);
+
+                JLabel labelImagemQr = new JLabel(new ImageIcon(imagemQr));
+                labelImagemQr.setAlignmentX(Component.CENTER_ALIGNMENT);
+                painelQr.add(labelImagemQr);
+            } catch (Exception e) {
+                System.err.println("Erro ao gerar QR Code: " + e.getMessage());
+            }
+
+            painelQr.add(Box.createRigidArea(new Dimension(0, 16)));
+
+            JTextField campoLink = new JTextField(url);
+            campoLink.setEditable(false);
+            campoLink.setHorizontalAlignment(JTextField.CENTER);
+            campoLink.setBackground(UiStyle.INPUT_BG);
+            campoLink.setForeground(UiStyle.TEXT);
+            campoLink.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(UiStyle.INPUT_BORDER),
+                    new EmptyBorder(8, 8, 8, 8)));
+            campoLink.setAlignmentX(Component.CENTER_ALIGNMENT);
+            campoLink.setMaximumSize(new Dimension(300, 35));
+            painelQr.add(campoLink);
+
+            JLabel labelDica = new JLabel("<html><br><div style='font-size: 11px; text-align: center;'>"
+                    + "Também pode usar diretamente um leitor USB apontando para o campo.<br>"
+                    + "O código lido será preenchido automaticamente no formulário.</div></html>");
+            labelDica.setForeground(UiStyle.MUTED);
+            labelDica.setAlignmentX(Component.CENTER_ALIGNMENT);
+            painelQr.add(labelDica);
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    painelQr,
+                    "Scanner de Código de Barras (USB / Telemóvel)",
+                    JOptionPane.PLAIN_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Não foi possível iniciar o servidor do leitor móvel: " + ex.getMessage(),
+                    "Erro",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private JComponent comBotaoMais(BotaoSeletorFormulario seletor, String dica,
+            java.util.function.Consumer<JButton> acao) {
+        JPanel linha = new JPanel(new BorderLayout(6, 0));
+        linha.setOpaque(false);
+
+        BotaoToolbarArredondado mais = new BotaoToolbarArredondado(
+                "", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 11);
+        mais.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PLUS, 15, () -> UiStyle.TEXT));
+        if (mais.getIcon() == null) {
+            mais.setText("+");
+        }
+        mais.setToolTipText(dica);
+        mais.addActionListener(e -> acao.accept(mais));
+
+        linha.add(seletor, BorderLayout.CENTER);
+        linha.add(mais, BorderLayout.EAST);
+        return linha;
+    }
+
+    private JComponent comBotoesMaisEMenos(
+            BotaoSeletorFormulario seletor,
+            String dicaMais,
+            java.util.function.Consumer<JButton> acaoMais,
+            String dicaMenos,
+            java.util.function.Consumer<JButton> acaoMenos) {
+        JPanel linha = new JPanel(new BorderLayout(4, 0));
+        linha.setOpaque(false);
+
+        BotaoToolbarArredondado mais = new BotaoToolbarArredondado(
+                "", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 9);
+        mais.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PLUS, 14, () -> UiStyle.TEXT));
+        if (mais.getIcon() == null) {
+            mais.setText("+");
+        }
+        mais.setToolTipText(dicaMais);
+        mais.addActionListener(e -> acaoMais.accept(mais));
+
+        BotaoToolbarArredondado menos = new BotaoToolbarArredondado(
+                "", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false, 9);
+        menos.setIcon(UiStyle.iconeDinamico(MaterialDesignD.DELETE_OUTLINE, 14, () -> UiStyle.DANGER_TEXT));
+        if (menos.getIcon() == null) {
+            menos.setText("-");
+        }
+        menos.setToolTipText(dicaMenos);
+        menos.addActionListener(e -> acaoMenos.accept(menos));
+
+        JPanel botoes = new JPanel(new GridLayout(1, 2, 4, 0));
+        botoes.setOpaque(false);
+        botoes.add(mais);
+        botoes.add(menos);
+
+        linha.add(seletor, BorderLayout.CENTER);
+        linha.add(botoes, BorderLayout.EAST);
+        return linha;
+    }
+
+    private void eliminarCategoriaSelecionada(BotaoSeletorFormulario seletorOrigem, JButton botaoOrigem) {
+        String nomeCat = textoSeletor(seletorOrigem);
+        Categoria cat = buscarCategoriaPorNome(nomeCat);
+        if (cat == null || cat.getIdCategoria() == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione uma categoria válida para eliminar.", "Eliminar categoria",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (listaProdutosEntidades != null) {
+            long emUso = listaProdutosEntidades.stream()
+                    .filter(p -> p.getCategoria() != null
+                            && cat.getIdCategoria().equals(p.getCategoria().getIdCategoria()))
+                    .count();
+            if (emUso > 0) {
+                JOptionPane.showMessageDialog(this,
+                        "Não é possível eliminar a categoria \"" + cat.getNome() + "\" porque está associada a " + emUso
+                                + " produto(s).",
+                        "Categoria em uso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+        int op = JOptionPane.showConfirmDialog(this,
+                "Deseja eliminar a categoria \"" + cat.getNome() + "\"?",
+                "Confirmar eliminação", JOptionPane.YES_NO_OPTION);
+        if (op != JOptionPane.YES_OPTION) {
+            return;
+        }
+        botaoOrigem.setEnabled(false);
+        AsyncTask.executar(
+                () -> {
+                    produtoController.eliminarCategoria(cat.getIdCategoria());
+                    return true;
+                },
+                ok -> {
+                    botaoOrigem.setEnabled(true);
+                    recarregarDados();
+                    JOptionPane.showMessageDialog(this, "Categoria eliminada com sucesso!", "Sucesso",
+                            JOptionPane.INFORMATION_MESSAGE);
+                },
+                erro -> {
+                    botaoOrigem.setEnabled(true);
+                    JOptionPane.showMessageDialog(this,
+                            "Não foi possível eliminar a categoria (pode estar em uso): " + erro.getMessage(),
+                            "Erro", JOptionPane.ERROR_MESSAGE);
+                });
+    }
+
+    private void removerUnidadeSelecionada(BotaoSeletorFormulario seletorOrigem) {
+        String unidadeAtual = textoSeletor(seletorOrigem);
+        if (unidadeAtual.isEmpty()) {
+            return;
+        }
+        if (listaUnidades.size() <= 1) {
+            JOptionPane.showMessageDialog(this, "Deve existir pelo menos uma unidade na lista.", "Aviso",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (listaProdutosEntidades != null) {
+            boolean emUso = listaProdutosEntidades.stream()
+                    .anyMatch(p -> p.getUnidade() != null
+                            && chaveUnidade(p.getUnidade()).equals(chaveUnidade(unidadeAtual)));
+            if (emUso) {
+                JOptionPane.showMessageDialog(this,
+                        "A unidade \"" + unidadeAtual
+                                + "\" está em uso por produtos cadastrados e não pode ser removida.",
+                        "Unidade em uso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+        int op = JOptionPane.showConfirmDialog(this,
+                "Deseja remover a unidade \"" + unidadeAtual + "\" da lista?",
+                "Remover unidade", JOptionPane.YES_NO_OPTION);
+        if (op != JOptionPane.YES_OPTION) {
+            return;
+        }
+        listaUnidades.removeIf(u -> chaveUnidade(u).equals(chaveUnidade(unidadeAtual)));
+        actualizarOpcoesUnidade();
+        String proxima = listaUnidades.isEmpty() ? "Unidade" : listaUnidades.get(0);
+        seletorOrigem.setText(proxima);
+    }
+
+    private void abrirDialogoNovoFornecedorRapido(BotaoSeletorFormulario seletorDestino) {
+        Component root = SwingUtilities.getWindowAncestor(this);
+        if (root instanceof MainFrame) {
+            int op = JOptionPane.showConfirmDialog(this,
+                    "Deseja abrir o ecrã de Fornecedores para cadastrar um novo fornecedor completo?",
+                    "Novo fornecedor", JOptionPane.YES_NO_OPTION);
+            if (op == JOptionPane.YES_OPTION) {
+                MainFrame mf = (MainFrame) root;
+                mf.mostrarPainel(MainFrame.PAINEL_FORNECEDORES);
+                JPanel pnl = mf.getPainelPorId(MainFrame.PAINEL_FORNECEDORES);
+                if (pnl instanceof FornecedoresPanel) {
+                    ((FornecedoresPanel) pnl).abrirModoLateral(FornecedoresPanel.ModoPainelLateral.NOVO_FORNECEDOR);
+                }
+            }
+        }
+    }
+
+    private void abrirDialogoNovaUnidade(BotaoSeletorFormulario seletorDestino) {
+        String entrada = JOptionPane.showInputDialog(
+                this, "Nome da nova unidade (ex.: Fardo, Garrafa):", "Nova unidade", JOptionPane.PLAIN_MESSAGE);
+        if (entrada == null) {
+            return;
+        }
+        String nome = entrada.trim().replaceAll("\\s+", " ");
+        if (nome.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Informe o nome da unidade.", "Nova unidade",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (nome.length() > TAMANHO_MAXIMO_UNIDADE) {
+            JOptionPane.showMessageDialog(this,
+                    "A unidade não pode ter mais de " + TAMANHO_MAXIMO_UNIDADE + " caracteres.",
+                    "Nova unidade", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String existente = procurarUnidade(nome);
+        if (existente != null) {
+            seletorDestino.setText(existente);
+            return;
+        }
+        nome = Character.toUpperCase(nome.charAt(0)) + nome.substring(1);
+        listaUnidades.add(nome);
+        actualizarOpcoesUnidade();
+        seletorDestino.setText(nome);
+    }
+
+    private void mesclarUnidadesDosProdutos(List<Produto> produtos) {
+        if (produtos == null) {
+            return;
+        }
+        for (Produto p : produtos) {
+            if (p == null || p.getUnidade() == null || p.getUnidade().trim().isEmpty()) {
+                continue;
+            }
+            String u = p.getUnidade().trim();
+            if (procurarUnidade(u) == null) {
+                listaUnidades.add(u);
+            }
+        }
+        actualizarOpcoesUnidade();
+    }
+
+    private void actualizarOpcoesUnidade() {
+        String[] arr = listaUnidades.toArray(new String[0]);
+        if (seletorUnidadeNovo != null) {
+            seletorUnidadeNovo.setOpcoes(arr);
+        }
+        if (seletorUnidadeEditar != null) {
+            seletorUnidadeEditar.setOpcoes(arr);
+        }
+    }
+
+    private String procurarUnidade(String nome) {
+        String chave = chaveUnidade(nome);
+        for (String u : listaUnidades) {
+            if (chaveUnidade(u).equals(chave)) {
+                return u;
+            }
+        }
+        return null;
+    }
+
+    private static String chaveUnidade(String texto) {
+        return java.text.Normalizer.normalize(texto, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "").trim().toLowerCase();
+    }
+
+    private void abrirDialogoNovaCategoria(BotaoSeletorFormulario seletorDestino, JButton botaoOrigem) {
+        String entrada = JOptionPane.showInputDialog(
+                this, "Nome da nova categoria:", "Nova categoria", JOptionPane.PLAIN_MESSAGE);
+        if (entrada == null) {
+            return;
+        }
+        botaoOrigem.setEnabled(false);
+        AsyncTask.executar(
+                () -> produtoController.criarCategoria(entrada),
+                nova -> {
+                    botaoOrigem.setEnabled(true);
+                    registarCategoriaCriada(nova);
+                    seletorDestino.setText(nova.getNome());
+                },
+                erro -> {
+                    botaoOrigem.setEnabled(true);
+                    JOptionPane.showMessageDialog(this, erro.getMessage(), "Nova categoria",
+                            JOptionPane.WARNING_MESSAGE);
+                });
+    }
+
+    private void registarCategoriaCriada(Categoria nova) {
+        List<Categoria> actualizada = new ArrayList<>();
+        if (listaCategoriasReais != null) {
+            actualizada.addAll(listaCategoriasReais);
+        }
+        actualizada.add(nova);
+        this.listaCategoriasReais = actualizada;
+
+        String[] nomes = actualizada.stream()
+                .map(Categoria::getNome)
+                .toArray(String[]::new);
+        if (seletorCategoriaNovo != null) {
+            seletorCategoriaNovo.setOpcoes(nomes);
+        }
+        if (seletorCategoriaEditar != null) {
+            seletorCategoriaEditar.setOpcoes(nomes);
+        }
     }
 
     private void descontinuarProdutoSelecionado() {
         int row = tabela.getSelectedRow();
         if (row < 0 || row >= tabela.getRowCount()) {
-            JOptionPane.showMessageDialog(this, "Selecione um produto na tabela para descontinuar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Selecione um produto na tabela para descontinuar.", "Aviso",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
         String idStr = String.valueOf(tabela.getValueAt(row, 0));
-        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja descontinuar o produto #" + idStr + "?", "Confirmar Descontinuação", JOptionPane.YES_NO_OPTION);
-        if (opt != JOptionPane.YES_OPTION) return;
+        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja descontinuar o produto #" + idStr + "?",
+                "Confirmar Descontinuação", JOptionPane.YES_NO_OPTION);
+        if (opt != JOptionPane.YES_OPTION)
+            return;
         try {
             Long idProduto = Long.parseLong(idStr);
             Produto p = (listaProdutosEntidades != null) ? listaProdutosEntidades.stream()
-                .filter(item -> item.getIdProduto() != null && item.getIdProduto().equals(idProduto))
-                .findFirst().orElse(null) : null;
+                    .filter(item -> item.getIdProduto() != null && item.getIdProduto().equals(idProduto))
+                    .findFirst().orElse(null) : null;
             if (p == null) {
                 p = new Produto();
                 p.setIdProduto(idProduto);
@@ -1036,21 +1691,23 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             p.setEstado(EstadoProduto.DESCONTINUADO);
             final Produto fProd = p;
             AsyncTask.executar(
-                () -> {
-                    produtoBO.atualizar(fProd);
-                    return true;
-                },
-                res -> {
-                    JOptionPane.showMessageDialog(this, "Produto #" + idStr + " descontinuado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
-                    recarregarDados();
-                },
-                erro -> {
-                    JOptionPane.showMessageDialog(this, "Erro ao descontinuar produto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
-                }
-            );
+                    () -> {
+                        produtoController.atualizar(fProd);
+                        return true;
+                    },
+                    res -> {
+                        JOptionPane.showMessageDialog(this, "Produto #" + idStr + " descontinuado com sucesso!",
+                                "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                        recarregarDados();
+                    },
+                    erro -> {
+                        JOptionPane.showMessageDialog(this, "Erro ao descontinuar produto: " + erro.getMessage(),
+                                "Erro", JOptionPane.ERROR_MESSAGE);
+                    });
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Identificador de produto inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Identificador de produto inválido.", "Erro",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -1062,15 +1719,56 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         if (row < 0 || row >= tabela.getRowCount()) {
             row = 0;
         }
+        String idStr = String.valueOf(tabela.getValueAt(row, 0));
         String nome = String.valueOf(tabela.getValueAt(row, 1));
         String categoria = String.valueOf(tabela.getValueAt(row, 2));
-        String preco = String.valueOf(tabela.getValueAt(row, 3)).replace(" MT", "").trim();
-        String estado = String.valueOf(tabela.getValueAt(row, 5));
+        String estado = String.valueOf(tabela.getValueAt(row, 8));
+
+        Produto entidade = null;
+        try {
+            Long idProd = Long.parseLong(idStr);
+            if (listaProdutosEntidades != null) {
+                for (Produto p : listaProdutosEntidades) {
+                    if (p != null && idProd.equals(p.getIdProduto())) {
+                        entidade = p;
+                        break;
+                    }
+                }
+            }
+        } catch (NumberFormatException ignored) {
+        }
 
         campoNomeEditarProduto.setText(nome);
-        seletorCategoriaEditar.setText(categoria + " ▾");
-        seletorEstadoEditar.setText(estado + " ▾");
-        campoPrecoEditarProduto.setText(preco);
+        seletorCategoriaEditar.setText(categoria);
+        seletorEstadoEditar.setText(estado);
+        if (entidade != null) {
+            campoPrecoEditarProduto.setText(
+                    String.format(Locale.GERMANY, "%.2f", entidade.getPreco() != null ? entidade.getPreco() : 0.0));
+            if (seletorUnidadeEditar != null) {
+                String un = entidade.getUnidade() != null && !entidade.getUnidade().isEmpty() ? entidade.getUnidade()
+                        : "Unidade";
+                seletorUnidadeEditar.setText(un);
+            }
+            if (campoQuantidadeMinimaEditarProduto != null) {
+                campoQuantidadeMinimaEditarProduto.setText(
+                        String.valueOf(entidade.getQuantidadeMinima() != null ? entidade.getQuantidadeMinima() : 0));
+            }
+            if (campoDescricaoEditarProduto != null) {
+                campoDescricaoEditarProduto.setText(entidade.getDescricao() != null ? entidade.getDescricao() : "");
+            }
+            if (campoCodigoBarrasEditarProduto != null) {
+                campoCodigoBarrasEditarProduto
+                        .setText(entidade.getCodigoBarras() != null ? entidade.getCodigoBarras() : "");
+            }
+            if (seletorFornecedorEditar != null) {
+                if (entidade.getFornecedor() != null && !entidade.getFornecedor().isEmpty()) {
+                    Fornecedor primeiro = entidade.getFornecedor().iterator().next();
+                    seletorFornecedorEditar.setText(primeiro.getNome() != null ? primeiro.getNome() : "Nenhum");
+                } else {
+                    seletorFornecedorEditar.setText("Nenhum");
+                }
+            }
+        }
     }
 
     private void sincronizarDadosProdutoParaFornecedores() {
@@ -1089,49 +1787,55 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             this.idProdutoAtualFornecedores = idProduto;
             carregarFornecedoresDoProduto(idProduto);
         } catch (Exception ex) {
-            // Ignora erro de parse
         }
     }
 
     private void carregarFornecedoresDoProduto(Long idProduto) {
-        if (idProduto == null) return;
+        if (idProduto == null)
+            return;
         AsyncTask.executar(
-            () -> {
-                List<Fornecedor> associados = produtoController.listarFornecedoresDoProduto(idProduto);
-                List<Fornecedor> todos = fornecedorController.listarTodos();
-                return new Object[] { associados, todos };
-            },
-            res -> {
-                Object[] arr = (Object[]) res;
-                @SuppressWarnings("unchecked")
-                List<Fornecedor> associados = (List<Fornecedor>) arr[0];
-                @SuppressWarnings("unchecked")
-                List<Fornecedor> todos = (List<Fornecedor>) arr[1];
-                this.listaFornecedoresDoProduto = associados != null ? associados : new ArrayList<>();
-                this.listaTodosFornecedores = todos != null ? todos : new ArrayList<>();
-                
-                if (modeloFornecedores != null) {
-                    modeloFornecedores.setRowCount(0);
-                    for (Fornecedor f : this.listaFornecedoresDoProduto) {
-                        String cto = (f.getContacto() != null && !f.getContacto().isEmpty()) 
-                            ? f.getContacto().get(0).getContacto() : "-";
-                        modeloFornecedores.addRow(new Object[] { f.getNome(), cto, "Remover" });
+                () -> {
+                    List<Fornecedor> associados = produtoController.listarFornecedoresDoProduto(idProduto);
+                    List<Fornecedor> todos = fornecedorController.listarTodos();
+                    return new Object[] { associados, todos };
+                },
+                res -> {
+                    Object[] arr = (Object[]) res;
+                    @SuppressWarnings("unchecked")
+                    List<Fornecedor> associados = (List<Fornecedor>) arr[0];
+                    @SuppressWarnings("unchecked")
+                    List<Fornecedor> todos = (List<Fornecedor>) arr[1];
+                    this.listaFornecedoresDoProduto = associados != null ? associados : new ArrayList<>();
+                    this.listaTodosFornecedores = todos != null ? todos : new ArrayList<>();
+
+                    if (modeloFornecedores != null) {
+                        modeloFornecedores.setRowCount(0);
+                        for (Fornecedor f : this.listaFornecedoresDoProduto) {
+                            String cto = (f.getContacto() != null && !f.getContacto().isEmpty())
+                                    ? f.getContacto().get(0).getContacto()
+                                    : "-";
+                            modeloFornecedores.addRow(new Object[] { f.getNome(), cto, "Remover" });
+                        }
                     }
-                }
-                
-                if (seletorAssociarFornecedor != null && !this.listaTodosFornecedores.isEmpty()) {
-                    String[] nomes = this.listaTodosFornecedores.stream()
-                        .map(Fornecedor::getNome)
-                        .toArray(String[]::new);
-                    seletorAssociarFornecedor.setOpcoes(nomes);
-                    seletorAssociarFornecedor.setText(nomes[0] + " â–¾");
-                }
-            },
-            erro -> {}
-        );
+
+                    if (seletorAssociarFornecedor != null && !this.listaTodosFornecedores.isEmpty()) {
+                        String[] nomes = this.listaTodosFornecedores.stream()
+                                .map(Fornecedor::getNome)
+                                .toArray(String[]::new);
+                        seletorAssociarFornecedor.setOpcoes(nomes);
+                        seletorAssociarFornecedor.setText(nomes[0]);
+                    }
+                },
+                erro -> {
+                });
     }
 
     private JPanel criarCampoComLabel(String textoLabel, JComponent campo) {
+        if (campo instanceof javax.swing.text.JTextComponent
+                && campo.getClientProperty(FlatClientProperties.PLACEHOLDER_TEXT) == null) {
+            String dica = textoLabel.replaceAll("\\(.*?\\)", "").replace("*", "").trim().toLowerCase();
+            campo.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Introduzir " + dica);
+        }
         JPanel painel = new JPanel();
         painel.setOpaque(false);
         painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
@@ -1163,7 +1867,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
     private void atualizarTabelaFiltrada() {
         String termo = campoBuscarProduto.getTextoReal().trim().toLowerCase();
-        List<Object[]> fonteDados = (dadosProdutosCarregados != null) ? dadosProdutosCarregados : Arrays.asList(DADOS_INICIAIS);
+        List<Object[]> fonteDados = (dadosProdutosCarregados != null) ? dadosProdutosCarregados : new ArrayList<>();
         List<Object[]> filtrados = new ArrayList<>();
         for (Object[] linha : fonteDados) {
             String id = String.valueOf(linha[0]).toLowerCase();
@@ -1184,9 +1888,6 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * .mt th { padding:6px 8px; font-size:12px; color:#A3ADC2; font-weight:600; border-bottom:1px solid #2A3040 }
-     */
     private static final class RenderizadorMiniCabecalho extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1201,15 +1902,11 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             label.setFont(UiStyle.fonteSemiBold(12));
             label.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.BORDER),
-                    new EmptyBorder(6, 8, 6, 8)
-            ));
+                    new EmptyBorder(6, 8, 6, 8)));
             return label;
         }
     }
 
-    /**
-     * .mt td { padding:6px 8px; font-size:12px; border-bottom:1px solid #242B3B }
-     */
     private static final class RenderizadorMiniCelula extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1225,15 +1922,11 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             label.setFont(UiStyle.fonte(12, Font.PLAIN));
             label.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.TABLE_ROW_BORDER),
-                    new EmptyBorder(6, 8, 6, 8)
-            ));
+                    new EmptyBorder(6, 8, 6, 8)));
             return label;
         }
     }
 
-    /**
-     * th { text-align:left; color:#A3ADC2; font-weight:600; padding:11px 14px; border-bottom:1px solid #2A3040 }
-     */
     private static final class RenderizadorCabecalho extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1248,15 +1941,11 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             label.setFont(UiStyle.fonteSemiBold(13));
             label.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.BORDER),
-                    new EmptyBorder(11, 14, 11, 14)
-            ));
+                    new EmptyBorder(11, 14, 11, 14)));
             return label;
         }
     }
 
-    /**
-     * td { padding:11px 14px; border-bottom:1px solid #242B3B }
-     */
     private static final class RenderizadorCelulaTexto extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1272,17 +1961,11 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             label.setFont(UiStyle.fonte(13, Font.PLAIN));
             label.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.TABLE_ROW_BORDER),
-                    new EmptyBorder(11, 14, 11, 14)
-            ));
+                    new EmptyBorder(11, 14, 11, 14)));
             return label;
         }
     }
 
-    /**
-     * Renderiza os chips da coluna Estado:
-     * .ch.g -> ATIVO (#12402A / #7FE3A8)
-     * .ch.r -> DESCONTINUADO (#4F1B1B / #FF9C9C)
-     */
     private static final class RenderizadorCelulaEstado extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1306,8 +1989,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             container.setBackground(isSelected ? UiStyle.TABLE_SELECTION_BG : UiStyle.SURFACE);
             container.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.TABLE_ROW_BORDER),
-                    new EmptyBorder(8, 14, 8, 14)
-            ));
+                    new EmptyBorder(8, 14, 8, 14)));
             container.add(new ChipEstado(texto, bgChip, fgChip));
             return container;
         }
@@ -1342,9 +2024,6 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Seletor estilo .in ("Categoria: Todas ▾").
-     */
     private static final class BotaoSeletorCategoria extends JButton {
         private static final long serialVersionUID = 1L;
 
@@ -1359,11 +2038,17 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             setContentAreaFilled(false);
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setBorder(new EmptyBorder(0, 12, 0, 12));
+            setBorder(new EmptyBorder(0, 12, 0, 28));
+        }
+
+        @Override
+        public String getText() {
+            return UiStyle.removerMarcadorSeta(super.getText());
         }
 
         @Override
         protected void paintComponent(Graphics g) {
+            setForeground(UiStyle.TEXT);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -1374,16 +2059,14 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
                 g2.setColor(UiStyle.INPUT_BORDER);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
+                super.paintComponent(g);
+                UiStyle.desenharChevronExpansivel(g2, w, h, UiStyle.MUTED);
             } finally {
                 g2.dispose();
             }
-            super.paintComponent(g);
         }
     }
 
-    /**
-     * Seletor de formulário estilo .in com min-width:0 (ex: "Cereais ▾", "ATIVO ▾", "Distribuidora Sol ▾").
-     */
     private static final class BotaoSeletorFormulario extends JButton {
         private static final long serialVersionUID = 1L;
         private String[] opcoes;
@@ -1400,7 +2083,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             setContentAreaFilled(false);
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setBorder(new EmptyBorder(0, 12, 0, 12));
+            setBorder(new EmptyBorder(0, 12, 0, 28));
 
             addActionListener(e -> {
                 if (this.opcoes != null && this.opcoes.length > 0) {
@@ -1412,10 +2095,10 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                         item.setFont(UiStyle.fonte(13, Font.PLAIN));
                         item.setBackground(UiStyle.SURFACE);
                         item.setForeground(UiStyle.TEXT);
-                        item.addActionListener(ev -> setText(opcao + " â–¾"));
+                        item.addActionListener(ev -> setText(opcao));
                         menu.add(item);
                     }
-                    menu.show(this, 0, getHeight() + 2);
+                    UiStyle.mostrarPopupSincronizado(menu, this);
                 }
             });
         }
@@ -1425,7 +2108,13 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         }
 
         @Override
+        public String getText() {
+            return UiStyle.removerMarcadorSeta(super.getText());
+        }
+
+        @Override
         protected void paintComponent(Graphics g) {
+            setForeground(UiStyle.TEXT);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -1436,21 +2125,22 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
                 g2.setColor(UiStyle.INPUT_BORDER);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
+                super.paintComponent(g);
+                UiStyle.desenharChevronExpansivel(g2, w, h, UiStyle.MUTED);
             } finally {
                 g2.dispose();
             }
-            super.paintComponent(g);
         }
     }
 
-    /**
-     * Campo de texto de formulário estilo .in com min-width:0 (ex: Nome *, Preço (MT) *, Quantidade, Validade).
-     */
     private static final class CampoFormularioArredondado extends JTextField {
         private static final long serialVersionUID = 1L;
 
         CampoFormularioArredondado(String valorInicial) {
-            super(valorInicial);
+            super("");
+            if (valorInicial != null && !valorInicial.isEmpty()) {
+                putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, valorInicial);
+            }
             setOpaque(false);
             setFont(UiStyle.fonte(13, Font.PLAIN));
             setForeground(UiStyle.MUTED);
@@ -1475,6 +2165,8 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
         @Override
         protected void paintComponent(Graphics g) {
+            setForeground(UiStyle.TEXT);
+            setCaretColor(UiStyle.TEXT);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -1501,9 +2193,6 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Campo de texto estilo .in ("Buscar produto").
-     */
     private static final class CampoBuscaArredondado extends JTextField {
         private static final long serialVersionUID = 1L;
 
@@ -1577,9 +2266,6 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Botão da toolbar (.bt / .bt.s / .bt.d) com padding 9px 16px, altura 38px e border-radius 8px.
-     */
     private static final class BotaoToolbarArredondado extends JButton {
         private static final long serialVersionUID = 1L;
 
@@ -1620,8 +2306,17 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setBorder(new EmptyBorder(9, paddingHorizontal, 9, paddingHorizontal));
-            Dimension pref = getPreferredSize();
-            setPreferredSize(new Dimension(pref.width, ALTURA_INPUT));
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            Dimension d = super.getPreferredSize();
+            return new Dimension(d.width, ALTURA_INPUT);
+        }
+
+        @Override
+        public Dimension getMinimumSize() {
+            return getPreferredSize();
         }
 
         @Override
@@ -1632,27 +2327,32 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
+                boolean ehPrimario = UiStyle.ACCENT.equals(corFundo);
 
                 if (preencherFundo && corFundo != null) {
-                    Color atual = corFundo;
+                    Color baseBg = ehPrimario ? UiStyle.ACCENT : UiStyle.SECONDARY_BG;
+                    setForeground(ehPrimario ? UiStyle.ACCENT_TEXT : UiStyle.TEXT);
+                    Color atual = baseBg;
                     if (getModel().isPressed()) {
-                        atual = corFundo.darker();
+                        atual = baseBg.darker();
                     } else if (getModel().isRollover()) {
                         atual = new Color(
-                                Math.min(255, corFundo.getRed() + 10),
-                                Math.min(255, corFundo.getGreen() + 10),
-                                Math.min(255, corFundo.getBlue() + 10)
-                        );
+                                Math.min(255, baseBg.getRed() + 10),
+                                Math.min(255, baseBg.getGreen() + 10),
+                                Math.min(255, baseBg.getBlue() + 10));
                     }
                     g2.setColor(atual);
                     g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
-                } else if (getModel().isRollover()) {
-                    g2.setColor(new Color(0x4F, 0x1B, 0x1B, 90));
-                    g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
+                } else {
+                    setForeground(UiStyle.DANGER_TEXT);
+                    if (getModel().isRollover()) {
+                        g2.setColor(new Color(0x4F, 0x1B, 0x1B, 40));
+                        g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
+                    }
                 }
 
                 if (corBorda != null) {
-                    g2.setColor(corBorda);
+                    g2.setColor(preencherFundo ? UiStyle.INPUT_BORDER : UiStyle.DANGER_BORDER);
                     g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
                 }
             } finally {
@@ -1662,9 +2362,6 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Card da tabela com padding:0, background #1B2030, border 1px #2A3040 e border-radius 14px.
-     */
     private static final class PainelCardTabela extends JPanel {
         private static final long serialVersionUID = 1L;
 
@@ -1681,13 +2378,17 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
         @Override
         protected void paintComponent(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                super.paintComponent(g);
+                return;
+            }
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
-                g2.setColor(corFundo);
+                g2.setColor(UiStyle.SURFACE);
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
             } finally {
                 g2.dispose();
@@ -1696,14 +2397,36 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         }
 
         @Override
+        protected void paintChildren(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                super.paintChildren(g);
+                return;
+            }
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                int arco = raio * 2;
+                Shape clipAnterior = g2.getClip();
+                g2.clip(new RoundRectangle2D.Float(1f, 1f, Math.max(0, getWidth() - 2f), Math.max(0, getHeight() - 2f),
+                        arco, arco));
+                super.paintChildren(g2);
+                g2.setClip(clipAnterior);
+            } finally {
+                g2.dispose();
+            }
+        }
+
+        @Override
         protected void paintBorder(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                return;
+            }
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
-                g2.setColor(corBorda);
+                g2.setColor(UiStyle.BORDER);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
             } finally {
                 g2.dispose();
@@ -1717,62 +2440,120 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
+        final DateTimeFormatter dtfVal = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         AsyncTask.executar(
-            () -> produtoBO.listarTodos(),
-            produtos -> {
-                this.listaProdutosEntidades = produtos;
-                if (produtos != null && !produtos.isEmpty()) {
+                () -> produtoController.listarTodos(),
+                produtos -> {
+                    this.listaProdutosEntidades = produtos != null ? produtos : new ArrayList<>();
+                    mesclarUnidadesDosProdutos(this.listaProdutosEntidades);
                     List<Object[]> linhas = new ArrayList<>();
-                    for (Produto p : produtos) {
-                        String idStr = String.valueOf(p.getIdProduto());
-                        String nomeStr = p.getNome() != null ? p.getNome() : "";
-                        String catStr = (p.getCategoria() != null && p.getCategoria().getNome() != null)
-                                ? p.getCategoria().getNome() : "Geral";
-                        String precoStr = String.format(Locale.GERMANY, "%,.2f MT", p.getPreco() != null ? p.getPreco() : 0.0);
-                        String estoqueStr = p.getQuantidadeMinima() != null ? String.valueOf(p.getQuantidadeMinima()) : "0";
-                        String estStr = p.getEstado() != null ? p.getEstado().name() : "ATIVO";
-                        linhas.add(new Object[] {idStr, nomeStr, catStr, precoStr, estoqueStr, estStr});
+                    if (produtos != null) {
+                        for (Produto p : produtos) {
+                            String idStr = String.valueOf(p.getIdProduto());
+                            String nomeStr = p.getNome() != null ? p.getNome() : "";
+                            String catStr = (p.getCategoria() != null && p.getCategoria().getNome() != null)
+                                    ? p.getCategoria().getNome()
+                                    : "Geral";
+                            String unidStr = (p.getUnidade() != null && !p.getUnidade().isBlank()) ? p.getUnidade()
+                                    : "un";
+                            String precoStr = String.format(Locale.GERMANY, "%,.2f MT / %s",
+                                    p.getPreco() != null ? p.getPreco() : 0.0, unidStr);
+                            int qtdReal = p.calcularQuantidadeEmEstoque();
+                            int qtdMin = p.getQuantidadeMinima() != null ? p.getQuantidadeMinima() : 0;
+                            String estoqueStr = p.estaAbaixoDoMinimo() ? (qtdReal + " (Baixo)")
+                                    : String.valueOf(qtdReal);
+                            String minStr = String.valueOf(qtdMin);
+                            LocalDate proxVal = p.obterProximaValidade();
+                            String proxValStr = proxVal != null ? proxVal.format(dtfVal) : "-";
+                            int numForn = p.getFornecedor() != null ? p.getFornecedor().size() : 0;
+                            String fornStr = String.valueOf(numForn);
+                            String estStr = p.getEstado() != null ? p.getEstado().name() : "ATIVO";
+                            linhas.add(new Object[] { idStr, nomeStr, catStr, precoStr, estoqueStr, minStr, proxValStr,
+                                    fornStr, estStr });
+                        }
                     }
                     this.dadosProdutosCarregados = linhas;
-                }
-                atualizarTabelaFiltrada();
-            },
-            erro -> {
-                atualizarTabelaFiltrada();
-            }
-        );
+                    atualizarTabelaFiltrada();
+                },
+                erro -> {
+                    this.listaProdutosEntidades = new ArrayList<>();
+                    this.dadosProdutosCarregados = new ArrayList<>();
+                    atualizarTabelaFiltrada();
+                });
+        AsyncTask.executar(
+                () -> produtoController.listarCategorias(),
+                categorias -> {
+                    this.listaCategoriasReais = categorias != null ? categorias : new ArrayList<>();
+                    String[] nomesCat = this.listaCategoriasReais.stream()
+                            .map(Categoria::getNome)
+                            .toArray(String[]::new);
+                    if (seletorCategoriaNovo != null && nomesCat.length > 0) {
+                        seletorCategoriaNovo.setOpcoes(nomesCat);
+                        seletorCategoriaNovo.setText(nomesCat[0]);
+                    }
+                    if (seletorCategoriaEditar != null && nomesCat.length > 0) {
+                        seletorCategoriaEditar.setOpcoes(nomesCat);
+                    }
+                },
+                erro -> {
+                });
+        AsyncTask.executar(
+                () -> fornecedorController.listarTodos(),
+                fornecedores -> {
+                    this.listaTodosFornecedores = fornecedores != null ? fornecedores : new ArrayList<>();
+                    List<String> opcoesForn = new ArrayList<>();
+                    opcoesForn.add("Nenhum");
+                    for (Fornecedor f : this.listaTodosFornecedores) {
+                        if (f != null && f.getNome() != null) {
+                            opcoesForn.add(f.getNome());
+                        }
+                    }
+                    String[] nomesForn = opcoesForn.toArray(new String[0]);
+                    if (seletorFornecedorNovo != null && nomesForn.length > 0) {
+                        seletorFornecedorNovo.setOpcoes(nomesForn);
+                        seletorFornecedorNovo.setText(nomesForn[0]);
+                    }
+                    if (seletorFornecedorEditar != null && nomesForn.length > 0) {
+                        seletorFornecedorEditar.setOpcoes(nomesForn);
+                    }
+                },
+                erro -> {
+                });
     }
 
     @Override
     public void aplicarPermissoes(Utilizador utilizador) {
         Perfil perfil = (utilizador != null) ? utilizador.getPerfil() : Perfil.ADMIN;
         if (perfil == Perfil.VENDEDOR) {
-            // Vendedor apenas consulta o catálogo
-            if (botaoNovoProduto != null) botaoNovoProduto.setVisible(false);
-            if (botaoEditar != null) botaoEditar.setVisible(false);
-            if (botaoFornecedores != null) botaoFornecedores.setVisible(false);
-            if (botaoDescontinuar != null) botaoDescontinuar.setVisible(false);
+            if (botaoNovoProduto != null)
+                botaoNovoProduto.setVisible(false);
+            if (botaoEditar != null)
+                botaoEditar.setVisible(false);
+            if (botaoFornecedores != null)
+                botaoFornecedores.setVisible(false);
+            if (botaoDescontinuar != null)
+                botaoDescontinuar.setVisible(false);
             if (modoLateral != ModoPainelLateral.NENHUM) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
             }
         } else {
-            if (botaoNovoProduto != null) botaoNovoProduto.setVisible(true);
-            if (botaoEditar != null) botaoEditar.setVisible(true);
-            if (botaoFornecedores != null) botaoFornecedores.setVisible(true);
-            if (botaoDescontinuar != null) botaoDescontinuar.setVisible(true);
+            if (botaoNovoProduto != null)
+                botaoNovoProduto.setVisible(true);
+            if (botaoEditar != null)
+                botaoEditar.setVisible(true);
+            if (botaoFornecedores != null)
+                botaoFornecedores.setVisible(true);
+            if (botaoDescontinuar != null)
+                botaoDescontinuar.setVisible(true);
         }
     }
 
     @Override
     public void aplicarTema() {
         setBackground(UiStyle.BACKGROUND);
-        if (tabela != null) {
-            tabela.setBackground(UiStyle.SURFACE);
-            tabela.setForeground(UiStyle.TEXT);
-            tabela.setGridColor(UiStyle.TABLE_ROW_BORDER);
-            tabela.getTableHeader().setBackground(UiStyle.SURFACE);
-            tabela.getTableHeader().setForeground(UiStyle.MUTED);
-        }
-        repaint();
+        UiStyle.atualizarComponentesTema(this);
+        UiStyle.atualizarComponentesTema(cardNovoProduto);
+        UiStyle.atualizarComponentesTema(cardEditarProduto);
+        UiStyle.atualizarComponentesTema(cardFornecedoresProduto);
     }
 }
