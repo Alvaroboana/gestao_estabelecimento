@@ -3,6 +3,7 @@ package model.bo;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import model.dao.EstoqueDAO;
 import model.dao.ReembolsoDAO;
 import model.exception.DadoInvalidoException;
 import model.exception.EntidadeNaoEncontradaException;
@@ -17,14 +18,21 @@ import util.ValidadorTexto;
 
 public class ReembolsoBO {
     private final ReembolsoDAO dao;
+    private final EstoqueDAO estoqueDAO;
 
     public ReembolsoBO() {
-        this(new ReembolsoDAO());
+        this(new ReembolsoDAO(), new EstoqueDAO());
     }
 
     public ReembolsoBO(ReembolsoDAO dao) {
+        this(dao, new EstoqueDAO());
+    }
+
+    public ReembolsoBO(ReembolsoDAO dao, EstoqueDAO estoqueDAO) {
         ValidadorObjeto.validarNaoNulo(dao, "DAO de reembolso");
+        ValidadorObjeto.validarNaoNulo(estoqueDAO, "DAO de estoque");
         this.dao = dao;
+        this.estoqueDAO = estoqueDAO;
     }
 
     public void salvar(Reembolso reembolso) {
@@ -37,7 +45,7 @@ public class ReembolsoBO {
         double valor = calcularValor(item, quantidade);
         Reembolso reembolso = new Reembolso(
                 quantidade, valor, motivo, LocalDateTime.now(), item, funcionario);
-        dao.salvar(reembolso);
+        dao.salvarReembolsoEReporEstoque(reembolso, estoqueDAO);
         anexarDepoisDePersistir(item, reembolso);
         return reembolso;
     }

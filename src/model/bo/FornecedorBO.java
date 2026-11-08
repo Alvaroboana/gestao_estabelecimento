@@ -63,6 +63,13 @@ public class FornecedorBO {
                 }
             }
         }
+        if (fornecedor.getEndereco() != null) {
+            ValidadorObjeto.validarNaoNulo(fornecedor.getEndereco().getBairro(), "Bairro");
+            validarId(fornecedor.getEndereco().getBairro().getIdBairro(), "bairro.idBairro");
+            ValidadorTexto.validarObrigatorioComTamanho(fornecedor.getEndereco().getQuarteirao(), 30, "Quarteirao");
+            ValidadorTexto.validarObrigatorioComTamanho(fornecedor.getEndereco().getRua(), 100, "Rua");
+            ValidadorTexto.validarObrigatorioComTamanho(fornecedor.getEndereco().getNumeroCasa(), 20, "Numero da casa");
+        }
     }
 
     private void validarId(Long id, String nome) {

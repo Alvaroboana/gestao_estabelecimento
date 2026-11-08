@@ -2,6 +2,7 @@ package model.bo;
 
 import java.util.List;
 
+import model.dao.EstoqueDAO;
 import model.dao.VendaDAO;
 import model.exception.AcessoNegadoException;
 import model.exception.DadoInvalidoException;
@@ -19,14 +20,21 @@ import util.ValidadorObjeto;
 
 public class VendaBO {
     private final VendaDAO dao;
+    private final EstoqueDAO estoqueDAO;
 
     public VendaBO() {
-        this(new VendaDAO());
+        this(new VendaDAO(), new EstoqueDAO());
     }
 
     public VendaBO(VendaDAO dao) {
+        this(dao, new EstoqueDAO());
+    }
+
+    public VendaBO(VendaDAO dao, EstoqueDAO estoqueDAO) {
         ValidadorObjeto.validarNaoNulo(dao, "DAO de venda");
+        ValidadorObjeto.validarNaoNulo(estoqueDAO, "DAO de estoque");
         this.dao = dao;
+        this.estoqueDAO = estoqueDAO;
     }
 
     public void salvar(Venda venda) {
@@ -45,7 +53,7 @@ public class VendaBO {
         Double totalAnterior = venda.getTotal();
         venda.concluir();
         try {
-            dao.salvar(venda);
+            dao.concluirVendaAtomicamente(venda, estoqueDAO);
         } catch (RuntimeException e) {
             venda.setEstado(estadoAnterior);
             venda.setTotal(totalAnterior);
@@ -65,6 +73,11 @@ public class VendaBO {
             venda.setTotal(venda.calcularTotal());
         }
         dao.atualizar(venda);
+    }
+
+    public void atualizar(Venda venda, Utilizador utilizador) {
+        validarOperador(venda, utilizador);
+        atualizar(venda);
     }
 
     public void eliminar(Long id) {

@@ -89,6 +89,13 @@ public class FuncionarioBO {
                 }
             }
         }
+        if (funcionario.getEndereco() != null) {
+            ValidadorObjeto.validarNaoNulo(funcionario.getEndereco().getBairro(), "Bairro");
+            validarId(funcionario.getEndereco().getBairro().getIdBairro(), "bairro.idBairro");
+            ValidadorTexto.validarObrigatorioComTamanho(funcionario.getEndereco().getQuarteirao(), 30, "Quarteirao");
+            ValidadorTexto.validarObrigatorioComTamanho(funcionario.getEndereco().getRua(), 100, "Rua");
+            ValidadorTexto.validarObrigatorioComTamanho(funcionario.getEndereco().getNumeroCasa(), 20, "Numero da casa");
+        }
     }
 
     private void exigirGestao(Utilizador utilizador) {

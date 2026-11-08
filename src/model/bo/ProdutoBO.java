@@ -1,6 +1,8 @@
 package model.bo;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import model.dao.ProdutoDAO;
 import model.exception.AcessoNegadoException;
@@ -63,6 +65,14 @@ public class ProdutoBO {
             throw new EntidadeNaoEncontradaException("Produto nao encontrado.");
         }
         return produto;
+    }
+
+    public Produto buscarPorCodigoBarras(String codigoBarras) {
+        return dao.buscarPorCodigoBarras(codigoBarras);
+    }
+
+    public Map<Long, LocalDate> obterProximaValidadePorProduto() {
+        return dao.obterProximaValidadePorProduto();
     }
 
     public List<Fornecedor> listarFornecedoresDoProduto(Long idProduto) {
