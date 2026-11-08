@@ -131,11 +131,7 @@ public class LoginPanel extends JPanel {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(PADDING_CARD, PADDING_CARD, PADDING_CARD, PADDING_CARD));
 
-<<<<<<< HEAD
         labelMarca = new JLabel("Mercearia Kumbeza");
-=======
-        labelMarca = new JLabel("ESTABELECIMENTO");
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         labelMarca.setFont(UiStyle.fonte(14, Font.BOLD));
         labelMarca.setForeground(UiStyle.BRAND_TEXT);
         labelMarca.setIcon(UiStyle.iconeDinamico(MaterialDesignS.STORE, 16, () -> UiStyle.BRAND_TEXT));
