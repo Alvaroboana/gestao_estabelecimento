@@ -18,42 +18,45 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import model.dao.RelatorioDAO;
 import model.vo.SessaoUtilizador;
 
-/**
- * Gerador do "Relatório Completo" em PDF utilizando iText 5 (lib/itextpdf-5.5.13.4.jar),
- * replicando as cores, tabelas e estrutura de RelatorioPDF.dc.html.
- */
 public final class GeradorRelatorioPDF {
-    private static final BaseColor COR_TEXTO = new BaseColor(0x1B, 0x20, 0x30);       // #1B2030
-    private static final BaseColor COR_SUB = new BaseColor(0x5A, 0x64, 0x78);         // #5A6478
-    private static final BaseColor COR_MARCA = new BaseColor(0x6B, 0x4F, 0x00);       // #6B4F00
-    private static final BaseColor COR_DOURADO = new BaseColor(0xF5, 0xB6, 0x38);     // #F5B638
-    private static final BaseColor COR_BORDA_KPI = new BaseColor(0xDD, 0xE2, 0xEA);   // #DDE2EA
-    private static final BaseColor COR_BORDA_TD = new BaseColor(0xE6, 0xE9, 0xF0);    // #E6E9F0
-    private static final BaseColor COR_ZEBRA = new BaseColor(0xF5, 0xF6, 0xF9);       // #F5F6F9
-    private static final BaseColor COR_TOTAL_BG = new BaseColor(0xFF, 0xF8, 0xE1);    // #FFF8E1
+    private static final BaseColor COR_TEXTO = new BaseColor(0x1B, 0x20, 0x30);
+    private static final BaseColor COR_SUB = new BaseColor(0x5A, 0x64, 0x78);
+    private static final BaseColor COR_MARCA = new BaseColor(0x6B, 0x4F, 0x00);
+    private static final BaseColor COR_DOURADO = new BaseColor(0xF5, 0xB6, 0x38);
+    private static final BaseColor COR_BORDA_KPI = new BaseColor(0xDD, 0xE2, 0xEA);
+    private static final BaseColor COR_BORDA_TD = new BaseColor(0xE6, 0xE9, 0xF0);
+    private static final BaseColor COR_ZEBRA = new BaseColor(0xF5, 0xF6, 0xF9);
+    private static final BaseColor COR_TOTAL_BG = new BaseColor(0xFF, 0xF8, 0xE1);
 
     private GeradorRelatorioPDF() {
     }
 
     public static void gerar(File destino) throws IOException, DocumentException {
-        // Carrega dados reais do banco (com fallback transparente para modo offline)
         RelatorioDAO dao = new RelatorioDAO();
         Map<String, Integer> kpis = null;
+        List<Map<String, Object>> resumoVendasEstado = null;
         List<Map<String, Object>> maisVendidos = null;
         List<Map<String, Object>> estoqueBaixo = null;
         List<Map<String, Object>> reembolsos = null;
         List<Map<String, Object>> auditoria = null;
         try {
+            LocalDateTime inicio = LocalDateTime.now().minusDays(30);
+            LocalDateTime fim = LocalDateTime.now().plusDays(1);
             kpis = dao.obterIndicadoresDashboard();
+            resumoVendasEstado = dao.resumoVendasPorEstado(inicio, fim);
             maisVendidos = dao.produtosMaisVendidos();
             estoqueBaixo = dao.estoqueBaixo();
-            reembolsos = dao.reembolsosPeriodo(LocalDateTime.now().minusDays(30), LocalDateTime.now());
-            auditoria = dao.resumoAuditoria(LocalDateTime.now().minusDays(30), LocalDateTime.now());
+            reembolsos = dao.reembolsosPeriodo(inicio, fim);
+            auditoria = dao.resumoAuditoria(inicio, fim);
         } catch (Exception ignored) {
         }
 
@@ -63,9 +66,9 @@ public final class GeradorRelatorioPDF {
             document.open();
 
             adicionarCabecalho(document);
-            adicionarLinhaKpisDinamica(document, kpis, reembolsos);
-            adicionarGradeVendasEMaisVendidosDinamica(document, maisVendidos);
-            adicionarGradeMenosVendidosEEstoqueBaixoDinamica(document, estoqueBaixo);
+            adicionarLinhaKpisDinamica(document, kpis, resumoVendasEstado, reembolsos);
+            adicionarGradeVendasEMaisVendidosDinamica(document, resumoVendasEstado, maisVendidos);
+            adicionarGradeMenosVendidosEEstoqueBaixoDinamica(document, maisVendidos, estoqueBaixo);
             adicionarTabelaReembolsosDinamica(document, reembolsos);
             adicionarTabelaAuditoriaDinamica(document, auditoria);
             adicionarRodape(document);
@@ -113,12 +116,23 @@ public final class GeradorRelatorioPDF {
         doc.add(header);
     }
 
-    private static void adicionarLinhaKpisDinamica(Document doc, Map<String, Integer> kpis, List<Map<String, Object>> reembolsos) throws DocumentException {
-        if (kpis == null || kpis.isEmpty()) {
-            adicionarLinhaKpis(doc);
-            return;
+    private static void adicionarLinhaKpisDinamica(
+            Document doc,
+            Map<String, Integer> kpis,
+            List<Map<String, Object>> resumoVendasEstado,
+            List<Map<String, Object>> reembolsos) throws DocumentException {
+        int totalVendasPeriodo = 0;
+        double totalConcluido = 0.0;
+        if (resumoVendasEstado != null) {
+            for (Map<String, Object> m : resumoVendasEstado) {
+                int q = ((Number) m.getOrDefault("quantidade", 0)).intValue();
+                double t = ((Number) m.getOrDefault("total", 0.0)).doubleValue();
+                totalVendasPeriodo += q;
+                if ("CONCLUIDA".equalsIgnoreCase(String.valueOf(m.getOrDefault("estado", "")))) {
+                    totalConcluido += t;
+                }
+            }
         }
-
         double totalReembolsado = 0.0;
         if (reembolsos != null) {
             for (Map<String, Object> r : reembolsos) {
@@ -130,12 +144,14 @@ public final class GeradorRelatorioPDF {
         grid.setWidthPercentage(100);
         grid.setSpacingAfter(10f);
 
+        int estBaixoCount = kpis != null ? kpis.getOrDefault("estoqueBaixo", 0) : 0;
+        int expCount = kpis != null ? kpis.getOrDefault("lotesAExpirar", 0) : 0;
         String[][] dados = {
-            {"Vendas hoje", String.valueOf(kpis.getOrDefault("vendasHoje", 0))},
-            {"Vendas pendentes", String.valueOf(kpis.getOrDefault("vendasPendentes", 0))},
-            {"Total reembolsado", String.format("%.2f MT", totalReembolsado)},
-            {"Estoque baixo", kpis.getOrDefault("estoqueBaixo", 0) + " produtos"},
-            {"A expirar (7 dias)", kpis.getOrDefault("lotesAExpirar", 0) + " lotes"}
+            {"Vendas no período", String.valueOf(totalVendasPeriodo)},
+            {"Total concluído", String.format(Locale.GERMANY, "%,.2f MT", totalConcluido)},
+            {"Total reembolsado", String.format(Locale.GERMANY, "%,.2f MT", totalReembolsado)},
+            {"Estoque baixo", estBaixoCount + " produtos"},
+            {"A expirar (7 dias)", expCount + " lotes"}
         };
 
         for (String[] item : dados) {
@@ -149,28 +165,35 @@ public final class GeradorRelatorioPDF {
         doc.add(grid);
     }
 
-    private static void adicionarGradeVendasEMaisVendidosDinamica(Document doc, List<Map<String, Object>> maisVendidos) throws DocumentException {
-        if (maisVendidos == null || maisVendidos.isEmpty()) {
-            adicionarGradeVendasEMaisVendidos(doc);
-            return;
-        }
-
+    private static void adicionarGradeVendasEMaisVendidosDinamica(
+            Document doc,
+            List<Map<String, Object>> resumoVendasEstado,
+            List<Map<String, Object>> maisVendidos) throws DocumentException {
         PdfPTable grade = new PdfPTable(new float[] {1f, 0.04f, 1f});
         grade.setWidthPercentage(100);
         grade.setSpacingAfter(10f);
 
+        int nEstado = resumoVendasEstado != null ? resumoVendasEstado.size() : 0;
+        String[][] linhasVendas = new String[nEstado][3];
+        int somaQtd = 0;
+        double somaVal = 0.0;
+        for (int i = 0; i < nEstado; i++) {
+            Map<String, Object> m = resumoVendasEstado.get(i);
+            int q = ((Number) m.getOrDefault("quantidade", 0)).intValue();
+            double t = ((Number) m.getOrDefault("total", 0.0)).doubleValue();
+            somaQtd += q;
+            somaVal += t;
+            linhasVendas[i][0] = String.valueOf(m.getOrDefault("estado", "-"));
+            linhasVendas[i][1] = String.valueOf(q);
+            linhasVendas[i][2] = String.format(Locale.GERMANY, "%,.2f MT", t);
+        }
         PdfPTable tVendas = criarTabelaSecao(
                 new String[] {"Estado", "Qtd", "Total"},
-                new String[][] {
-                    {"PENDENTE", "1", "1.250,00 MT"},
-                    {"CONCLUÍDA", "1", "840,00 MT"},
-                    {"ANULADA", "1", "300,00 MT"},
-                    {"REEMBOLSADA", "1", "2.100,00 MT"}
-                },
-                new String[] {"Total", "4", "4.490,00 MT"}
+                linhasVendas,
+                new String[] {"Total", String.valueOf(somaQtd), String.format(Locale.GERMANY, "%,.2f MT", somaVal)}
         );
 
-        int limit = Math.min(maisVendidos.size(), 4);
+        int limit = maisVendidos != null ? Math.min(maisVendidos.size(), 4) : 0;
         String[][] linhasMais = new String[limit][3];
         for (int i = 0; i < limit; i++) {
             Map<String, Object> m = maisVendidos.get(i);
@@ -191,28 +214,37 @@ public final class GeradorRelatorioPDF {
         doc.add(grade);
     }
 
-    private static void adicionarGradeMenosVendidosEEstoqueBaixoDinamica(Document doc, List<Map<String, Object>> estoqueBaixo) throws DocumentException {
-        if (estoqueBaixo == null || estoqueBaixo.isEmpty()) {
-            adicionarGradeMenosVendidosEEstoqueBaixo(doc);
-            return;
-        }
-
+    private static void adicionarGradeMenosVendidosEEstoqueBaixoDinamica(
+            Document doc,
+            List<Map<String, Object>> maisVendidos,
+            List<Map<String, Object>> estoqueBaixo) throws DocumentException {
         PdfPTable grade = new PdfPTable(new float[] {1f, 0.04f, 1f});
         grade.setWidthPercentage(100);
         grade.setSpacingAfter(10f);
 
+        List<Map<String, Object>> menos = new ArrayList<>();
+        if (maisVendidos != null) {
+            menos.addAll(maisVendidos);
+            Collections.sort(menos, Comparator.comparingDouble(o -> {
+                try { return Double.parseDouble(String.valueOf(o.getOrDefault("quantidade_vendida", 0))); }
+                catch (Exception e) { return 0.0; }
+            }));
+        }
+        int limitMenos = Math.min(menos.size(), 4);
+        String[][] linhasMenos = new String[limitMenos][3];
+        for (int i = 0; i < limitMenos; i++) {
+            Map<String, Object> m = menos.get(i);
+            linhasMenos[i][0] = String.valueOf(i + 1);
+            linhasMenos[i][1] = String.valueOf(m.getOrDefault("nome_produto", "-"));
+            linhasMenos[i][2] = String.valueOf(m.getOrDefault("quantidade_vendida", "0"));
+        }
         PdfPTable tMenosVendidos = criarTabelaSecao(
                 new String[] {"#", "Produto", "Qtd"},
-                new String[][] {
-                    {"1", "Biscoito", "0"},
-                    {"2", "Óleo 5L", "4"},
-                    {"3", "Sal 1kg", "5"},
-                    {"4", "Açúcar 1kg", "7"}
-                },
+                linhasMenos,
                 null
         );
 
-        int limit = Math.min(estoqueBaixo.size(), 4);
+        int limit = estoqueBaixo != null ? Math.min(estoqueBaixo.size(), 4) : 0;
         String[][] linhasEstoque = new String[limit][3];
         for (int i = 0; i < limit; i++) {
             Map<String, Object> m = estoqueBaixo.get(i);
@@ -234,12 +266,7 @@ public final class GeradorRelatorioPDF {
     }
 
     private static void adicionarTabelaReembolsosDinamica(Document doc, List<Map<String, Object>> reembolsos) throws DocumentException {
-        if (reembolsos == null || reembolsos.isEmpty()) {
-            adicionarTabelaReembolsos(doc);
-            return;
-        }
-
-        int limit = Math.min(reembolsos.size(), 6);
+        int limit = reembolsos != null ? Math.min(reembolsos.size(), 6) : 0;
         String[][] linhas = new String[limit][7];
         double totalValor = 0.0;
         int totalQtd = 0;
@@ -271,12 +298,7 @@ public final class GeradorRelatorioPDF {
     }
 
     private static void adicionarTabelaAuditoriaDinamica(Document doc, List<Map<String, Object>> auditoria) throws DocumentException {
-        if (auditoria == null || auditoria.isEmpty()) {
-            adicionarTabelaAuditoria(doc);
-            return;
-        }
-
-        int limit = Math.min(auditoria.size(), 5);
+        int limit = auditoria != null ? Math.min(auditoria.size(), 5) : 0;
         String[][] linhas = new String[limit][4];
         for (int i = 0; i < limit; i++) {
             Map<String, Object> a = auditoria.get(i);
