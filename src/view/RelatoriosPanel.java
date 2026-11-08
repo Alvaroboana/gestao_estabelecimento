@@ -11,7 +11,9 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.geom.RoundRectangle2D;
@@ -47,22 +49,15 @@ import java.util.Comparator;
 import java.util.Locale;
 import java.util.Map;
 import controller.RelatorioController;
-import model.bo.RelatorioBO;
 import model.vo.Perfil;
 import model.vo.SessaoUtilizador;
 import model.vo.Utilizador;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignC;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignF;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignP;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignR;
 import util.AsyncTask;
 
-/**
- * Painel Relatórios em Java Swing fiel aos designs HTML:
- * - "ADMIN · Barra superior · Escuro — Relatório — completo" (RelCompleto.dc.html)
- * - "ADMIN · Barra superior · Escuro — Relatório — venda detalhada" (RelVendaDetalhe.dc.html)
- * - "ADMIN · Barra superior · Escuro — Relatório — estoque baixo" (RelEstoqueBaixo.dc.html)
- * - "ADMIN · Barra superior · Escuro — Relatório — mais vendidos" (Relatorios.dc.html)
- * - "ADMIN · Barra superior · Escuro — Relatório — menos vendidos" (RelMenosVendidos.dc.html)
- * - "ADMIN · Barra superior · Escuro — Relatório — reembolsos" (RelReembolsos.dc.html)
- * - "ADMIN · Barra superior · Escuro — Relatório — auditoria" (RelAuditoria.dc.html)
- */
 public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
     private static final long serialVersionUID = 1L;
 
@@ -114,74 +109,28 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         "#", "Produto", "Qtd vendida", "Receita"
     };
 
-    private static final Object[][] DADOS_MAIS_VENDIDOS = {
-        {"1", "Pão", "320", "1.600,00 MT"},
-        {"2", "Leite 1L", "210", "17.850,00 MT"},
-        {"3", "Água 1,5L", "180", "5.400,00 MT"},
-        {"4", "Arroz 25kg", "35", "63.000,00 MT"}
-    };
-
     private static final String[] COLUNAS_MENOS_VENDIDOS = {
         "#", "Produto", "Qtd vendida", "Receita"
-    };
-
-    private static final Object[][] DADOS_MENOS_VENDIDOS = {
-        {"1", "Biscoito", "0", "0,00 MT"},
-        {"2", "Óleo 5L", "4", "2.600,00 MT"},
-        {"3", "Sal 1kg", "5", "100,00 MT"},
-        {"4", "Açúcar 1kg", "7", "490,00 MT"}
     };
 
     private static final String[] COLUNAS_ESTOQUE_BAIXO = {
         "Produto", "Estoque actual", "Mínimo", "Em falta"
     };
 
-    private static final Object[][] DADOS_ESTOQUE_BAIXO = {
-        {"Arroz 25kg", "4", "10", "6"},
-        {"Óleo 5L", "2", "8", "6"},
-        {"Açúcar 1kg", "6", "15", "9"},
-        {"Sal 1kg", "1", "5", "4"}
-    };
-
     private static final String[] COLUNAS_REEMBOLSOS = {
         "Data", "Venda", "Item", "Qtd", "Valor", "Motivo", "Funcionário"
-    };
-
-    private static final Object[][] DADOS_REEMBOLSOS = {
-        {"03/11/2026", "1039", "Leite 1L", "1", "85,00 MT", "Embalagem danificada", "Sara"},
-        {"02/11/2026", "1039", "Pão", "4", "20,00 MT", "Fora do prazo", "Sara"}
     };
 
     private static final String[] COLUNAS_AUDITORIA = {
         "Dia", "Tabela afectada", "Operação", "Registos"
     };
 
-    private static final Object[][] DADOS_AUDITORIA = {
-        {"03/11/2026", "Vendas", "Registo criado", "12"},
-        {"03/11/2026", "Estoque", "Registo alterado", "8"},
-        {"02/11/2026", "Produtos", "Registo alterado", "3"},
-        {"02/11/2026", "Reembolsos", "Registo criado", "2"}
-    };
-
     private static final String[] COLUNAS_VENDAS = {
         "ID", "Data", "Cliente", "Funcionário", "Total", "Estado"
     };
 
-    private static final Object[][] DADOS_VENDAS = {
-        {"1042", "03/11/2026", "Ana Macie", "Carlos", "1.250,00 MT", "PENDENTE"},
-        {"1041", "03/11/2026", "João Sitoe", "Carlos", "840,00 MT", "CONCLUÍDA"},
-        {"1040", "02/11/2026", "Maria Nhaca", "Sara", "300,00 MT", "ANULADA"},
-        {"1039", "02/11/2026", "Ana Macie", "Sara", "2.100,00 MT", "REEMBOLSADA"}
-    };
-
     private static final String[] COLUNAS_ITENS_VENDA_DETALHE = {
         "Item", "Qtd", "Preço", "Subtotal"
-    };
-
-    private static final Object[][] DADOS_ITENS_VENDA_DETALHE = {
-        {"Leite 1L", "4", "85,00 MT", "340,00 MT"},
-        {"Pão", "20", "5,00 MT", "100,00 MT"},
-        {"Água 1,5L", "10", "40,00 MT", "400,00 MT"}
     };
 
     private final List<BotaoAbaPilula> botoesAbas = new ArrayList<>();
@@ -200,12 +149,28 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
     private final JTable tabelaItensVendaDetalhe;
     private final JPanel wrapperDireitaVenda;
     private final JPanel cardDetalheVenda;
+    private JLabel labelDetalheVendaTitulo;
+    private JLabel labelDetalheVendaCliente;
+    private ChipEstado chipDetalheVendaEstado;
+    private JLabel labelDetalheVendaFuncionario;
+    private JLabel labelDetalheVendaTotal;
     private final JTable tabelaEstoqueBaixo;
     private final JTable tabelaMaisVendidos;
     private final JTable tabelaMenosVendidos;
     private final JTable tabelaReembolsos;
     private final JTable tabelaAuditoria;
-    private final RelatorioBO relatorioBO;
+    private JLabel labelKpiVendasPeriodo;
+    private JLabel labelKpiTotalConcluido;
+    private JLabel labelKpiTotalReembolsado;
+    private JLabel labelKpiEstoqueBaixo;
+    private JLabel labelKpiProdutosExpirar;
+    private JLabel labelKpiLotesExpirados;
+    private DefaultTableModel modeloMiniVendasEstado;
+    private DefaultTableModel modeloMiniMaisVendidos;
+    private DefaultTableModel modeloMiniMenosVendidos;
+    private DefaultTableModel modeloMiniEstoqueBaixo;
+    private DefaultTableModel modeloMiniReembolsos;
+    private DefaultTableModel modeloMiniAuditoria;
     private final RelatorioController relatorioController;
     private boolean detalheVendaVisivel = true;
     private String abaAtiva = "Completo";
@@ -216,35 +181,44 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
 
     public RelatoriosPanel(AbaRelatorio abaInicial) {
         UiStyle.instalarTemaEscuro();
-        this.relatorioBO = new RelatorioBO();
-        this.relatorioController = new RelatorioController(this.relatorioBO);
-        // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
+        this.relatorioController = new RelatorioController();
         setLayout(new BorderLayout(0, 16));
         setBackground(UiStyle.BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
 
-        this.campoDataDe = new CampoDataArredondado("De: 01/11/2026");
-        this.campoDataAte = new CampoDataArredondado("Até: 03/11/2026");
+        DateTimeFormatter dtfPadrao = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        this.campoDataDe = new CampoDataArredondado("De: " + LocalDate.now().minusDays(30).format(dtfPadrao));
+        this.campoDataAte = new CampoDataArredondado("Até: " + LocalDate.now().format(dtfPadrao));
         this.botaoGerarRelatorio = new BotaoToolbarArredondado(
                 "Gerar relatório completo", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        this.botaoGerarRelatorio.setIcon(UiStyle.icone(MaterialDesignR.REFRESH, 15, UiStyle.ACCENT_TEXT));
+        this.botaoGerarRelatorio.setIconTextGap(6);
         this.botaoGerarRelatorio.addActionListener(e -> carregarRelatorioAtual());
         this.botaoExportarPdf = criarBotaoExportarPdf();
         this.botaoImprimir = new BotaoToolbarArredondado(
                 "Imprimir", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        this.botaoImprimir.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PRINTER, 15, () -> UiStyle.TEXT));
+        this.botaoImprimir.setIconTextGap(6);
         this.botaoImprimir.addActionListener(e -> imprimirRelatorioAtivo());
         this.botaoGerarSimples = new BotaoToolbarArredondado(
                 "Gerar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        this.botaoGerarSimples.setIcon(UiStyle.icone(MaterialDesignR.REFRESH, 15, UiStyle.ACCENT_TEXT));
+        this.botaoGerarSimples.setIconTextGap(6);
         this.botaoGerarSimples.addActionListener(e -> carregarRelatorioAtual());
         this.botaoExportarSimples = new BotaoToolbarArredondado(
                 "Exportar CSV", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        this.botaoExportarSimples.setIcon(UiStyle.iconeDinamico(MaterialDesignF.FILE_DELIMITED, 15, () -> UiStyle.TEXT));
+        this.botaoExportarSimples.setIconTextGap(6);
         this.botaoExportarSimples.addActionListener(e -> exportarCsvRelatorioAtivo());
         this.botaoFecharDetalheVenda = new BotaoToolbarArredondado(
                 "Fechar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        this.botaoFecharDetalheVenda.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        this.botaoFecharDetalheVenda.setIconTextGap(6);
         this.botaoFecharDetalheVenda.addActionListener(e -> mostrarDetalheVenda(false));
         this.containerBotoesFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         this.containerBotoesFiltro.setOpaque(false);
@@ -254,11 +228,11 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         this.wrapperDireitaVenda = new JPanel(new BorderLayout());
         this.wrapperDireitaVenda.setOpaque(false);
         this.cardDetalheVenda = criarCardDetalheVenda();
-        this.tabelaEstoqueBaixo = criarTabelaRanking(DADOS_ESTOQUE_BAIXO, COLUNAS_ESTOQUE_BAIXO);
-        this.tabelaMaisVendidos = criarTabelaRanking(DADOS_MAIS_VENDIDOS, COLUNAS_MAIS_VENDIDOS);
-        this.tabelaMenosVendidos = criarTabelaRanking(DADOS_MENOS_VENDIDOS, COLUNAS_MENOS_VENDIDOS);
-        this.tabelaReembolsos = criarTabelaRanking(DADOS_REEMBOLSOS, COLUNAS_REEMBOLSOS);
-        this.tabelaAuditoria = criarTabelaRanking(DADOS_AUDITORIA, COLUNAS_AUDITORIA);
+        this.tabelaEstoqueBaixo = criarTabelaRanking(new Object[0][COLUNAS_ESTOQUE_BAIXO.length], COLUNAS_ESTOQUE_BAIXO);
+        this.tabelaMaisVendidos = criarTabelaRanking(new Object[0][COLUNAS_MAIS_VENDIDOS.length], COLUNAS_MAIS_VENDIDOS);
+        this.tabelaMenosVendidos = criarTabelaRanking(new Object[0][COLUNAS_MENOS_VENDIDOS.length], COLUNAS_MENOS_VENDIDOS);
+        this.tabelaReembolsos = criarTabelaRanking(new Object[0][COLUNAS_REEMBOLSOS.length], COLUNAS_REEMBOLSOS);
+        this.tabelaAuditoria = criarTabelaRanking(new Object[0][COLUNAS_AUDITORIA.length], COLUNAS_AUDITORIA);
         this.layoutCorpo = new CardLayout();
         this.containerCorpo = new JPanel(this.layoutCorpo);
         this.containerCorpo.setOpaque(false);
@@ -276,6 +250,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         mostrarDetalheVenda(true);
         AbaRelatorio inicial = abaInicial != null ? abaInicial : AbaRelatorio.COMPLETO;
         selecionarAba(inicial.getRotulo());
+        carregarRelatorioAtual();
     }
 
     public String getAbaAtiva() {
@@ -354,11 +329,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         return relatorioController;
     }
 
-    /**
-     * Retorna a JTable ativa de acordo com a aba selecionada no momento.
-     *
-     * @return Tabela Swing ativa
-     */
     public JTable obterTabelaAtiva() {
         if ("Vendas".equalsIgnoreCase(abaAtiva)) {
             return tabelaVendas;
@@ -373,16 +343,10 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         } else if ("Auditoria".equalsIgnoreCase(abaAtiva)) {
             return tabelaAuditoria;
         } else {
-            // Aba Completo utiliza a tabela de vendas principal
             return tabelaVendas;
         }
     }
 
-    /**
-     * Retorna o título descritivo do relatório ativo na visualização.
-     *
-     * @return Título amigável
-     */
     public String obterTituloRelatorioAtivo() {
         if ("Vendas".equalsIgnoreCase(abaAtiva)) {
             return "Vendas";
@@ -401,9 +365,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Imprime a tabela ativa do relatório visualizado no momento utilizando a API Swing JTable.print().
-     */
     public void imprimirRelatorioAtivo() {
         JTable tabela = obterTabelaAtiva();
         if (tabela == null || tabela.getRowCount() == 0) {
@@ -450,11 +411,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Abre uma caixa de diálogo JFileChooser para que o utilizador escolha o local
-     * de gravação e exporta a tabela ativa para um ficheiro .csv com delimitador ';'
-     * e codificação UTF-8.
-     */
     public void exportarCsvRelatorioAtivo() {
         JTable tabela = obterTabelaAtiva();
         if (tabela == null || tabela.getRowCount() == 0) {
@@ -520,12 +476,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Exporta os dados da tabela ativa programaticamente para um ficheiro CSV.
-     *
-     * @param destino Ficheiro de destino
-     * @throws IOException Em caso de falha de I/O
-     */
     public void exportarCsv(File destino) throws IOException {
         JTable tabela = obterTabelaAtiva();
         if (tabela == null) {
@@ -554,35 +504,97 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         topo.setLayout(new BoxLayout(topo, BoxLayout.Y_AXIS));
         topo.setOpaque(false);
 
-        // <h1>Relatórios</h1> (h1 { font-size:24px; margin:0 })
         JLabel titulo = new JLabel("Relatórios");
         UiStyle.aplicarTexto(titulo, 24, true);
         titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
         topo.add(titulo);
         topo.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        // Primeira .tb: Abas em formato pílula (.tab / .tab.on)
-        JPanel barraAbas = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JPanel barraAbas = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6)) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Dimension getPreferredSize() {
+                int larguraDisp = getWidth();
+                if (larguraDisp <= 0 && getParent() != null) {
+                    larguraDisp = getParent().getWidth();
+                }
+                if (larguraDisp <= 0) {
+                    return super.getPreferredSize();
+                }
+                int maxW = Math.max(200, larguraDisp);
+                int hgap = 8;
+                int vgap = 6;
+                int x = 0;
+                int y = vgap;
+                int rowH = 0;
+                for (Component c : getComponents()) {
+                    if (!c.isVisible()) continue;
+                    Dimension d = c.getPreferredSize();
+                    if (x > 0 && x + hgap + d.width > maxW) {
+                        y += rowH + vgap;
+                        x = 0;
+                        rowH = 0;
+                    }
+                    if (x > 0) x += hgap;
+                    x += d.width;
+                    rowH = Math.max(rowH, d.height);
+                }
+                y += rowH + vgap;
+                return new Dimension(larguraDisp, Math.max(34, y));
+            }
+        };
         barraAbas.setOpaque(false);
         barraAbas.setAlignmentX(Component.LEFT_ALIGNMENT);
+        barraAbas.setBorder(new EmptyBorder(-6, -8, -6, 0));
 
         for (int i = 0; i < ABAS_RELATORIO.length; i++) {
             String nomeAba = ABAS_RELATORIO[i];
             BotaoAbaPilula botaoAba = new BotaoAbaPilula(nomeAba, "Completo".equals(nomeAba));
             botaoAba.addActionListener(e -> selecionarAba(nomeAba));
             botoesAbas.add(botaoAba);
-            if (i > 0) {
-                barraAbas.add(Box.createRigidArea(new Dimension(10, 0)));
-            }
             barraAbas.add(botaoAba);
         }
         topo.add(barraAbas);
         topo.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        // Segunda .tb: De: 01/11/2026 | Até: 03/11/2026 | Gerar relatório completo | Exportar PDF | Imprimir
-        JPanel barraFiltros = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JPanel barraFiltros = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6)) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Dimension getPreferredSize() {
+                int larguraDisp = getWidth();
+                if (larguraDisp <= 0 && getParent() != null) {
+                    larguraDisp = getParent().getWidth();
+                }
+                if (larguraDisp <= 0) {
+                    return super.getPreferredSize();
+                }
+                int maxW = Math.max(200, larguraDisp);
+                int hgap = 8;
+                int vgap = 6;
+                int x = 0;
+                int y = vgap;
+                int rowH = 0;
+                for (Component c : getComponents()) {
+                    if (!c.isVisible()) continue;
+                    Dimension d = c.getPreferredSize();
+                    if (x > 0 && x + hgap + d.width > maxW) {
+                        y += rowH + vgap;
+                        x = 0;
+                        rowH = 0;
+                    }
+                    if (x > 0) x += hgap;
+                    x += d.width;
+                    rowH = Math.max(rowH, d.height);
+                }
+                y += rowH + vgap;
+                return new Dimension(larguraDisp, Math.max(ALTURA_INPUT, y));
+            }
+        };
         barraFiltros.setOpaque(false);
         barraFiltros.setAlignmentX(Component.LEFT_ALIGNMENT);
+        barraFiltros.setBorder(new EmptyBorder(-6, -8, -6, 0));
 
         Dimension dimInput = new Dimension(LARGURA_MIN_INPUT, ALTURA_INPUT);
         campoDataDe.setPreferredSize(dimInput);
@@ -591,9 +603,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         campoDataAte.setMinimumSize(dimInput);
 
         barraFiltros.add(campoDataDe);
-        barraFiltros.add(Box.createRigidArea(new Dimension(10, 0)));
         barraFiltros.add(campoDataAte);
-        barraFiltros.add(Box.createRigidArea(new Dimension(10, 0)));
         barraFiltros.add(containerBotoesFiltro);
 
         topo.add(barraFiltros);
@@ -645,7 +655,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
 
         containerBotoesFiltro.removeAll();
         if ("Vendas".equalsIgnoreCase(this.abaAtiva)) {
-            // Em RelVendaDetalhe.dc.html (Vendas): Gerar | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarSimples);
@@ -653,7 +662,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
             containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_VENDAS);
         } else if ("Estoque baixo".equalsIgnoreCase(this.abaAtiva)) {
-            // Em RelEstoqueBaixo.dc.html (Estoque baixo): Gerar | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarSimples);
@@ -661,7 +669,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
             containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_ESTOQUE_BAIXO);
         } else if ("Mais vendidos".equalsIgnoreCase(this.abaAtiva)) {
-            // Em Relatorios.dc.html (Mais vendidos): Gerar | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarSimples);
@@ -669,7 +676,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
             containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_MAIS_VENDIDOS);
         } else if ("Menos vendidos".equalsIgnoreCase(this.abaAtiva)) {
-            // Em RelMenosVendidos.dc.html (Menos vendidos): Gerar | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarSimples);
@@ -677,7 +683,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
             containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_MENOS_VENDIDOS);
         } else if ("Reembolsos".equalsIgnoreCase(this.abaAtiva)) {
-            // Em RelReembolsos.dc.html (Reembolsos): Gerar | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarSimples);
@@ -685,7 +690,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
             containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_REEMBOLSOS);
         } else if ("Auditoria".equalsIgnoreCase(this.abaAtiva)) {
-            // Em RelAuditoria.dc.html (Auditoria): Gerar | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarSimples);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarSimples);
@@ -693,7 +697,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
             containerBotoesFiltro.add(botaoImprimir);
             layoutCorpo.show(containerCorpo, CARD_AUDITORIA);
         } else {
-            // Em RelCompleto.dc.html (Completo): Gerar relatório completo | Exportar PDF | Exportar CSV | Imprimir
             containerBotoesFiltro.add(botaoGerarRelatorio);
             containerBotoesFiltro.add(Box.createRigidArea(new Dimension(10, 0)));
             containerBotoesFiltro.add(botaoExportarPdf);
@@ -704,6 +707,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
             layoutCorpo.show(containerCorpo, CARD_COMPLETO);
         }
 
+        carregarRelatorioAtual();
         revalidate();
         repaint();
     }
@@ -715,7 +719,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
             wrapperDireitaVenda.setBorder(new EmptyBorder(0, 16, 0, 0));
             JPanel alinhadorTopo = new JPanel(new BorderLayout());
             alinhadorTopo.setOpaque(false);
-            alinhadorTopo.add(cardDetalheVenda, BorderLayout.NORTH);
+            alinhadorTopo.add(UiStyle.envolverCardLateralComScroll(cardDetalheVenda), BorderLayout.CENTER);
             wrapperDireitaVenda.add(alinhadorTopo, BorderLayout.CENTER);
             if (tabelaVendas.getSelectedRow() < 0 && tabelaVendas.getRowCount() > 1) {
                 tabelaVendas.setRowSelectionInterval(1, 1);
@@ -732,6 +736,8 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 "Exportar PDF", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignF.FILE_PDF_BOX, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             Component root = SwingUtilities.getWindowAncestor(this);
             if (root instanceof MainFrame) {
@@ -761,11 +767,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         return botao;
     }
 
-    /**
-     * Corpo principal contendo:
-     * - .row de 5 KPIs
-     * - Grid 3x2 (repeat(3, 1fr); gap: 16px) com 6 cards de mini-tabelas
-     */
     private JPanel criarCorpoRelatorioCompleto() {
         JPanel corpo = new JPanel(new BorderLayout(0, 16));
         corpo.setOpaque(false);
@@ -775,13 +776,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         return corpo;
     }
 
-    /**
-     * Corpo da sub-aba "Vendas" fiel a RelVendaDetalhe.dc.html:
-     * <div class="row" style="align-items:flex-start">
-     *   <div class="card" style="flex:1;padding:0"><table>...</table></div>
-     *   <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">...</div>
-     * </div>
-     */
     private JPanel criarCorpoVendas() {
         JPanel corpo = new JPanel(new BorderLayout());
         corpo.setOpaque(false);
@@ -793,7 +787,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
     }
 
     private JTable criarTabelaVendas() {
-        DefaultTableModel modelo = new DefaultTableModel(DADOS_VENDAS, COLUNAS_VENDAS) {
+        DefaultTableModel modelo = new DefaultTableModel(new Object[0][COLUNAS_VENDAS.length], COLUNAS_VENDAS) {
             private static final long serialVersionUID = 1L;
 
             @Override
@@ -836,11 +830,12 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
             }
         }
 
-        // Em RelVendaDetalhe.dc.html, a linha 1041 (índice 1) aparece selecionada (#2A3347)
-        t.setRowSelectionInterval(1, 1);
         t.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting() && t.getSelectedRow() >= 0 && !detalheVendaVisivel) {
-                mostrarDetalheVenda(true);
+            if (!e.getValueIsAdjusting() && t.getSelectedRow() >= 0) {
+                if (!detalheVendaVisivel) {
+                    mostrarDetalheVenda(true);
+                }
+                sincronizarDetalheVendaSelecionada();
             }
         });
 
@@ -848,7 +843,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
     }
 
     private JTable criarTabelaItensVendaDetalhe() {
-        DefaultTableModel modelo = new DefaultTableModel(DADOS_ITENS_VENDA_DETALHE, COLUNAS_ITENS_VENDA_DETALHE) {
+        DefaultTableModel modelo = new DefaultTableModel(new Object[0][COLUNAS_ITENS_VENDA_DETALHE.length], COLUNAS_ITENS_VENDA_DETALHE) {
             private static final long serialVersionUID = 1L;
 
             @Override
@@ -882,10 +877,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         return miniTabela;
     }
 
-    /**
-     * Card lateral "Venda 1041" (width:420px; height:fit-content; padding:16px; gap:12px)
-     * fiel a RelVendaDetalhe.dc.html.
-     */
     private JPanel criarCardDetalheVenda() {
         PainelCard card = new PainelCard(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD) {
             private static final long serialVersionUID = 1L;
@@ -911,48 +902,47 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        // <b>Venda 1041</b>
-        JLabel titulo = new JLabel("Venda 1041");
-        titulo.setFont(UiStyle.fonte(13, Font.BOLD));
-        titulo.setForeground(UiStyle.TEXT);
-        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        card.add(titulo);
+        labelDetalheVendaTitulo = new JLabel("Venda -");
+        labelDetalheVendaTitulo.setFont(UiStyle.fonte(13, Font.BOLD));
+        labelDetalheVendaTitulo.setForeground(UiStyle.TEXT);
+        labelDetalheVendaTitulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(labelDetalheVendaTitulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;gap:10px;align-items:center"><span>João Sitoe</span><span class="ch g">CONCLUÍDA</span></div>
         JPanel linhaClienteEstado = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         linhaClienteEstado.setOpaque(false);
         linhaClienteEstado.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel labelCliente = new JLabel("João Sitoe");
-        labelCliente.setFont(UiStyle.fonte(13, Font.PLAIN));
-        labelCliente.setForeground(UiStyle.TEXT);
-        linhaClienteEstado.add(labelCliente);
+        labelDetalheVendaCliente = new JLabel("-");
+        labelDetalheVendaCliente.setFont(UiStyle.fonte(13, Font.PLAIN));
+        labelDetalheVendaCliente.setForeground(UiStyle.TEXT);
+        linhaClienteEstado.add(labelDetalheVendaCliente);
         linhaClienteEstado.add(Box.createRigidArea(new Dimension(10, 0)));
-        linhaClienteEstado.add(new ChipEstado("CONCLUÍDA", UiStyle.CHIP_GREEN_BG, UiStyle.CHIP_GREEN_FG));
+        chipDetalheVendaEstado = new ChipEstado("CONCLUIDA", UiStyle.CHIP_GREEN_BG, UiStyle.CHIP_GREEN_FG);
+        linhaClienteEstado.add(chipDetalheVendaEstado);
         card.add(linhaClienteEstado);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="k">Funcionário: Carlos</div>
-        JLabel labelFuncionario = new JLabel("Funcionário: Carlos");
-        labelFuncionario.setFont(UiStyle.fonte(12, Font.PLAIN));
-        labelFuncionario.setForeground(UiStyle.MUTED);
-        labelFuncionario.setAlignmentX(Component.LEFT_ALIGNMENT);
-        card.add(labelFuncionario);
+        labelDetalheVendaFuncionario = new JLabel("Funcionário: -");
+        labelDetalheVendaFuncionario.setFont(UiStyle.fonte(12, Font.PLAIN));
+        labelDetalheVendaFuncionario.setForeground(UiStyle.MUTED);
+        labelDetalheVendaFuncionario.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(labelDetalheVendaFuncionario);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="mt"><table>...</table></div>
         JPanel tabelaWrapper = new JPanel(new BorderLayout());
         tabelaWrapper.setOpaque(false);
         tabelaWrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
-        tabelaWrapper.add(tabelaItensVendaDetalhe.getTableHeader(), BorderLayout.NORTH);
-        tabelaWrapper.add(tabelaItensVendaDetalhe, BorderLayout.CENTER);
+        JScrollPane scrollItens = new JScrollPane(tabelaItensVendaDetalhe);
+        scrollItens.setBorder(BorderFactory.createEmptyBorder());
+        scrollItens.setOpaque(false);
+        scrollItens.getViewport().setOpaque(false);
+        scrollItens.getViewport().setBackground(UiStyle.SURFACE);
+        scrollItens.setPreferredSize(new Dimension(LARGURA_CARD_DETALHE_VENDA - 32, 130));
+        tabelaWrapper.add(scrollItens, BorderLayout.CENTER);
         card.add(tabelaWrapper);
-        card.add(Box.createRigidArea(new Dimension(0, 18))); // gap:12px + margin-top:6px
+        card.add(Box.createRigidArea(new Dimension(0, 18)));
 
-        // <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:20px;font-weight:700;border-top:1px solid #2A3040;margin-top:6px;padding-top:12px">
-        //   <span class="k" style="font-size:14px;color:#E8ECF4">Total</span><span>840,00 MT</span>
-        // </div>
         JPanel linhaTotal = new JPanel(new BorderLayout());
         linhaTotal.setOpaque(false);
         linhaTotal.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -965,16 +955,15 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         labelTotalTexto.setFont(UiStyle.fonte(14, Font.PLAIN));
         labelTotalTexto.setForeground(UiStyle.TEXT);
 
-        JLabel labelTotalValor = new JLabel("840,00 MT");
-        labelTotalValor.setFont(UiStyle.fonte(20, Font.BOLD));
-        labelTotalValor.setForeground(UiStyle.TEXT);
+        labelDetalheVendaTotal = new JLabel("0,00 MT");
+        labelDetalheVendaTotal.setFont(UiStyle.fonte(20, Font.BOLD));
+        labelDetalheVendaTotal.setForeground(UiStyle.TEXT);
 
         linhaTotal.add(labelTotalTexto, BorderLayout.WEST);
-        linhaTotal.add(labelTotalValor, BorderLayout.EAST);
+        linhaTotal.add(labelDetalheVendaTotal, BorderLayout.EAST);
         card.add(linhaTotal);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt s">Fechar</span></div>
         JPanel barraFechar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraFechar.setOpaque(false);
         barraFechar.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -984,10 +973,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Corpo das sub-abas "Mais vendidos" (Relatorios.dc.html) e "Menos vendidos" (RelMenosVendidos.dc.html):
-     * <div class="card" style="padding:0"><table><tr><th>#</th><th>Produto</th><th>Qtd vendida</th><th>Receita</th></tr>...</table></div>
-     */
     private JPanel criarCardTabelaRanking(JTable tabela) {
         PainelCard card = new PainelCard(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BorderLayout());
@@ -1048,35 +1033,37 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         return t;
     }
 
-    /**
-     * <div class="row"> com 5 cards (flex:1; padding:12px 16px)
-     */
     private JPanel criarLinhaKpis() {
-        JPanel linha = new JPanel(new GridLayout(1, 5, 16, 0));
+        JPanel linha = new JPanel(new GridLayout(1, 6, 12, 0));
         linha.setOpaque(false);
 
-        linha.add(criarCardKpi("Vendas no período", "4"));
-        linha.add(criarCardKpi("Total concluído", "840,00 MT"));
-        linha.add(criarCardKpi("Total reembolsado", "105,00 MT"));
-        linha.add(criarCardKpi("Produtos com estoque baixo", "4"));
-        linha.add(criarCardKpi("Produtos a expirar", "5"));
+        labelKpiVendasPeriodo = new JLabel("0");
+        labelKpiTotalConcluido = new JLabel("0,00 MT");
+        labelKpiTotalReembolsado = new JLabel("0,00 MT");
+        labelKpiEstoqueBaixo = new JLabel("0");
+        labelKpiProdutosExpirar = new JLabel("0");
+        labelKpiLotesExpirados = new JLabel("0");
+
+        linha.add(criarCardKpi("Vendas no período", labelKpiVendasPeriodo));
+        linha.add(criarCardKpi("Total concluído", labelKpiTotalConcluido));
+        linha.add(criarCardKpi("Total reembolsado", labelKpiTotalReembolsado));
+        linha.add(criarCardKpi("Produtos com estoque baixo", labelKpiEstoqueBaixo));
+        linha.add(criarCardKpi("Produtos a expirar", labelKpiProdutosExpirar));
+        linha.add(criarCardKpi("Lotes expirados", labelKpiLotesExpirados));
 
         return linha;
     }
 
-    private JPanel criarCardKpi(String rotulo, String valor) {
+    private JPanel criarCardKpi(String rotulo, JLabel labelValor) {
         PainelCard card = new PainelCard(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(12, 16, 12, 16));
 
-        // <div class="k">...</div> (.k { font-size:12px; color:#A3ADC2 })
         JLabel labelRotulo = new JLabel(rotulo);
         labelRotulo.setFont(UiStyle.fonte(12, Font.PLAIN));
         labelRotulo.setForeground(UiStyle.MUTED);
         labelRotulo.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // <div style="font-size:22px;font-weight:700;margin-top:2px">...</div>
-        JLabel labelValor = new JLabel(valor);
         labelValor.setFont(UiStyle.fonte(22, Font.BOLD));
         labelValor.setForeground(UiStyle.TEXT);
         labelValor.setBorder(new EmptyBorder(2, 0, 0, 0));
@@ -1087,98 +1074,45 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
-     */
     private JPanel criarGradeSecoes() {
         JPanel grade = new JPanel(new GridLayout(2, 3, 16, 16));
         grade.setOpaque(false);
 
-        // 1. Vendas por estado
-        grade.add(criarCardMiniTabela(
-                "Vendas por estado",
-                new String[] {"Estado", "Qtd", "Total"},
-                new Object[][] {
-                    {"PENDENTE", "1", "1.250,00 MT"},
-                    {"CONCLUÍDA", "1", "840,00 MT"},
-                    {"ANULADA", "1", "300,00 MT"},
-                    {"REEMBOLSADA", "1", "2.100,00 MT"}
-                },
-                true
-        ));
+        modeloMiniVendasEstado = criarModeloNaoEditavel(new String[] {"Estado", "Qtd", "Total"});
+        modeloMiniMaisVendidos = criarModeloNaoEditavel(new String[] {"Produto", "Qtd"});
+        modeloMiniMenosVendidos = criarModeloNaoEditavel(new String[] {"Produto", "Qtd"});
+        modeloMiniEstoqueBaixo = criarModeloNaoEditavel(new String[] {"Produto", "Actual", "Mín."});
+        modeloMiniReembolsos = criarModeloNaoEditavel(new String[] {"Item", "Qtd", "Valor"});
+        modeloMiniAuditoria = criarModeloNaoEditavel(new String[] {"Tabela", "Operação", "Registos"});
 
-        // 2. Mais vendidos
-        grade.add(criarCardMiniTabela(
-                "Mais vendidos",
-                new String[] {"Produto", "Qtd"},
-                new Object[][] {
-                    {"Pão", "320"},
-                    {"Leite 1L", "210"},
-                    {"Água 1,5L", "180"}
-                },
-                false
-        ));
+        grade.add(criarCardMiniTabela("Vendas por estado", modeloMiniVendasEstado, true));
 
-        // 3. Menos vendidos
-        grade.add(criarCardMiniTabela(
-                "Menos vendidos",
-                new String[] {"Produto", "Qtd"},
-                new Object[][] {
-                    {"Biscoito", "0"},
-                    {"Óleo 5L", "4"},
-                    {"Sal 1kg", "5"}
-                },
-                false
-        ));
+        grade.add(criarCardMiniTabela("Mais vendidos", modeloMiniMaisVendidos, false));
 
-        // 4. Estoque baixo
-        grade.add(criarCardMiniTabela(
-                "Estoque baixo",
-                new String[] {"Produto", "Actual", "Mín."},
-                new Object[][] {
-                    {"Arroz 25kg", "4", "10"},
-                    {"Óleo 5L", "2", "8"},
-                    {"Açúcar 1kg", "6", "15"}
-                },
-                false
-        ));
+        grade.add(criarCardMiniTabela("Menos vendidos", modeloMiniMenosVendidos, false));
 
-        // 5. Reembolsos
-        grade.add(criarCardMiniTabela(
-                "Reembolsos",
-                new String[] {"Item", "Qtd", "Valor"},
-                new Object[][] {
-                    {"Leite 1L", "1", "85,00 MT"},
-                    {"Pão", "4", "20,00 MT"}
-                },
-                false
-        ));
+        grade.add(criarCardMiniTabela("Estoque baixo", modeloMiniEstoqueBaixo, false));
 
-        // 6. Auditoria
-        grade.add(criarCardMiniTabela(
-                "Auditoria",
-                new String[] {"Tabela", "Operação", "Registos"},
-                new Object[][] {
-                    {"Vendas", "Registo criado", "12"},
-                    {"Estoque", "Registo alterado", "8"},
-                    {"Produtos", "Registo alterado", "3"}
-                },
-                false
-        ));
+        grade.add(criarCardMiniTabela("Reembolsos", modeloMiniReembolsos, false));
+
+        grade.add(criarCardMiniTabela("Auditoria", modeloMiniAuditoria, false));
 
         return grade;
     }
 
-    /**
-     * <div class="card" style="padding:12px">
-     *   <b style="font-size:13px">...</b>
-     *   <div class="mt" style="margin-top:6px"><table>...</table></div>
-     * </div>
-     */
+    private DefaultTableModel criarModeloNaoEditavel(String[] colunas) {
+        return new DefaultTableModel(new Object[0][colunas.length], colunas) {
+            private static final long serialVersionUID = 1L;
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+    }
+
     private JPanel criarCardMiniTabela(
             String tituloSecao,
-            String[] colunas,
-            Object[][] dados,
+            DefaultTableModel modelo,
             boolean primeiraColunaChipEstado) {
         PainelCard card = new PainelCard(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BorderLayout(0, 6));
@@ -1188,15 +1122,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
         card.add(titulo, BorderLayout.NORTH);
-
-        DefaultTableModel modelo = new DefaultTableModel(dados, colunas) {
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
 
         JTable miniTabela = new JTable(modelo);
         miniTabela.setRowHeight(30);
@@ -1228,16 +1153,17 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
 
         JPanel tabelaWrapper = new JPanel(new BorderLayout());
         tabelaWrapper.setOpaque(false);
-        tabelaWrapper.add(header, BorderLayout.NORTH);
-        tabelaWrapper.add(miniTabela, BorderLayout.CENTER);
+        JScrollPane scrollMini = new JScrollPane(miniTabela);
+        scrollMini.setBorder(BorderFactory.createEmptyBorder());
+        scrollMini.setOpaque(false);
+        scrollMini.getViewport().setOpaque(false);
+        scrollMini.getViewport().setBackground(UiStyle.SURFACE);
+        tabelaWrapper.add(scrollMini, BorderLayout.CENTER);
 
         card.add(tabelaWrapper, BorderLayout.CENTER);
         return card;
     }
 
-    /**
-     * th { text-align:left; color:#A3ADC2; font-weight:600; padding:11px 14px; border-bottom:1px solid #2A3040 }
-     */
     private static final class RenderizadorCabecalhoPadrao extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1258,9 +1184,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * td { padding:11px 14px; border-bottom:1px solid #242B3B }
-     */
     private static final class RenderizadorCelulaPadrao extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1282,10 +1205,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Renderiza os chips de Estado em tabelas padrão (padding: 11px 14px, com suporte a seleção de linha #2A3347):
-     * PENDENTE (.ch.y), CONCLUÍDA (.ch.g), ANULADA (.ch.r), REEMBOLSADA (.ch.b)
-     */
     private static final class RenderizadorChipEstadoPadrao extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1322,9 +1241,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * .mt th { padding:6px 8px; font-size:12px; color:#A3ADC2; font-weight:600; border-bottom:1px solid #2A3040 }
-     */
     private static final class RenderizadorMiniCabecalho extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1345,9 +1261,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * .mt td { padding:6px 8px; font-size:12px; border-bottom:1px solid #242B3B }
-     */
     private static final class RenderizadorMiniCelula extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1368,10 +1281,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Renderiza os chips da tabela "Vendas por estado":
-     * PENDENTE (.ch.y), CONCLUÍDA (.ch.g), ANULADA (.ch.r), REEMBOLSADA (.ch.b)
-     */
     private static final class RenderizadorMiniChipEstado extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1410,7 +1319,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
     private static final class ChipEstado extends JLabel {
         private static final long serialVersionUID = 1L;
 
-        private final Color corFundo;
+        private Color corFundo;
 
         ChipEstado(String texto, Color corFundo, Color corTexto) {
             super(texto);
@@ -1421,13 +1330,38 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
             setOpaque(false);
         }
 
+        void atualizarEstado(String texto, Color novoFundo, Color novoTexto) {
+            setText(texto);
+            this.corFundo = novoFundo;
+            setForeground(novoTexto);
+            revalidate();
+            repaint();
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
+            String txt = getText() != null ? getText().trim() : "";
+            Color bgDinamico = corFundo;
+            Color fgDinamico = getForeground();
+            if ("PENDENTE".equalsIgnoreCase(txt)) {
+                bgDinamico = UiStyle.CHIP_YELLOW_BG;
+                fgDinamico = UiStyle.CHIP_YELLOW_FG;
+            } else if ("CONCLUÍDA".equalsIgnoreCase(txt) || "CONCLUIDA".equalsIgnoreCase(txt)) {
+                bgDinamico = UiStyle.CHIP_GREEN_BG;
+                fgDinamico = UiStyle.CHIP_GREEN_FG;
+            } else if ("ANULADA".equalsIgnoreCase(txt)) {
+                bgDinamico = UiStyle.ERROR_BG;
+                fgDinamico = UiStyle.ERROR_TEXT;
+            } else if (!txt.isEmpty()) {
+                bgDinamico = UiStyle.CHIP_BLUE_BG;
+                fgDinamico = UiStyle.CHIP_BLUE_FG;
+            }
+            setForeground(fgDinamico);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int h = getHeight();
-                g2.setColor(corFundo);
+                g2.setColor(bgDinamico);
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), h, h, h));
             } finally {
                 g2.dispose();
@@ -1436,11 +1370,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Aba em pílula (.tab / .tab.on):
-     * .tab { padding:7px 14px; border-radius:99px; font-size:13px; background:#232A3B; color:#A3ADC2 }
-     * .tab.on { background:#F5B638; color:#12151C; font-weight:600 }
-     */
     private static final class BotaoAbaPilula extends JButton {
         private static final long serialVersionUID = 1L;
 
@@ -1476,7 +1405,8 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
-                g2.setColor(ativa ? UiStyle.ACCENT : UiStyle.SECONDARY_BG);
+                setForeground(ativa ? UiStyle.ACCENT_TEXT : UiStyle.MUTED);
+                g2.setColor(ativa ? UiStyle.ACCENT : UiStyle.TAB_BG);
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, h, h));
             } finally {
                 g2.dispose();
@@ -1485,9 +1415,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Campo de data estilo .in ("De: 01/11/2026" / "Até: 03/11/2026").
-     */
     private static final class CampoDataArredondado extends JTextField {
         private static final long serialVersionUID = 1L;
 
@@ -1543,9 +1470,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Botão da toolbar (.bt / .bt.s) com padding 9px 16px, altura 38px e border-radius 8px.
-     */
     private static final class BotaoToolbarArredondado extends JButton {
         private static final long serialVersionUID = 1L;
 
@@ -1575,8 +1499,17 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setBorder(new EmptyBorder(9, 16, 9, 16));
-            Dimension pref = getPreferredSize();
-            setPreferredSize(new Dimension(pref.width, ALTURA_INPUT));
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            Dimension d = super.getPreferredSize();
+            return new Dimension(d.width, ALTURA_INPUT);
+        }
+
+        @Override
+        public Dimension getMinimumSize() {
+            return getPreferredSize();
         }
 
         @Override
@@ -1587,16 +1520,19 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
+                boolean ehPrimario = UiStyle.ACCENT.equals(corFundo);
 
                 if (preencherFundo && corFundo != null) {
-                    Color atual = corFundo;
+                    Color baseBg = ehPrimario ? UiStyle.ACCENT : UiStyle.SECONDARY_BG;
+                    setForeground(ehPrimario ? UiStyle.ACCENT_TEXT : UiStyle.TEXT);
+                    Color atual = baseBg;
                     if (getModel().isPressed()) {
-                        atual = corFundo.darker();
+                        atual = baseBg.darker();
                     } else if (getModel().isRollover()) {
                         atual = new Color(
-                                Math.min(255, corFundo.getRed() + 10),
-                                Math.min(255, corFundo.getGreen() + 10),
-                                Math.min(255, corFundo.getBlue() + 10)
+                                Math.min(255, baseBg.getRed() + 10),
+                                Math.min(255, baseBg.getGreen() + 10),
+                                Math.min(255, baseBg.getBlue() + 10)
                         );
                     }
                     g2.setColor(atual);
@@ -1604,7 +1540,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                 }
 
                 if (corBorda != null) {
-                    g2.setColor(corBorda);
+                    g2.setColor(UiStyle.INPUT_BORDER);
                     g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
                 }
             } finally {
@@ -1614,9 +1550,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Card (.card) com background #1B2030, border 1px #2A3040 e border-radius 14px.
-     */
     private static class PainelCard extends JPanel {
         private static final long serialVersionUID = 1L;
 
@@ -1633,13 +1566,17 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
 
         @Override
         protected void paintComponent(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                super.paintComponent(g);
+                return;
+            }
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
-                g2.setColor(corFundo);
+                g2.setColor(UiStyle.SURFACE);
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
             } finally {
                 g2.dispose();
@@ -1648,14 +1585,34 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         }
 
         @Override
+        protected void paintChildren(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                super.paintChildren(g);
+                return;
+            }
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                int arco = raio * 2;
+                Shape clip = new RoundRectangle2D.Float(1, 1, Math.max(0, getWidth() - 2), Math.max(0, getHeight() - 2), arco, arco);
+                g2.clip(clip);
+                super.paintChildren(g2);
+            } finally {
+                g2.dispose();
+            }
+        }
+
+        @Override
         protected void paintBorder(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                return;
+            }
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
-                g2.setColor(corBorda);
+                g2.setColor(UiStyle.BORDER);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
             } finally {
                 g2.dispose();
@@ -1692,6 +1649,78 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         return u;
     }
 
+    private void sincronizarDetalheVendaSelecionada() {
+        int row = tabelaVendas.getSelectedRow();
+        DefaultTableModel mItens = (DefaultTableModel) tabelaItensVendaDetalhe.getModel();
+        if (row < 0 || row >= tabelaVendas.getRowCount()) {
+            mItens.setRowCount(0);
+            if (labelDetalheVendaTitulo != null) labelDetalheVendaTitulo.setText("Venda -");
+            if (labelDetalheVendaCliente != null) labelDetalheVendaCliente.setText("-");
+            if (labelDetalheVendaFuncionario != null) labelDetalheVendaFuncionario.setText("Funcionário: -");
+            if (labelDetalheVendaTotal != null) labelDetalheVendaTotal.setText("0,00 MT");
+            return;
+        }
+        String idStr = String.valueOf(tabelaVendas.getValueAt(row, 0));
+        String cliente = String.valueOf(tabelaVendas.getValueAt(row, 2));
+        String func = String.valueOf(tabelaVendas.getValueAt(row, 3));
+        String total = String.valueOf(tabelaVendas.getValueAt(row, 4));
+        String estado = String.valueOf(tabelaVendas.getValueAt(row, 5));
+
+        if (labelDetalheVendaTitulo != null) labelDetalheVendaTitulo.setText("Venda " + idStr);
+        if (labelDetalheVendaCliente != null) labelDetalheVendaCliente.setText(cliente);
+        if (labelDetalheVendaFuncionario != null) labelDetalheVendaFuncionario.setText("Funcionário: " + func);
+        if (labelDetalheVendaTotal != null) labelDetalheVendaTotal.setText(total);
+
+        if (chipDetalheVendaEstado != null) {
+            Color bgChip;
+            Color fgChip;
+            if ("PENDENTE".equalsIgnoreCase(estado)) {
+                bgChip = UiStyle.CHIP_YELLOW_BG;
+                fgChip = UiStyle.CHIP_YELLOW_FG;
+            } else if ("CONCLUÍDA".equalsIgnoreCase(estado) || "CONCLUIDA".equalsIgnoreCase(estado)) {
+                bgChip = UiStyle.CHIP_GREEN_BG;
+                fgChip = UiStyle.CHIP_GREEN_FG;
+            } else if ("ANULADA".equalsIgnoreCase(estado)) {
+                bgChip = UiStyle.ERROR_BG;
+                fgChip = UiStyle.ERROR_TEXT;
+            } else {
+                bgChip = UiStyle.CHIP_BLUE_BG;
+                fgChip = UiStyle.CHIP_BLUE_FG;
+            }
+            chipDetalheVendaEstado.atualizarEstado(estado, bgChip, fgChip);
+        }
+
+        try {
+            final Long idVenda = Long.parseLong(idStr);
+            final Utilizador user = obterUtilizadorAutenticadoOuPadrao();
+            AsyncTask.executar(
+                () -> relatorioController.itensPorVenda(user, idVenda),
+                itens -> {
+                    mItens.setRowCount(0);
+                    if (itens != null) {
+                        for (Map<String, Object> it : itens) {
+                            String nomeProd = String.valueOf(it.getOrDefault("nome_produto", ""));
+                            String qtd = String.valueOf(it.getOrDefault("quantidade", 0));
+                            double prc = 0.0;
+                            double sub = 0.0;
+                            try { prc = Double.parseDouble(String.valueOf(it.getOrDefault("preco", 0.0))); } catch (Exception ignored) {}
+                            try { sub = Double.parseDouble(String.valueOf(it.getOrDefault("subtotal", 0.0))); } catch (Exception ignored) {}
+                            mItens.addRow(new Object[] {
+                                nomeProd,
+                                qtd,
+                                String.format(Locale.GERMANY, "%,.2f MT", prc),
+                                String.format(Locale.GERMANY, "%,.2f MT", sub)
+                            });
+                        }
+                    }
+                },
+                err -> mItens.setRowCount(0)
+            );
+        } catch (Exception ex) {
+            mItens.setRowCount(0);
+        }
+    }
+
     public void carregarRelatorioAtual() {
         Utilizador user = obterUtilizadorAutenticadoOuPadrao();
         LocalDateTime inicio = extrairDataInicio();
@@ -1699,11 +1728,11 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
 
         if ("Estoque baixo".equalsIgnoreCase(abaAtiva)) {
             AsyncTask.executar(
-                () -> relatorioBO.estoqueBaixo(user),
+                () -> relatorioController.estoqueBaixo(user),
                 lista -> {
-                    if (lista != null && !lista.isEmpty()) {
-                        DefaultTableModel m = (DefaultTableModel) tabelaEstoqueBaixo.getModel();
-                        m.setRowCount(0);
+                    DefaultTableModel m = (DefaultTableModel) tabelaEstoqueBaixo.getModel();
+                    m.setRowCount(0);
+                    if (lista != null) {
                         for (Map<String, Object> map : lista) {
                             String prod = String.valueOf(map.getOrDefault("nome_produto", ""));
                             String atual = String.valueOf(map.getOrDefault("quantidade_atual", 0));
@@ -1716,15 +1745,15 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                         }
                     }
                 },
-                erro -> {}
+                erro -> ((DefaultTableModel) tabelaEstoqueBaixo.getModel()).setRowCount(0)
             );
         } else if ("Mais vendidos".equalsIgnoreCase(abaAtiva)) {
             AsyncTask.executar(
-                () -> relatorioBO.produtosMaisVendidos(user),
+                () -> relatorioController.produtosMaisVendidos(user),
                 lista -> {
-                    if (lista != null && !lista.isEmpty()) {
-                        DefaultTableModel m = (DefaultTableModel) tabelaMaisVendidos.getModel();
-                        m.setRowCount(0);
+                    DefaultTableModel m = (DefaultTableModel) tabelaMaisVendidos.getModel();
+                    m.setRowCount(0);
+                    if (lista != null) {
                         int pos = 1;
                         for (Map<String, Object> map : lista) {
                             String prod = String.valueOf(map.getOrDefault("nome_produto", ""));
@@ -1738,12 +1767,12 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                         }
                     }
                 },
-                erro -> {}
+                erro -> ((DefaultTableModel) tabelaMaisVendidos.getModel()).setRowCount(0)
             );
         } else if ("Menos vendidos".equalsIgnoreCase(abaAtiva)) {
             AsyncTask.executar(
                 () -> {
-                    List<Map<String, Object>> lista = relatorioBO.produtosMaisVendidos(user);
+                    List<Map<String, Object>> lista = relatorioController.produtosMaisVendidos(user);
                     if (lista != null) {
                         lista = new ArrayList<>(lista);
                         Collections.sort(lista, Comparator.comparingDouble(o -> {
@@ -1757,9 +1786,9 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                     return lista;
                 },
                 lista -> {
-                    if (lista != null && !lista.isEmpty()) {
-                        DefaultTableModel m = (DefaultTableModel) tabelaMenosVendidos.getModel();
-                        m.setRowCount(0);
+                    DefaultTableModel m = (DefaultTableModel) tabelaMenosVendidos.getModel();
+                    m.setRowCount(0);
+                    if (lista != null) {
                         int pos = 1;
                         for (Map<String, Object> map : lista) {
                             String prod = String.valueOf(map.getOrDefault("nome_produto", ""));
@@ -1773,15 +1802,15 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                         }
                     }
                 },
-                erro -> {}
+                erro -> ((DefaultTableModel) tabelaMenosVendidos.getModel()).setRowCount(0)
             );
         } else if ("Reembolsos".equalsIgnoreCase(abaAtiva)) {
             AsyncTask.executar(
-                () -> relatorioBO.reembolsosPeriodo(user, inicio, fim),
+                () -> relatorioController.reembolsosPeriodo(user, inicio, fim),
                 lista -> {
-                    if (lista != null && !lista.isEmpty()) {
-                        DefaultTableModel m = (DefaultTableModel) tabelaReembolsos.getModel();
-                        m.setRowCount(0);
+                    DefaultTableModel m = (DefaultTableModel) tabelaReembolsos.getModel();
+                    m.setRowCount(0);
+                    if (lista != null) {
                         for (Map<String, Object> map : lista) {
                             String data = String.valueOf(map.getOrDefault("data_reembolso", ""));
                             if (data.length() >= 10) data = data.substring(0, 10);
@@ -1799,15 +1828,15 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                         }
                     }
                 },
-                erro -> {}
+                erro -> ((DefaultTableModel) tabelaReembolsos.getModel()).setRowCount(0)
             );
         } else if ("Auditoria".equalsIgnoreCase(abaAtiva)) {
             AsyncTask.executar(
-                () -> relatorioBO.resumoAuditoria(user, inicio, fim),
+                () -> relatorioController.resumoAuditoria(user, inicio, fim),
                 lista -> {
-                    if (lista != null && !lista.isEmpty()) {
-                        DefaultTableModel m = (DefaultTableModel) tabelaAuditoria.getModel();
-                        m.setRowCount(0);
+                    DefaultTableModel m = (DefaultTableModel) tabelaAuditoria.getModel();
+                    m.setRowCount(0);
+                    if (lista != null) {
                         for (Map<String, Object> map : lista) {
                             String dia = String.valueOf(map.getOrDefault("dia", ""));
                             String tabela = String.valueOf(map.getOrDefault("tabela_afetada", ""));
@@ -1817,15 +1846,15 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                         }
                     }
                 },
-                erro -> {}
+                erro -> ((DefaultTableModel) tabelaAuditoria.getModel()).setRowCount(0)
             );
-        } else if ("Vendas".equalsIgnoreCase(abaAtiva) || "Completo".equalsIgnoreCase(abaAtiva)) {
+        } else if ("Vendas".equalsIgnoreCase(abaAtiva)) {
             AsyncTask.executar(
-                () -> relatorioBO.vendasPeriodo(user, inicio, fim),
+                () -> relatorioController.vendasPeriodo(user, inicio, fim),
                 lista -> {
-                    if (lista != null && !lista.isEmpty()) {
-                        DefaultTableModel m = (DefaultTableModel) tabelaVendas.getModel();
-                        m.setRowCount(0);
+                    DefaultTableModel m = (DefaultTableModel) tabelaVendas.getModel();
+                    m.setRowCount(0);
+                    if (lista != null) {
                         for (Map<String, Object> map : lista) {
                             String id = String.valueOf(map.getOrDefault("id_venda", ""));
                             String data = String.valueOf(map.getOrDefault("data_venda", ""));
@@ -1841,6 +1870,172 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                             m.addRow(new Object[] {id, data, cli, func, totStr, est});
                         }
                     }
+                    if (tabelaVendas.getRowCount() > 0) {
+                        tabelaVendas.setRowSelectionInterval(0, 0);
+                    }
+                    sincronizarDetalheVendaSelecionada();
+                },
+                erro -> {
+                    ((DefaultTableModel) tabelaVendas.getModel()).setRowCount(0);
+                    sincronizarDetalheVendaSelecionada();
+                }
+            );
+        } else if ("Completo".equalsIgnoreCase(abaAtiva)) {
+            AsyncTask.executar(
+                () -> {
+                    Map<String, Integer> kpisDash = relatorioController.obterIndicadoresDashboard();
+                    List<Map<String, Object>> vendas = relatorioController.vendasPeriodo(user, inicio, fim);
+                    List<Map<String, Object>> resumoEstado = relatorioController.resumoVendasPorEstado(user, inicio, fim);
+                    List<Map<String, Object>> maisVend = relatorioController.produtosMaisVendidos(user);
+                    List<Map<String, Object>> estBaixo = relatorioController.estoqueBaixo(user);
+                    List<Map<String, Object>> reemb = relatorioController.reembolsosPeriodo(user, inicio, fim);
+                    List<Map<String, Object>> audit = relatorioController.resumoAuditoria(user, inicio, fim);
+                    return new Object[] { kpisDash, vendas, resumoEstado, maisVend, estBaixo, reemb, audit };
+                },
+                res -> {
+                    Object[] arr = (Object[]) res;
+                    @SuppressWarnings("unchecked")
+                    Map<String, Integer> kpisDash = (Map<String, Integer>) arr[0];
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> vendas = (List<Map<String, Object>>) arr[1];
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> resumoEstado = (List<Map<String, Object>>) arr[2];
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> maisVend = (List<Map<String, Object>>) arr[3];
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> estBaixo = (List<Map<String, Object>>) arr[4];
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> reemb = (List<Map<String, Object>>) arr[5];
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> audit = (List<Map<String, Object>>) arr[6];
+
+                    DefaultTableModel mVendas = (DefaultTableModel) tabelaVendas.getModel();
+                    mVendas.setRowCount(0);
+                    double totalConcluido = 0.0;
+                    if (vendas != null) {
+                        for (Map<String, Object> map : vendas) {
+                            String id = String.valueOf(map.getOrDefault("id_venda", ""));
+                            String data = String.valueOf(map.getOrDefault("data_venda", ""));
+                            if (data.length() >= 10) data = data.substring(0, 10);
+                            String cli = String.valueOf(map.getOrDefault("nome_cliente", ""));
+                            String func = String.valueOf(map.getOrDefault("nome_funcionario", ""));
+                            double tot = 0.0;
+                            try { tot = Double.parseDouble(String.valueOf(map.getOrDefault("total", 0.0))); } catch (Exception ignored) {}
+                            String est = String.valueOf(map.getOrDefault("estado", ""));
+                            if ("CONCLUIDA".equalsIgnoreCase(est)) {
+                                totalConcluido += tot;
+                            }
+                            mVendas.addRow(new Object[] {id, data, cli, func, String.format(Locale.GERMANY, "%,.2f MT", tot), est});
+                        }
+                    }
+
+                    double totalReembolsado = 0.0;
+                    if (reemb != null) {
+                        for (Map<String, Object> r : reemb) {
+                            try { totalReembolsado += Double.parseDouble(String.valueOf(r.getOrDefault("valor", 0.0))); } catch (Exception ignored) {}
+                        }
+                    }
+
+                    if (labelKpiVendasPeriodo != null) labelKpiVendasPeriodo.setText(String.valueOf(vendas != null ? vendas.size() : 0));
+                    if (labelKpiTotalConcluido != null) labelKpiTotalConcluido.setText(String.format(Locale.GERMANY, "%,.2f MT", totalConcluido));
+                    if (labelKpiTotalReembolsado != null) labelKpiTotalReembolsado.setText(String.format(Locale.GERMANY, "%,.2f MT", totalReembolsado));
+                    if (labelKpiEstoqueBaixo != null) labelKpiEstoqueBaixo.setText(String.valueOf(estBaixo != null ? estBaixo.size() : 0));
+                    if (labelKpiProdutosExpirar != null) {
+                        int exp = (kpisDash != null) ? kpisDash.getOrDefault("lotesAExpirar", 0) : 0;
+                        labelKpiProdutosExpirar.setText(String.valueOf(exp));
+                    }
+                    if (labelKpiLotesExpirados != null) {
+                        int expVenc = (kpisDash != null) ? kpisDash.getOrDefault("lotesExpirados", 0) : 0;
+                        labelKpiLotesExpirados.setText(String.valueOf(expVenc));
+                    }
+
+                    if (modeloMiniVendasEstado != null) {
+                        modeloMiniVendasEstado.setRowCount(0);
+                        if (resumoEstado != null) {
+                            for (Map<String, Object> m : resumoEstado) {
+                                String est = String.valueOf(m.getOrDefault("estado", ""));
+                                String qtd = String.valueOf(m.getOrDefault("quantidade", 0));
+                                double tot = 0.0;
+                                try { tot = Double.parseDouble(String.valueOf(m.getOrDefault("total", 0.0))); } catch (Exception ignored) {}
+                                modeloMiniVendasEstado.addRow(new Object[] {est, qtd, String.format(Locale.GERMANY, "%,.2f MT", tot)});
+                            }
+                        }
+                    }
+
+                    if (modeloMiniMaisVendidos != null) {
+                        modeloMiniMaisVendidos.setRowCount(0);
+                        if (maisVend != null) {
+                            for (int i = 0; i < maisVend.size(); i++) {
+                                Map<String, Object> m = maisVend.get(i);
+                                modeloMiniMaisVendidos.addRow(new Object[] {
+                                    String.valueOf(m.getOrDefault("nome_produto", "")),
+                                    String.valueOf(m.getOrDefault("quantidade_vendida", 0))
+                                });
+                            }
+                        }
+                    }
+
+                    if (modeloMiniMenosVendidos != null) {
+                        modeloMiniMenosVendidos.setRowCount(0);
+                        if (maisVend != null) {
+                            List<Map<String, Object>> menos = new ArrayList<>(maisVend);
+                            Collections.sort(menos, Comparator.comparingDouble(o -> {
+                                try { return Double.parseDouble(String.valueOf(o.getOrDefault("quantidade_vendida", 0))); }
+                                catch (Exception e) { return 0.0; }
+                            }));
+                            for (int i = 0; i < menos.size(); i++) {
+                                Map<String, Object> m = menos.get(i);
+                                modeloMiniMenosVendidos.addRow(new Object[] {
+                                    String.valueOf(m.getOrDefault("nome_produto", "")),
+                                    String.valueOf(m.getOrDefault("quantidade_vendida", 0))
+                                });
+                            }
+                        }
+                    }
+
+                    if (modeloMiniEstoqueBaixo != null) {
+                        modeloMiniEstoqueBaixo.setRowCount(0);
+                        if (estBaixo != null) {
+                            for (int i = 0; i < estBaixo.size(); i++) {
+                                Map<String, Object> m = estBaixo.get(i);
+                                modeloMiniEstoqueBaixo.addRow(new Object[] {
+                                    String.valueOf(m.getOrDefault("nome_produto", "")),
+                                    String.valueOf(m.getOrDefault("quantidade_atual", 0)),
+                                    String.valueOf(m.getOrDefault("quantidade_minima", 0))
+                                });
+                            }
+                        }
+                    }
+
+                    if (modeloMiniReembolsos != null) {
+                        modeloMiniReembolsos.setRowCount(0);
+                        if (reemb != null) {
+                            for (int i = 0; i < reemb.size(); i++) {
+                                Map<String, Object> m = reemb.get(i);
+                                double v = 0.0;
+                                try { v = Double.parseDouble(String.valueOf(m.getOrDefault("valor", 0.0))); } catch (Exception ignored) {}
+                                modeloMiniReembolsos.addRow(new Object[] {
+                                    String.valueOf(m.getOrDefault("nome_produto", "")),
+                                    String.valueOf(m.getOrDefault("quantidade", 0)),
+                                    String.format(Locale.GERMANY, "%,.2f MT", v)
+                                });
+                            }
+                        }
+                    }
+
+                    if (modeloMiniAuditoria != null) {
+                        modeloMiniAuditoria.setRowCount(0);
+                        if (audit != null) {
+                            for (int i = 0; i < audit.size(); i++) {
+                                Map<String, Object> m = audit.get(i);
+                                modeloMiniAuditoria.addRow(new Object[] {
+                                    String.valueOf(m.getOrDefault("tabela_afetada", "")),
+                                    String.valueOf(m.getOrDefault("operacao", "")),
+                                    String.valueOf(m.getOrDefault("quantidade", 0))
+                                });
+                            }
+                        }
+                    }
                 },
                 erro -> {}
             );
@@ -1851,18 +2046,17 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
     public void recarregarDados() {
         if (abaAtiva != null) {
             selecionarAba(abaAtiva);
-            carregarRelatorioAtual();
         }
     }
 
     @Override
     public void aplicarPermissoes(Utilizador utilizador) {
-        // Se for VENDEDOR, a navegação oculta essa aba
     }
 
     @Override
     public void aplicarTema() {
         setBackground(UiStyle.BACKGROUND);
-        repaint();
+        UiStyle.atualizarComponentesTema(this);
+        UiStyle.atualizarComponentesTema(cardDetalheVenda);
     }
 }

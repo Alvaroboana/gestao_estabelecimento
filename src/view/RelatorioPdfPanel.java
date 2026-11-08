@@ -1,5 +1,6 @@
 package view;
 
+import controller.RelatorioController;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -16,6 +17,15 @@ import java.awt.GridLayout;
 import java.awt.RenderingHints;
 import java.awt.geom.RoundRectangle2D;
 import java.io.File;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -34,87 +44,120 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import model.vo.SessaoUtilizador;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignA;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignF;
+import util.AsyncTask;
 import util.GeradorRelatorioPDF;
 
 import model.vo.Utilizador;
 
-/**
- * Visualização em Java Swing fiel ao design HTML "Relatório completo em PDF (exemplo)" (RelatorioPDF.dc.html),
- * com suporte a exportação real para PDF via iText 5 (lib/itextpdf-5.5.13.4.jar).
- */
 public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
     private static final long serialVersionUID = 1L;
 
-    // Dimensões e cores exatas de RelatorioPDF.dc.html
     private static final int LARGURA_PAGINA = 794;
     private static final int ALTURA_PAGINA = 1123;
 
-    private static final Color PG_BG = Color.WHITE;                         // #FFFFFF
-    private static final Color PG_TEXT = new Color(0x1B, 0x20, 0x30);       // #1B2030 (body / th background)
-    private static final Color PG_SUB = new Color(0x5A, 0x64, 0x78);        // #5A6478 (.sub / .kp small / .ft)
-    private static final Color PG_BRAND = new Color(0x6B, 0x4F, 0x00);      // #6B4F00 (.br / .ch.y color)
-    private static final Color PG_GOLD = new Color(0xF5, 0xB6, 0x38);       // #F5B638 (.hd border / h2 border-left)
-    private static final Color PG_KPI_BORDER = new Color(0xDD, 0xE2, 0xEA); // #DDE2EA (.kp div border / .ft border)
-    private static final Color PG_TD_BORDER = new Color(0xE6, 0xE9, 0xF0);  // #E6E9F0 (td border-bottom)
-    private static final Color PG_ZEBRA = new Color(0xF5, 0xF6, 0xF9);      // #F5F6F9 (tr:nth-child(even) td)
-    private static final Color PG_TOT_BG = new Color(0xFF, 0xF8, 0xE1);     // #FFF8E1 (.tot td)
+    private static final Color PG_BG = Color.WHITE;
+    private static final Color PG_TEXT = new Color(0x1B, 0x20, 0x30);
+    private static final Color PG_SUB = new Color(0x5A, 0x64, 0x78);
+    private static final Color PG_BRAND = new Color(0x6B, 0x4F, 0x00);
+    private static final Color PG_GOLD = new Color(0xF5, 0xB6, 0x38);
+    private static final Color PG_KPI_BORDER = new Color(0xDD, 0xE2, 0xEA);
+    private static final Color PG_TD_BORDER = new Color(0xE6, 0xE9, 0xF0);
+    private static final Color PG_ZEBRA = new Color(0xF5, 0xF6, 0xF9);
+    private static final Color PG_TOT_BG = new Color(0xFF, 0xF8, 0xE1);
 
-    // Chips do relatório PDF (.ch)
-    private static final Color CH_Y_BG = new Color(0xFF, 0xF3, 0xCD);       // #FFF3CD
-    private static final Color CH_Y_FG = new Color(0x6B, 0x4F, 0x00);       // #6B4F00
-    private static final Color CH_G_BG = new Color(0xD9, 0xF2, 0xE3);       // #D9F2E3
-    private static final Color CH_G_FG = new Color(0x0F, 0x5B, 0x34);       // #0F5B34
-    private static final Color CH_R_BG = new Color(0xFB, 0xDA, 0xDA);       // #FBDADA
-    private static final Color CH_R_FG = new Color(0x8F, 0x1A, 0x1A);       // #8F1A1A
-    private static final Color CH_B_BG = new Color(0xDC, 0xE9, 0xFB);       // #DCE9FB
-    private static final Color CH_B_FG = new Color(0x1A, 0x4A, 0x93);       // #1A4A93
+    private static final Color CH_Y_BG = new Color(0xFF, 0xF3, 0xCD);
+    private static final Color CH_Y_FG = new Color(0x6B, 0x4F, 0x00);
+    private static final Color CH_G_BG = new Color(0xD9, 0xF2, 0xE3);
+    private static final Color CH_G_FG = new Color(0x0F, 0x5B, 0x34);
+    private static final Color CH_R_BG = new Color(0xFB, 0xDA, 0xDA);
+    private static final Color CH_R_FG = new Color(0x8F, 0x1A, 0x1A);
+    private static final Color CH_B_BG = new Color(0xDC, 0xE9, 0xFB);
+    private static final Color CH_B_FG = new Color(0x1A, 0x4A, 0x93);
+
+    private static final Color PAINEL_BG = new Color(0xF2, 0xF4, 0xF8);
+    private static final Color PAINEL_TITULO_FG = new Color(0x1B, 0x20, 0x30);
+    private static final Color BOTAO_VOLTAR_BG = Color.WHITE;
+    private static final Color BOTAO_VOLTAR_FG = new Color(0x1B, 0x20, 0x30);
+    private static final Color BOTAO_VOLTAR_BORDA = new Color(0xDD, 0xE2, 0xEA);
+
+    private JLabel labelSubCabecalho;
+    private JLabel labelKpiVendasPeriodo;
+    private JLabel labelKpiTotalConcluido;
+    private JLabel labelKpiTotalReembolsado;
+    private JLabel labelKpiEstoqueBaixo;
+    private JLabel labelKpiAExpirar;
+    private DefaultTableModel modeloVendasEstado;
+    private DefaultTableModel modeloMaisVendidos;
+    private DefaultTableModel modeloMenosVendidos;
+    private DefaultTableModel modeloEstoqueBaixo;
+    private DefaultTableModel modeloReembolsos;
+    private DefaultTableModel modeloAuditoria;
+    private JPanel barraTopo;
+    private JPanel wrapperCentral;
+    private JScrollPane scrollPagina;
+    private final RelatorioController relatorioController = new RelatorioController();
 
     public RelatorioPdfPanel() {
         this(true);
     }
 
     public RelatorioPdfPanel(boolean exibirBarraExportacao) {
-        UiStyle.instalarTemaEscuro();
+        putClientProperty("temaFixoClaro", Boolean.TRUE);
         setLayout(new BorderLayout(0, 12));
-        setBackground(UiStyle.BACKGROUND);
+        setBackground(PAINEL_BG);
         setBorder(new EmptyBorder(16, 28, 16, 28));
 
         if (exibirBarraExportacao) {
-            add(criarBarraTopo(), BorderLayout.NORTH);
+            this.barraTopo = criarBarraTopo();
+            add(this.barraTopo, BorderLayout.NORTH);
         }
 
         JPanel paginaA4 = criarPaginaA4();
 
-        JPanel wrapperCentral = new JPanel(new GridBagLayout());
-        wrapperCentral.setBackground(UiStyle.BACKGROUND);
+        this.wrapperCentral = new JPanel(new GridBagLayout());
+        this.wrapperCentral.setBackground(PAINEL_BG);
+        this.wrapperCentral.putClientProperty("temaFixoClaro", Boolean.TRUE);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.NORTH;
-        wrapperCentral.add(paginaA4, gbc);
+        this.wrapperCentral.add(paginaA4, gbc);
 
-        JScrollPane scroll = new JScrollPane(wrapperCentral);
-        scroll.setBorder(BorderFactory.createEmptyBorder());
-        scroll.getViewport().setBackground(UiStyle.BACKGROUND);
-        scroll.getVerticalScrollBar().setUnitIncrement(18);
-        add(scroll, BorderLayout.CENTER);
+        this.scrollPagina = new JScrollPane(this.wrapperCentral);
+        this.scrollPagina.setBorder(BorderFactory.createEmptyBorder());
+        this.scrollPagina.setBackground(PAINEL_BG);
+        this.scrollPagina.getViewport().setBackground(PAINEL_BG);
+        this.scrollPagina.getVerticalScrollBar().setUnitIncrement(18);
+        this.scrollPagina.putClientProperty("temaFixoClaro", Boolean.TRUE);
+        add(this.scrollPagina, BorderLayout.CENTER);
+        recarregarDados();
     }
 
     private JPanel criarBarraTopo() {
         JPanel barra = new JPanel(new BorderLayout());
         barra.setOpaque(false);
+        barra.putClientProperty("temaFixoClaro", Boolean.TRUE);
 
         JLabel titulo = new JLabel("Pré-visualização — Relatório Completo (PDF)");
-        UiStyle.aplicarTexto(titulo, 18, true);
+        titulo.setFont(UiStyle.fonte(18, Font.BOLD));
+        titulo.setForeground(PAINEL_TITULO_FG);
         barra.add(titulo, BorderLayout.WEST);
 
-        JButton botaoVoltar = new JButton("← Voltar aos relatórios");
+        JButton botaoVoltar = new JButton("Voltar aos relatórios");
         botaoVoltar.setFont(UiStyle.fonteSemiBold(13));
-        botaoVoltar.setBackground(UiStyle.SECONDARY_BG);
-        botaoVoltar.setForeground(UiStyle.TEXT);
+        botaoVoltar.setBackground(BOTAO_VOLTAR_BG);
+        botaoVoltar.setForeground(BOTAO_VOLTAR_FG);
+        botaoVoltar.setIcon(UiStyle.icone(MaterialDesignA.ARROW_LEFT, 15, BOTAO_VOLTAR_FG));
+        botaoVoltar.setIconTextGap(6);
         botaoVoltar.setFocusPainted(false);
         botaoVoltar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        botaoVoltar.setBorder(new EmptyBorder(9, 16, 9, 16));
+        botaoVoltar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BOTAO_VOLTAR_BORDA, 1, true),
+                new EmptyBorder(9, 16, 9, 16)
+        ));
         botaoVoltar.addActionListener(e -> {
             Component root = SwingUtilities.getWindowAncestor(this);
             if (root instanceof MainFrame) {
@@ -126,6 +169,8 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         botaoExportar.setFont(UiStyle.fonteSemiBold(13));
         botaoExportar.setBackground(UiStyle.ACCENT);
         botaoExportar.setForeground(UiStyle.ACCENT_TEXT);
+        botaoExportar.setIcon(UiStyle.icone(MaterialDesignF.FILE_PDF_BOX, 15, UiStyle.ACCENT_TEXT));
+        botaoExportar.setIconTextGap(6);
         botaoExportar.setFocusPainted(false);
         botaoExportar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         botaoExportar.setBorder(new EmptyBorder(9, 16, 9, 16));
@@ -139,14 +184,14 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         return barra;
     }
 
-    /**
-     * .pg { width:794px; height:1123px; background:#fff; padding:40px 44px;
-     *       display:flex; flex-direction:column; gap:14px; position:relative }
-     */
     public JPanel criarPaginaA4() {
         JPanel pg = new JPanel(new BorderLayout());
         pg.setBackground(PG_BG);
-        pg.setBorder(new EmptyBorder(40, 44, 26, 44));
+        pg.putClientProperty("temaFixoClaro", Boolean.TRUE);
+        pg.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0xDD, 0xE2, 0xEA), 1),
+                new EmptyBorder(40, 44, 26, 44)
+        ));
         Dimension dimA4 = new Dimension(LARGURA_PAGINA, ALTURA_PAGINA);
         pg.setPreferredSize(dimA4);
         pg.setMinimumSize(dimA4);
@@ -156,110 +201,44 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         corpo.setOpaque(false);
         corpo.setLayout(new BoxLayout(corpo, BoxLayout.Y_AXIS));
 
-        int larguraConteudo = LARGURA_PAGINA - 88; // 706px (794 - 44*2)
+        int larguraConteudo = LARGURA_PAGINA - 88;
 
-        // 1. Cabeçalho (.hd)
         JPanel hd = criarCabecalhoPagina(larguraConteudo);
         corpo.add(hd);
         corpo.add(Box.createRigidArea(new Dimension(0, 14)));
 
-        // 2. KPIs (.kp)
         JPanel kp = criarLinhaKpis(larguraConteudo);
         corpo.add(kp);
         corpo.add(Box.createRigidArea(new Dimension(0, 14)));
 
-        // 3. Primeira grade .g2: Vendas por estado | Mais vendidos
+        modeloVendasEstado = criarModelo(new String[] {"Estado", "Qtd", "Total"});
+        modeloMaisVendidos = criarModelo(new String[] {"#", "Produto", "Qtd"});
         JPanel grade1 = new JPanel(new GridLayout(1, 2, 14, 0));
         grade1.setOpaque(false);
-        grade1.add(criarSecaoTabela(
-                "Vendas por estado",
-                new String[] {"Estado", "Qtd", "Total"},
-                new Object[][] {
-                    {"PENDENTE", "1", "1.250,00 MT"},
-                    {"CONCLUÍDA", "1", "840,00 MT"},
-                    {"ANULADA", "1", "300,00 MT"},
-                    {"REEMBOLSADA", "1", "2.100,00 MT"},
-                    {"Total", "4", "4.490,00 MT"}
-                },
-                true,
-                true
-        ));
-        grade1.add(criarSecaoTabela(
-                "Mais vendidos",
-                new String[] {"#", "Produto", "Qtd"},
-                new Object[][] {
-                    {"1", "Pão", "320"},
-                    {"2", "Leite 1L", "210"},
-                    {"3", "Água 1,5L", "180"},
-                    {"4", "Arroz 25kg", "35"}
-                },
-                false,
-                false
-        ));
+        grade1.add(criarSecaoTabela("Vendas por estado", modeloVendasEstado, true, true));
+        grade1.add(criarSecaoTabela("Mais vendidos", modeloMaisVendidos, false, false));
         fixarDimensaoBloco(grade1, larguraConteudo, 178);
         corpo.add(grade1);
         corpo.add(Box.createRigidArea(new Dimension(0, 14)));
 
-        // 4. Segunda grade .g2: Menos vendidos | Estoque baixo
+        modeloMenosVendidos = criarModelo(new String[] {"#", "Produto", "Qtd"});
+        modeloEstoqueBaixo = criarModelo(new String[] {"Produto", "Actual", "Mínimo"});
         JPanel grade2 = new JPanel(new GridLayout(1, 2, 14, 0));
         grade2.setOpaque(false);
-        grade2.add(criarSecaoTabela(
-                "Menos vendidos",
-                new String[] {"#", "Produto", "Qtd"},
-                new Object[][] {
-                    {"1", "Biscoito", "0"},
-                    {"2", "Óleo 5L", "4"},
-                    {"3", "Sal 1kg", "5"},
-                    {"4", "Açúcar 1kg", "7"}
-                },
-                false,
-                false
-        ));
-        grade2.add(criarSecaoTabela(
-                "Estoque baixo",
-                new String[] {"Produto", "Actual", "Mínimo"},
-                new Object[][] {
-                    {"Arroz 25kg", "4", "10"},
-                    {"Óleo 5L", "2", "8"},
-                    {"Açúcar 1kg", "6", "15"},
-                    {"Sal 1kg", "1", "5"}
-                },
-                false,
-                false
-        ));
+        grade2.add(criarSecaoTabela("Menos vendidos", modeloMenosVendidos, false, false));
+        grade2.add(criarSecaoTabela("Estoque baixo", modeloEstoqueBaixo, false, false));
         fixarDimensaoBloco(grade2, larguraConteudo, 154);
         corpo.add(grade2);
         corpo.add(Box.createRigidArea(new Dimension(0, 14)));
 
-        // 5. Seção Reembolsos
-        JPanel secaoReembolsos = criarSecaoTabela(
-                "Reembolsos",
-                new String[] {"Data", "Venda", "Item", "Qtd", "Valor", "Motivo", "Funcionário"},
-                new Object[][] {
-                    {"03/11/2026", "1039", "Leite 1L", "1", "85,00 MT", "Embalagem danificada", "Sara"},
-                    {"02/11/2026", "1039", "Pão", "4", "20,00 MT", "Fora do prazo", "Sara"},
-                    {"Total", "", "", "5", "105,00 MT", "", ""}
-                },
-                false,
-                true
-        );
+        modeloReembolsos = criarModelo(new String[] {"Data", "Venda", "Item", "Qtd", "Valor", "Motivo", "Funcionário"});
+        JPanel secaoReembolsos = criarSecaoTabela("Reembolsos", modeloReembolsos, false, true);
         fixarDimensaoBloco(secaoReembolsos, larguraConteudo, 130);
         corpo.add(secaoReembolsos);
         corpo.add(Box.createRigidArea(new Dimension(0, 14)));
 
-        // 6. Seção Resumo de auditoria
-        JPanel secaoAuditoria = criarSecaoTabela(
-                "Resumo de auditoria",
-                new String[] {"Dia", "Tabela afectada", "Operação", "Registos"},
-                new Object[][] {
-                    {"03/11/2026", "Vendas", "Registo criado", "12"},
-                    {"03/11/2026", "Estoque", "Registo alterado", "8"},
-                    {"02/11/2026", "Produtos", "Registo alterado", "3"},
-                    {"02/11/2026", "Reembolsos", "Registo criado", "2"}
-                },
-                false,
-                false
-        );
+        modeloAuditoria = criarModelo(new String[] {"Dia", "Tabela afectada", "Operação", "Registos"});
+        JPanel secaoAuditoria = criarSecaoTabela("Resumo de auditoria", modeloAuditoria, false, false);
         fixarDimensaoBloco(secaoAuditoria, larguraConteudo, 154);
         corpo.add(secaoAuditoria);
 
@@ -268,10 +247,16 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         return pg;
     }
 
-    /**
-     * .hd { display:flex; justify-content:space-between; align-items:flex-end;
-     *       border-bottom:3px solid #F5B638; padding-bottom:10px }
-     */
+    private DefaultTableModel criarModelo(String[] colunas) {
+        return new DefaultTableModel(new Object[0][colunas.length], colunas) {
+            private static final long serialVersionUID = 1L;
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+    }
+
     private JPanel criarCabecalhoPagina(int largura) {
         JPanel hd = new JPanel(new BorderLayout());
         hd.setOpaque(false);
@@ -284,12 +269,10 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         esq.setOpaque(false);
         esq.setLayout(new BoxLayout(esq, BoxLayout.Y_AXIS));
 
-        // .br { font-weight:700; font-size:12px; letter-spacing:1px; color:#6B4F00 }
         JLabel labelMarca = new JLabel("ESTABELECIMENTO");
         labelMarca.setFont(UiStyle.fonte(12, Font.BOLD));
         labelMarca.setForeground(PG_BRAND);
 
-        // .tt { font-size:24px; font-weight:700; margin-top:2px }
         JLabel labelTitulo = new JLabel("Relatório Completo");
         labelTitulo.setFont(UiStyle.fonte(24, Font.BOLD));
         labelTitulo.setForeground(PG_TEXT);
@@ -298,40 +281,43 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         esq.add(labelMarca);
         esq.add(labelTitulo);
 
-        // .sub { color:#5A6478; font-size:11px; text-align:right; line-height:1.5 }
-        JLabel sub = new JLabel(
-                "<html><div style='text-align:right;line-height:1.45'>Período: 01/11/2026 a 03/11/2026<br>Gerado em 03/11/2026 por admin</div></html>",
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        String hojeStr = LocalDate.now().format(dtf);
+        String inicioStr = LocalDate.now().minusDays(30).format(dtf);
+        labelSubCabecalho = new JLabel(
+                "<html><div style='text-align:right;line-height:1.45'>Período: " + inicioStr + " a " + hojeStr
+                        + "<br>Gerado em " + hojeStr + " por admin</div></html>",
                 SwingConstants.RIGHT
         );
-        sub.setFont(UiStyle.fonte(11, Font.PLAIN));
-        sub.setForeground(PG_SUB);
-        sub.setVerticalAlignment(SwingConstants.BOTTOM);
+        labelSubCabecalho.setFont(UiStyle.fonte(11, Font.PLAIN));
+        labelSubCabecalho.setForeground(PG_SUB);
+        labelSubCabecalho.setVerticalAlignment(SwingConstants.BOTTOM);
 
         hd.add(esq, BorderLayout.WEST);
-        hd.add(sub, BorderLayout.EAST);
+        hd.add(labelSubCabecalho, BorderLayout.EAST);
         fixarDimensaoBloco(hd, largura, 62);
         return hd;
     }
 
-    /**
-     * .kp { display:flex; gap:8px }
-     * .kp div { flex:1; border:1px solid #DDE2EA; border-radius:6px; padding:8px 10px }
-     * .kp small { color:#5A6478; font-size:10px }
-     * .kp b { display:block; font-size:17px; margin-top:2px }
-     */
     private JPanel criarLinhaKpis(int largura) {
         JPanel kp = new JPanel(new GridLayout(1, 5, 8, 0));
         kp.setOpaque(false);
-        kp.add(criarCardKpi("Vendas no período", "4"));
-        kp.add(criarCardKpi("Total concluído", "840,00 MT"));
-        kp.add(criarCardKpi("Total reembolsado", "105,00 MT"));
-        kp.add(criarCardKpi("Estoque baixo", "4 produtos"));
-        kp.add(criarCardKpi("A expirar (7 dias)", "5 produtos"));
+        labelKpiVendasPeriodo = new JLabel("0");
+        labelKpiTotalConcluido = new JLabel("0,00 MT");
+        labelKpiTotalReembolsado = new JLabel("0,00 MT");
+        labelKpiEstoqueBaixo = new JLabel("0 produtos");
+        labelKpiAExpirar = new JLabel("0 lotes");
+
+        kp.add(criarCardKpi("Vendas no período", labelKpiVendasPeriodo));
+        kp.add(criarCardKpi("Total concluído", labelKpiTotalConcluido));
+        kp.add(criarCardKpi("Total reembolsado", labelKpiTotalReembolsado));
+        kp.add(criarCardKpi("Estoque baixo", labelKpiEstoqueBaixo));
+        kp.add(criarCardKpi("A expirar (7 dias)", labelKpiAExpirar));
         fixarDimensaoBloco(kp, largura, 56);
         return kp;
     }
 
-    private JPanel criarCardKpi(String rotulo, String valor) {
+    private JPanel criarCardKpi(String rotulo, JLabel bold) {
         PainelKpiArredondado card = new PainelKpiArredondado();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(8, 10, 8, 10));
@@ -340,7 +326,6 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         small.setFont(UiStyle.fonte(10, Font.PLAIN));
         small.setForeground(PG_SUB);
 
-        JLabel bold = new JLabel(valor);
         bold.setFont(UiStyle.fonte(17, Font.BOLD));
         bold.setForeground(PG_TEXT);
         bold.setBorder(new EmptyBorder(2, 0, 0, 0));
@@ -350,13 +335,9 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * h2 { font-size:12px; margin:0 0 5px; padding-left:7px; border-left:4px solid #F5B638 }
-     */
     private JPanel criarSecaoTabela(
             String tituloSecao,
-            String[] colunas,
-            Object[][] dados,
+            DefaultTableModel modelo,
             boolean primeiraColunaChipEstado,
             boolean ultimaLinhaTotal) {
         JPanel secao = new JPanel(new BorderLayout(0, 5));
@@ -370,15 +351,6 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
                 new EmptyBorder(0, 7, 0, 0)
         ));
         secao.add(h2, BorderLayout.NORTH);
-
-        DefaultTableModel modelo = new DefaultTableModel(dados, colunas) {
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
 
         JTable tabela = new JTable(modelo);
         tabela.setRowHeight(24);
@@ -411,10 +383,6 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         return secao;
     }
 
-    /**
-     * .ft { display:flex; justify-content:space-between; color:#5A6478; font-size:10px;
-     *       border-top:1px solid #DDE2EA; padding-top:6px }
-     */
     private JPanel criarRodapePagina(int largura) {
         JPanel ft = new JPanel(new BorderLayout());
         ft.setOpaque(false);
@@ -476,19 +444,16 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
 
     public static void abrirJanelaIsolada() {
         SwingUtilities.invokeLater(() -> {
-            UiStyle.instalarTemaEscuro();
             JFrame frame = new JFrame("Relatório PDF — Estabelecimento");
             frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
             frame.setSize(920, 820);
             frame.setLocationRelativeTo(null);
+            frame.getContentPane().setBackground(PAINEL_BG);
             frame.setContentPane(new RelatorioPdfPanel(true));
             frame.setVisible(true);
         });
     }
 
-    /**
-     * .kp div { border:1px solid #DDE2EA; border-radius:6px; padding:8px 10px }
-     */
     private static final class PainelKpiArredondado extends JPanel {
         private static final long serialVersionUID = 1L;
 
@@ -515,9 +480,6 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * th { background:#1B2030; color:#fff; text-align:left; padding:5px 7px; font-size:10px }
-     */
     private static final class RenderizadorThPdf extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -536,11 +498,6 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * td { padding:5px 7px; border-bottom:1px solid #E6E9F0 }
-     * tr:nth-child(even) td { background:#F5F6F9 }
-     * .tot td { font-weight:700; background:#FFF8E1!important }
-     */
     private static final class RenderizadorTdPdf extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -557,8 +514,6 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
                 JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             String texto = value != null ? value.toString() : "";
             boolean isTotalRow = ultimaLinhaTotal && (row == table.getRowCount() - 1);
-            // Em CSS, tr:nth-child(even) considera o <tr> do cabeçalho como 1º filho,
-            // logo a 1ª linha de dados (row 0) é o 2º filho (even -> #F5F6F9)
             Color corFundoLinha = isTotalRow
                     ? PG_TOT_BG
                     : ((row % 2 == 0) ? PG_ZEBRA : PG_BG);
@@ -606,9 +561,6 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * .ch { padding:1px 7px; border-radius:99px; font-size:9px; font-weight:700 }
-     */
     private static final class ChipPdf extends JLabel {
         private static final long serialVersionUID = 1L;
 
@@ -640,17 +592,187 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        // Pré-visualização atualizada
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        String hojeStr = LocalDate.now().format(dtf);
+        String inicioStr = LocalDate.now().minusDays(30).format(dtf);
+        String userStr = (SessaoUtilizador.getUtilizador() != null && SessaoUtilizador.getUtilizador().getUsername() != null)
+                ? SessaoUtilizador.getUtilizador().getUsername() : "admin";
+        if (labelSubCabecalho != null) {
+            labelSubCabecalho.setText("<html><div style='text-align:right;line-height:1.45'>Período: "
+                    + inicioStr + " a " + hojeStr + "<br>Gerado em " + hojeStr + " por " + userStr + "</div></html>");
+        }
+
+        final LocalDateTime inicio = LocalDate.now().minusDays(30).atStartOfDay();
+        final LocalDateTime fim = LocalDateTime.now().plusDays(1);
+        AsyncTask.executar(
+            () -> {
+                Map<String, Integer> kpis = relatorioController.obterIndicadoresDashboard();
+                List<Map<String, Object>> resumoEstado = relatorioController.obterResumoVendasPorEstadoRelatorio(inicio, fim);
+                List<Map<String, Object>> maisVend = relatorioController.obterProdutosMaisVendidosDashboard();
+                List<Map<String, Object>> estBaixo = relatorioController.obterEstoqueBaixoDashboard();
+                List<Map<String, Object>> reemb = relatorioController.obterReembolsosPeriodoRelatorio(inicio, fim);
+                List<Map<String, Object>> audit = relatorioController.obterResumoAuditoriaRelatorio(inicio, fim);
+                return new Object[] { kpis, resumoEstado, maisVend, estBaixo, reemb, audit };
+            },
+            res -> {
+                Object[] arr = (Object[]) res;
+                @SuppressWarnings("unchecked")
+                Map<String, Integer> kpis = (Map<String, Integer>) arr[0];
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> resumoEstado = (List<Map<String, Object>>) arr[1];
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> maisVend = (List<Map<String, Object>>) arr[2];
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> estBaixo = (List<Map<String, Object>>) arr[3];
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> reemb = (List<Map<String, Object>>) arr[4];
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> audit = (List<Map<String, Object>>) arr[5];
+
+                int totalQtdVendas = 0;
+                double somaTotalVendas = 0.0;
+                double totalConcluido = 0.0;
+                if (modeloVendasEstado != null) {
+                    modeloVendasEstado.setRowCount(0);
+                    if (resumoEstado != null) {
+                        for (Map<String, Object> m : resumoEstado) {
+                            String est = String.valueOf(m.getOrDefault("estado", ""));
+                            int q = ((Number) m.getOrDefault("quantidade", 0)).intValue();
+                            double t = ((Number) m.getOrDefault("total", 0.0)).doubleValue();
+                            totalQtdVendas += q;
+                            somaTotalVendas += t;
+                            if ("CONCLUIDA".equalsIgnoreCase(est)) {
+                                totalConcluido += t;
+                            }
+                            modeloVendasEstado.addRow(new Object[] {est, String.valueOf(q), String.format(Locale.GERMANY, "%,.2f MT", t)});
+                        }
+                        if (!resumoEstado.isEmpty()) {
+                            modeloVendasEstado.addRow(new Object[] {"Total", String.valueOf(totalQtdVendas), String.format(Locale.GERMANY, "%,.2f MT", somaTotalVendas)});
+                        }
+                    }
+                }
+
+                if (modeloMaisVendidos != null) {
+                    modeloMaisVendidos.setRowCount(0);
+                    if (maisVend != null) {
+                        for (int i = 0; i < Math.min(4, maisVend.size()); i++) {
+                            Map<String, Object> m = maisVend.get(i);
+                            modeloMaisVendidos.addRow(new Object[] {
+                                String.valueOf(i + 1),
+                                String.valueOf(m.getOrDefault("nome_produto", "-")),
+                                String.valueOf(m.getOrDefault("quantidade_vendida", 0))
+                            });
+                        }
+                    }
+                }
+
+                if (modeloMenosVendidos != null) {
+                    modeloMenosVendidos.setRowCount(0);
+                    if (maisVend != null) {
+                        List<Map<String, Object>> menos = new ArrayList<>(maisVend);
+                        Collections.sort(menos, Comparator.comparingDouble(o -> {
+                            try { return Double.parseDouble(String.valueOf(o.getOrDefault("quantidade_vendida", 0))); }
+                            catch (Exception e) { return 0.0; }
+                        }));
+                        for (int i = 0; i < Math.min(4, menos.size()); i++) {
+                            Map<String, Object> m = menos.get(i);
+                            modeloMenosVendidos.addRow(new Object[] {
+                                String.valueOf(i + 1),
+                                String.valueOf(m.getOrDefault("nome_produto", "-")),
+                                String.valueOf(m.getOrDefault("quantidade_vendida", 0))
+                            });
+                        }
+                    }
+                }
+
+                if (modeloEstoqueBaixo != null) {
+                    modeloEstoqueBaixo.setRowCount(0);
+                    if (estBaixo != null) {
+                        for (int i = 0; i < Math.min(4, estBaixo.size()); i++) {
+                            Map<String, Object> m = estBaixo.get(i);
+                            modeloEstoqueBaixo.addRow(new Object[] {
+                                String.valueOf(m.getOrDefault("nome_produto", "-")),
+                                String.valueOf(m.getOrDefault("quantidade_atual", 0)),
+                                String.valueOf(m.getOrDefault("quantidade_minima", 0))
+                            });
+                        }
+                    }
+                }
+
+                double totalReembValor = 0.0;
+                int totalReembQtd = 0;
+                if (modeloReembolsos != null) {
+                    modeloReembolsos.setRowCount(0);
+                    if (reemb != null) {
+                        for (int i = 0; i < Math.min(4, reemb.size()); i++) {
+                            Map<String, Object> r = reemb.get(i);
+                            String d = String.valueOf(r.getOrDefault("data_reembolso", "-"));
+                            if (d.length() >= 10) d = d.substring(0, 10);
+                            int q = ((Number) r.getOrDefault("quantidade", 0)).intValue();
+                            double v = ((Number) r.getOrDefault("valor", 0.0)).doubleValue();
+                            totalReembQtd += q;
+                            totalReembValor += v;
+                            modeloReembolsos.addRow(new Object[] {
+                                d,
+                                String.valueOf(r.getOrDefault("id_venda", "-")),
+                                String.valueOf(r.getOrDefault("nome_produto", "-")),
+                                String.valueOf(q),
+                                String.format(Locale.GERMANY, "%,.2f MT", v),
+                                String.valueOf(r.getOrDefault("motivo", "-")),
+                                String.valueOf(r.getOrDefault("nome_funcionario", "-"))
+                            });
+                        }
+                        if (!reemb.isEmpty()) {
+                            modeloReembolsos.addRow(new Object[] {
+                                "Total", "", "", String.valueOf(totalReembQtd),
+                                String.format(Locale.GERMANY, "%,.2f MT", totalReembValor), "", ""
+                            });
+                        }
+                    }
+                }
+
+                if (modeloAuditoria != null) {
+                    modeloAuditoria.setRowCount(0);
+                    if (audit != null) {
+                        for (int i = 0; i < Math.min(4, audit.size()); i++) {
+                            Map<String, Object> a = audit.get(i);
+                            modeloAuditoria.addRow(new Object[] {
+                                String.valueOf(a.getOrDefault("dia", "-")),
+                                String.valueOf(a.getOrDefault("tabela_afetada", "-")),
+                                String.valueOf(a.getOrDefault("operacao", "-")),
+                                String.valueOf(a.getOrDefault("quantidade", 0))
+                            });
+                        }
+                    }
+                }
+
+                if (labelKpiVendasPeriodo != null) labelKpiVendasPeriodo.setText(String.valueOf(totalQtdVendas));
+                if (labelKpiTotalConcluido != null) labelKpiTotalConcluido.setText(String.format(Locale.GERMANY, "%,.2f MT", totalConcluido));
+                if (labelKpiTotalReembolsado != null) labelKpiTotalReembolsado.setText(String.format(Locale.GERMANY, "%,.2f MT", totalReembValor));
+                if (labelKpiEstoqueBaixo != null) labelKpiEstoqueBaixo.setText((estBaixo != null ? estBaixo.size() : 0) + " produtos");
+                if (labelKpiAExpirar != null) {
+                    int exp = (kpis != null) ? kpis.getOrDefault("lotesAExpirar", 0) : 0;
+                    labelKpiAExpirar.setText(exp + " lotes");
+                }
+            },
+            erro -> {}
+        );
     }
 
     @Override
     public void aplicarPermissoes(Utilizador utilizador) {
-        // Respeita regras de visualização
     }
 
     @Override
     public void aplicarTema() {
-        setBackground(UiStyle.BACKGROUND);
+        setBackground(PAINEL_BG);
+        if (wrapperCentral != null) {
+            wrapperCentral.setBackground(PAINEL_BG);
+        }
+        if (scrollPagina != null && scrollPagina.getViewport() != null) {
+            scrollPagina.getViewport().setBackground(PAINEL_BG);
+            scrollPagina.setBackground(PAINEL_BG);
+        }
         repaint();
     }
 }
