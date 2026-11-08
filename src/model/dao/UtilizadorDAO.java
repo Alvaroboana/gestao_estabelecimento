@@ -10,6 +10,8 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
+import model.vo.EstadoFuncionario;
 import model.vo.Funcionario;
 import model.vo.Perfil;
 import model.vo.Utilizador;
@@ -30,11 +32,9 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
             }
             stmt.setString(3, perfilNome);
 
-            long idFunc = 0L;
-            if (objecto.getFuncionario() != null && objecto.getFuncionario().getIdFuncionario() != null) {
-                idFunc = objecto.getFuncionario().getIdFuncionario();
-            }
-            stmt.setLong(4, idFunc);
+            stmt.setLong(4, JdbcValidation.requireId(
+                    objecto.getFuncionario() == null ? null : objecto.getFuncionario().getIdFuncionario(),
+                    "funcionario.idFuncionario"));
 
             stmt.executeUpdate();
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -73,11 +73,9 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
             }
             stmt.setString(3, perfilNome);
 
-            long idFunc = 0L;
-            if (objecto.getFuncionario() != null && objecto.getFuncionario().getIdFuncionario() != null) {
-                idFunc = objecto.getFuncionario().getIdFuncionario();
-            }
-            stmt.setLong(4, idFunc);
+            stmt.setLong(4, JdbcValidation.requireId(
+                    objecto.getFuncionario() == null ? null : objecto.getFuncionario().getIdFuncionario(),
+                    "funcionario.idFuncionario"));
             stmt.setLong(5, objecto.getIdUtilizador());
 
             stmt.executeUpdate();
@@ -89,7 +87,7 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
     @Override
     public List<Utilizador> listarTodos() {
         String sql = "SELECT u.id_utilizador, u.username, u.password_hash, u.perfil, " +
-                     "f.id_funcionario, f.bi, p.id_pessoa, p.nome " +
+                     "f.id_funcionario, f.bi, f.estado, p.id_pessoa, p.nome " +
                      "FROM utilizador u " +
                      "INNER JOIN funcionario f ON u.id_funcionario = f.id_funcionario " +
                      "INNER JOIN pessoa p ON f.id_pessoa = p.id_pessoa " +
@@ -110,7 +108,7 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
     @Override
     public Utilizador buscarPorId(Long id) {
         String sql = "SELECT u.id_utilizador, u.username, u.password_hash, u.perfil, " +
-                     "f.id_funcionario, f.bi, p.id_pessoa, p.nome " +
+                     "f.id_funcionario, f.bi, f.estado, p.id_pessoa, p.nome " +
                      "FROM utilizador u " +
                      "INNER JOIN funcionario f ON u.id_funcionario = f.id_funcionario " +
                      "INNER JOIN pessoa p ON f.id_pessoa = p.id_pessoa " +
@@ -132,7 +130,7 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
 
     public Utilizador buscarPorUsername(String username) {
         String sql = "SELECT u.id_utilizador, u.username, u.password_hash, u.perfil, " +
-                     "f.id_funcionario, f.bi, p.id_pessoa, p.nome " +
+                     "f.id_funcionario, f.bi, f.estado, p.id_pessoa, p.nome " +
                      "FROM utilizador u " +
                      "INNER JOIN funcionario f ON u.id_funcionario = f.id_funcionario " +
                      "INNER JOIN pessoa p ON f.id_pessoa = p.id_pessoa " +
@@ -168,6 +166,12 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
         f.setIdPessoa(rs.getLong("id_pessoa"));
         f.setNome(rs.getString("nome"));
         f.setBi(rs.getString("bi"));
+
+        String estadoStr = rs.getString("estado");
+        if (estadoStr != null) {
+            f.setEstado(EstadoFuncionario.valueOf(estadoStr));
+        }
+
         u.setFuncionario(f);
 
         return u;

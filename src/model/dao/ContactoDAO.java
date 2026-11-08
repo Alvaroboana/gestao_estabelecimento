@@ -10,13 +10,14 @@ import java.util.List;
 
 import infra.ConexaoDB;
 import infra.DBException;
+import infra.JdbcValidation;
 import model.vo.Contacto;
 
 public class ContactoDAO implements GenericoDAO<Contacto, Long> {
 
     @Override
     public void salvar(Contacto objecto) {
-        salvarComPessoa(objecto, null);
+        throw new IllegalArgumentException("idPessoa e obrigatorio para salvar um contacto.");
     }
 
     public void salvarComPessoa(Contacto objecto, Long idPessoa) {
@@ -24,11 +25,7 @@ public class ContactoDAO implements GenericoDAO<Contacto, Long> {
         try (Connection conn = ConexaoDB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, objecto.getContacto());
-            long id = 0L;
-            if (idPessoa != null) {
-                id = idPessoa;
-            }
-            stmt.setLong(2, id);
+            stmt.setLong(2, JdbcValidation.requireId(idPessoa, "idPessoa"));
             stmt.executeUpdate();
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {

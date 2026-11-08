@@ -72,8 +72,8 @@ public class Fornecedor extends Pessoa {
         return produto;
     }
 
-    public void setProduto(Set<Produto> produto) {
-        this.produto = produto;
+    public void setProduto(List<Produto> prods) {
+        this.produto = (Set<Produto>) prods;
     }
 
     @Override
