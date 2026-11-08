@@ -10,8 +10,8 @@
             "server": "localhost",
             "port": 3306,
             "driver": "MySQL",
-            "name": "Gestao",
-            "group": "Gestao",
+            "name": "Estabelecimento",
+            "group": "Estabelecimento",
             "database": "gestao",
             "username": "root",
             "password": "root"

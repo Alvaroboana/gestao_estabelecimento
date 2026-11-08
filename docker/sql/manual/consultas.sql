@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 SELECT * FROM auditoria;
 SELECT * FROM bairro;
 SELECT * FROM cargo;
@@ -18,3 +19,6 @@ SELECT * FROM utilizador;
 SELECT * FROM venda;
 
 SELECT * FROM venda;
+=======
+SELECT * FROM utilizador;
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49

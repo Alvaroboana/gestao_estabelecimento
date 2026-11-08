@@ -63,12 +63,15 @@ import org.kordamp.ikonli.materialdesign2.MaterialDesignP;
 import org.kordamp.ikonli.materialdesign2.MaterialDesignT;
 import util.AsyncTask;
 import util.ServidorLeitorCodigoBarras;
+<<<<<<< HEAD
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import java.awt.image.BufferedImage;
 import javax.swing.ImageIcon;
+=======
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 
 public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     private static final long serialVersionUID = 1L;
@@ -88,16 +91,28 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     private static final int LARGURA_CARD_FORNECEDORES = 420;
 
     private static final String[] COLUNAS = {
+<<<<<<< HEAD
             "ID", "Nome", "Categoria", "Preço / Un.", "Estoque", "Mín.", "Próx. Validade", "Fornec.", "Estado"
     };
 
     private static final String[] COLUNAS_FORNECEDORES_PRODUTO = {
             "Fornecedor", "Contactos", ""
+=======
+        "ID", "Nome", "Categoria", "Preço / Un.", "Estoque", "Mín.", "Próx. Validade", "Fornec.", "Estado"
+    };
+
+    private static final String[] COLUNAS_FORNECEDORES_PRODUTO = {
+        "Fornecedor", "Contactos", ""
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     };
 
     private static final int TAMANHO_MAXIMO_UNIDADE = 20;
     private static final String[] UNIDADES_PADRAO = {
+<<<<<<< HEAD
             "Unidade", "Kg", "Grama", "Litro", "Caixa", "Pacote", "Saco", "Dúzia"
+=======
+        "Unidade", "Kg", "Grama", "Litro", "Caixa", "Pacote", "Saco", "Dúzia"
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     };
     private final List<String> listaUnidades = new ArrayList<>(Arrays.asList(UNIDADES_PADRAO));
 
@@ -177,8 +192,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         this.botaoNovoProduto = criarBotaoNovoProduto();
         this.botaoEditar = criarBotaoEditarProduto();
         this.botaoFornecedores = criarBotaoFornecedoresProduto();
+<<<<<<< HEAD
         this.botaoDescontinuar = criarBotaoToolbar("Descontinuar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT,
                 UiStyle.DANGER_BORDER, false);
+=======
+        this.botaoDescontinuar = criarBotaoToolbar("Descontinuar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         this.botaoDescontinuar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CANCEL, 15, () -> UiStyle.DANGER_TEXT));
         this.botaoDescontinuar.setIconTextGap(6);
         this.botaoDescontinuar.addActionListener(e -> descontinuarProdutoSelecionado());
@@ -450,7 +469,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
     private JButton criarBotaoNovoProduto() {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 "Novo produto", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true);
+=======
+                "Novo produto", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         botao.setIcon(UiStyle.icone(MaterialDesignP.PLUS, 15, UiStyle.ACCENT_TEXT));
         botao.setIconTextGap(6);
         botao.addActionListener(e -> {
@@ -465,7 +489,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
     private JButton criarBotaoEditarProduto() {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 "Editar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+=======
+                "Editar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         botao.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PENCIL_OUTLINE, 15, () -> UiStyle.TEXT));
         botao.setIconTextGap(6);
         botao.addActionListener(e -> {
@@ -480,7 +509,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
     private JButton criarBotaoFornecedoresProduto() {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 "Fornecedores", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+=======
+                "Fornecedores", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         botao.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRUCK_DELIVERY, 15, () -> UiStyle.TEXT));
         botao.setIconTextGap(6);
         botao.addActionListener(e -> {
@@ -500,7 +534,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             Color borda,
             boolean preencherFundo) {
         return new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 texto, bg, fg, borda, RAIO_COMPONENTE, preencherFundo);
+=======
+                texto, bg, fg, borda, RAIO_COMPONENTE, preencherFundo
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     }
 
     private DefaultTableModel criarModeloTabela() {
@@ -592,10 +631,19 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
         seletorCategoriaNovo = new BotaoSeletorFormulario(
                 "Cereais",
+<<<<<<< HEAD
                 new String[] { "Cereais", "Mercearia", "Lacticínios", "Snacks" });
         seletorUnidadeNovo = new BotaoSeletorFormulario(
                 "Unidade",
                 listaUnidades.toArray(new String[0]));
+=======
+                new String[] {"Cereais", "Mercearia", "Lacticínios", "Snacks"}
+        );
+        seletorUnidadeNovo = new BotaoSeletorFormulario(
+                "Unidade",
+                listaUnidades.toArray(new String[0])
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         JPanel blocoCategoriaNovo = criarCampoComLabel("Categoria *", comBotaoNovaCategoria(seletorCategoriaNovo));
         fixarLargura(blocoCategoriaNovo, larguraInterna, 60);
         card.add(blocoCategoriaNovo);
@@ -627,14 +675,24 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         campoCodigoBarrasNovoProduto.setToolTipText("Digite o código, use o leitor USB ou clique em Leitor Celular");
         JPanel blocoCodigoBarras = criarCampoComLabel(
                 "Código de barras (opcional — Digitar / Leitor USB / Celular)",
+<<<<<<< HEAD
                 comBotaoLeitorCodigoBarras(campoCodigoBarrasNovoProduto));
+=======
+                comBotaoLeitorCodigoBarras(campoCodigoBarrasNovoProduto)
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         fixarLargura(blocoCodigoBarras, larguraInterna, 60);
         card.add(blocoCodigoBarras);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
         seletorFornecedorNovo = new BotaoSeletorFormulario(
                 "Nenhum",
+<<<<<<< HEAD
                 new String[] { "Nenhum" });
+=======
+                new String[] {"Nenhum"}
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         JPanel blocoFornecedor = criarCampoComLabel("Fornecedor", comBotaoNovoFornecedor(seletorFornecedorNovo));
         fixarLargura(blocoFornecedor, larguraInterna, 60);
         card.add(blocoFornecedor);
@@ -654,7 +712,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         barraBotoes.setOpaque(false);
 
         BotaoToolbarArredondado botaoGuardar = new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true);
+=======
+                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         botaoGuardar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
         botaoGuardar.setIconTextGap(6);
         botaoGuardar.addActionListener(e -> {
@@ -732,8 +795,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             String descricao = campoDescricaoNovoProduto.getText().trim();
             p.setDescricao(descricao.isEmpty() ? null : descricao);
             if (campoCodigoBarrasNovoProduto != null) {
+<<<<<<< HEAD
                 String cbNovo = campoCodigoBarrasNovoProduto.getText();
                 p.setCodigoBarras(cbNovo != null && !cbNovo.trim().isEmpty() ? cbNovo.trim() : null);
+=======
+                p.setCodigoBarras(campoCodigoBarrasNovoProduto.getText());
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             }
             p.setEstado(EstadoProduto.ATIVO);
             Categoria categoriaEscolhida = buscarCategoriaPorNome(textoSeletor(seletorCategoriaNovo));
@@ -747,6 +814,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
             botaoGuardar.setEnabled(false);
             AsyncTask.executar(
+<<<<<<< HEAD
                     () -> {
                         Utilizador user = SessaoUtilizador.getUtilizador();
                         if (qtdInicial > 0 && (user == null || user.getFuncionario() == null)) {
@@ -793,6 +861,53 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+=======
+                () -> {
+                    Utilizador user = SessaoUtilizador.getUtilizador();
+                    if (qtdInicial > 0 && (user == null || user.getFuncionario() == null)) {
+                        throw new IllegalStateException(
+                                "Sessão sem funcionário associado: não é possível registar o stock inicial.");
+                    }
+
+                    produtoController.salvar(p);
+
+                    if (p.getIdProduto() != null && !fornNome.isEmpty() && !"Nenhum".equalsIgnoreCase(fornNome) && listaTodosFornecedores != null) {
+                        for (Fornecedor f : listaTodosFornecedores) {
+                            if (f.getNome() != null && f.getNome().equalsIgnoreCase(fornNome)) {
+                                produtoController.associarFornecedor(p.getIdProduto(), f.getIdFornecedor());
+                                break;
+                            }
+                        }
+                    }
+                    if (p.getIdProduto() != null && qtdInicial > 0) {
+                        Estoque lote = new Estoque();
+                        lote.setProduto(p);
+                        lote.setFuncionario(user.getFuncionario());
+                        lote.setQuantidade(qtdInicial);
+                        lote.setDataEntrada(java.time.LocalDate.now());
+                        lote.setDataValidade(validadeInicial);
+                        produtoController.salvarLoteInicial(lote);
+                    }
+                    return null;
+                },
+                sucesso -> {
+                    botaoGuardar.setEnabled(true);
+                    JOptionPane.showMessageDialog(this, "Produto cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    limparFormularioNovoProduto();
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                erro -> {
+                    botaoGuardar.setEnabled(true);
+                    JOptionPane.showMessageDialog(this, "Erro ao salvar produto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            );
+        });
+
+        BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         botaoCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
         botaoCancelar.setIconTextGap(6);
         botaoCancelar.addActionListener(e -> {
@@ -829,8 +944,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         campoNomeNovoProduto.setText("");
         campoPrecoNovoProduto.setText("");
         campoDescricaoNovoProduto.setText("");
+<<<<<<< HEAD
         if (campoCodigoBarrasNovoProduto != null)
             campoCodigoBarrasNovoProduto.setText("");
+=======
+        if (campoCodigoBarrasNovoProduto != null) campoCodigoBarrasNovoProduto.setText("");
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         campoQuantidadeNovoProduto.setText("");
         campoValidadeNovoProduto.setText("");
         campoQuantidadeMinimaNovoProduto.setText("5");
@@ -859,10 +978,19 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
         seletorCategoriaEditar = new BotaoSeletorFormulario(
                 "Cereais",
+<<<<<<< HEAD
                 new String[] { "Cereais", "Mercearia", "Lacticínios", "Snacks" });
         seletorUnidadeEditar = new BotaoSeletorFormulario(
                 "Unidade",
                 listaUnidades.toArray(new String[0]));
+=======
+                new String[] {"Cereais", "Mercearia", "Lacticínios", "Snacks"}
+        );
+        seletorUnidadeEditar = new BotaoSeletorFormulario(
+                "Unidade",
+                listaUnidades.toArray(new String[0])
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         JPanel blocoCatEditar = criarCampoComLabel("Categoria *", comBotaoNovaCategoria(seletorCategoriaEditar));
         fixarLargura(blocoCatEditar, larguraInterna, 60);
         card.add(blocoCatEditar);
@@ -893,17 +1021,31 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         campoCodigoBarrasEditarProduto.setToolTipText("Digite o código, use o leitor USB ou clique em Leitor Celular");
         JPanel blocoCodigoBarrasEditar = criarCampoComLabel(
                 "Código de barras (opcional — Digitar / Leitor USB / Celular)",
+<<<<<<< HEAD
                 comBotaoLeitorCodigoBarras(campoCodigoBarrasEditarProduto));
+=======
+                comBotaoLeitorCodigoBarras(campoCodigoBarrasEditarProduto)
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         fixarLargura(blocoCodigoBarrasEditar, larguraInterna, 60);
         card.add(blocoCodigoBarrasEditar);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
         seletorEstadoEditar = new BotaoSeletorFormulario(
                 "ATIVO",
+<<<<<<< HEAD
                 new String[] { "ATIVO", "DESCONTINUADO" });
         seletorFornecedorEditar = new BotaoSeletorFormulario(
                 "Nenhum",
                 new String[] { "Nenhum" });
+=======
+                new String[] {"ATIVO", "DESCONTINUADO"}
+        );
+        seletorFornecedorEditar = new BotaoSeletorFormulario(
+                "Nenhum",
+                new String[] {"Nenhum"}
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         JPanel blocoEstadoEditar = criarCampoComLabel("Estado", seletorEstadoEditar);
         fixarLargura(blocoEstadoEditar, larguraInterna, 60);
         card.add(blocoEstadoEditar);
@@ -918,52 +1060,85 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         barraBotoes.setOpaque(false);
 
         BotaoToolbarArredondado botaoGuardarAlteracoes = new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true, 10);
+=======
+                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true, 10
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         botaoGuardarAlteracoes.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 14, UiStyle.ACCENT_TEXT));
         botaoGuardarAlteracoes.setIconTextGap(5);
         botaoGuardarAlteracoes.addActionListener(e -> {
             int row = tabela.getSelectedRow();
             if (row < 0 || row >= tabela.getRowCount()) {
+<<<<<<< HEAD
                 JOptionPane.showMessageDialog(this, "Selecione um produto para editar.", "Aviso",
                         JOptionPane.WARNING_MESSAGE);
+=======
+                JOptionPane.showMessageDialog(this, "Selecione um produto para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 return;
             }
             String idStr = String.valueOf(tabela.getValueAt(row, 0));
             try {
                 Long idProduto = Long.parseLong(idStr);
                 Produto p = (listaProdutosEntidades != null) ? listaProdutosEntidades.stream()
+<<<<<<< HEAD
                         .filter(item -> item.getIdProduto() != null && item.getIdProduto().equals(idProduto))
                         .findFirst().orElse(null) : null;
+=======
+                    .filter(item -> item.getIdProduto() != null && item.getIdProduto().equals(idProduto))
+                    .findFirst().orElse(null) : null;
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 if (p == null) {
                     p = new Produto();
                     p.setIdProduto(idProduto);
                 }
                 Categoria catEdit = buscarCategoriaPorNome(textoSeletor(seletorCategoriaEditar));
                 if (catEdit == null) {
+<<<<<<< HEAD
                     JOptionPane.showMessageDialog(this, "Seleccione uma categoria válida.", "Aviso",
                             JOptionPane.WARNING_MESSAGE);
+=======
+                    JOptionPane.showMessageDialog(this, "Seleccione uma categoria válida.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                     return;
                 }
                 String nomeEdit = campoNomeEditarProduto.getText().trim();
                 if (nomeEdit.isEmpty()) {
+<<<<<<< HEAD
                     JOptionPane.showMessageDialog(this, "Informe o nome do produto.", "Aviso",
                             JOptionPane.WARNING_MESSAGE);
+=======
+                    JOptionPane.showMessageDialog(this, "Informe o nome do produto.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                     return;
                 }
                 p.setNome(nomeEdit);
                 try {
+<<<<<<< HEAD
                     String prcStr = campoPrecoEditarProduto.getText().trim().replace(" MT", "").replace(".", "")
                             .replace(",", ".");
                     double novoPreco = Double.parseDouble(prcStr);
                     if (novoPreco <= 0) {
                         JOptionPane.showMessageDialog(this, "O preço deve ser maior que zero.", "Aviso",
                                 JOptionPane.WARNING_MESSAGE);
+=======
+                    String prcStr = campoPrecoEditarProduto.getText().trim().replace(" MT", "").replace(".", "").replace(",", ".");
+                    double novoPreco = Double.parseDouble(prcStr);
+                    if (novoPreco <= 0) {
+                        JOptionPane.showMessageDialog(this, "O preço deve ser maior que zero.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                         return;
                     }
                     p.setPreco(novoPreco);
                 } catch (NumberFormatException exP) {
+<<<<<<< HEAD
                     JOptionPane.showMessageDialog(this, "Informe um preço válido.", "Aviso",
                             JOptionPane.WARNING_MESSAGE);
+=======
+                    JOptionPane.showMessageDialog(this, "Informe um preço válido.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                     return;
                 }
                 String unidadeEdit = textoSeletor(seletorUnidadeEditar);
@@ -973,12 +1148,19 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 if (campoQuantidadeMinimaEditarProduto != null) {
                     try {
                         int qMin = Integer.parseInt(campoQuantidadeMinimaEditarProduto.getText().trim());
+<<<<<<< HEAD
                         if (qMin < 0)
                             throw new NumberFormatException();
                         p.setQuantidadeMinima(qMin);
                     } catch (NumberFormatException exMin) {
                         JOptionPane.showMessageDialog(this, "A quantidade mínima deve ser um número inteiro >= 0.",
                                 "Aviso", JOptionPane.WARNING_MESSAGE);
+=======
+                        if (qMin < 0) throw new NumberFormatException();
+                        p.setQuantidadeMinima(qMin);
+                    } catch (NumberFormatException exMin) {
+                        JOptionPane.showMessageDialog(this, "A quantidade mínima deve ser um número inteiro >= 0.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                         return;
                     }
                 }
@@ -987,20 +1169,29 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                     p.setDescricao(descEdit.isEmpty() ? null : descEdit);
                 }
                 if (campoCodigoBarrasEditarProduto != null) {
+<<<<<<< HEAD
                     String cbEdit = campoCodigoBarrasEditarProduto.getText();
                     p.setCodigoBarras(cbEdit != null && !cbEdit.trim().isEmpty() ? cbEdit.trim() : null);
+=======
+                    p.setCodigoBarras(campoCodigoBarrasEditarProduto.getText());
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 }
                 String estadoStr = seletorEstadoEditar.getText().replace(" ▾", "").replace("▾", "").trim();
                 try {
                     p.setEstado(EstadoProduto.valueOf(estadoStr));
+<<<<<<< HEAD
                 } catch (Exception ignored) {
                 }
+=======
+                } catch (Exception ignored) {}
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 p.setCategoria(catEdit);
                 final String fornEditNome = textoSeletor(seletorFornecedorEditar);
 
                 final Produto fProd = p;
                 botaoGuardarAlteracoes.setEnabled(false);
                 AsyncTask.executar(
+<<<<<<< HEAD
                         () -> {
                             produtoController.atualizar(fProd);
                             if (fProd.getIdProduto() != null && !fornEditNome.isEmpty()
@@ -1029,18 +1220,55 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(this, "Identificador de produto inválido.", "Erro",
                         JOptionPane.ERROR_MESSAGE);
+=======
+                    () -> {
+                        produtoController.atualizar(fProd);
+                        if (fProd.getIdProduto() != null && !fornEditNome.isEmpty() && !"Nenhum".equalsIgnoreCase(fornEditNome) && listaTodosFornecedores != null) {
+                            for (Fornecedor f : listaTodosFornecedores) {
+                                if (f.getNome() != null && f.getNome().equalsIgnoreCase(fornEditNome)) {
+                                    produtoController.associarFornecedor(fProd.getIdProduto(), f.getIdFornecedor());
+                                    break;
+                                }
+                            }
+                        }
+                        return true;
+                    },
+                    res -> {
+                        JOptionPane.showMessageDialog(this, "Produto atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                        recarregarDados();
+                        botaoGuardarAlteracoes.setEnabled(true);
+                    },
+                    erro -> {
+                        JOptionPane.showMessageDialog(this, "Erro ao atualizar produto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                        botaoGuardarAlteracoes.setEnabled(true);
+                    }
+                );
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Identificador de produto inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             }
         });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 10);
+=======
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 10
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         botaoCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 14, () -> UiStyle.TEXT));
         botaoCancelar.setIconTextGap(5);
         botaoCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         BotaoToolbarArredondado botaoDescontinuarCard = new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 "Descontinuar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE,
                 false, 10);
+=======
+                "Descontinuar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false, 10
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         botaoDescontinuarCard.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CANCEL, 14, () -> UiStyle.DANGER_TEXT));
         botaoDescontinuarCard.setIconTextGap(5);
         botaoDescontinuarCard.addActionListener(e -> descontinuarProdutoSelecionado());
@@ -1094,7 +1322,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
         seletorAssociarFornecedor = new BotaoSeletorFormulario(
                 "Lacticínios Norte",
+<<<<<<< HEAD
                 new String[] { "Lacticínios Norte", "Distribuidora Sol", "Mercearia Atlas" });
+=======
+                new String[] {"Lacticínios Norte", "Distribuidora Sol", "Mercearia Atlas"}
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         JPanel blocoAssociar = criarCampoComLabel("Associar fornecedor", seletorAssociarFornecedor);
         fixarLargura(blocoAssociar, larguraInterna, 60);
         card.add(blocoAssociar);
@@ -1104,32 +1337,53 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         barraBotoes.setOpaque(false);
 
         botaoAssociarFornecedor = new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 "+ Associar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true);
+=======
+                "+ Associar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         botaoAssociarFornecedor.setIcon(UiStyle.icone(MaterialDesignP.PLUS, 15, UiStyle.ACCENT_TEXT));
         botaoAssociarFornecedor.setIconTextGap(6);
         botaoAssociarFornecedor.addActionListener(e -> {
             if (idProdutoAtualFornecedores == null) {
+<<<<<<< HEAD
                 JOptionPane.showMessageDialog(this, "Selecione um produto na tabela primeiro.", "Aviso",
                         JOptionPane.WARNING_MESSAGE);
+=======
+                JOptionPane.showMessageDialog(this, "Selecione um produto na tabela primeiro.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 return;
             }
             String textoSel = seletorAssociarFornecedor != null ? seletorAssociarFornecedor.getText() : "";
             if (textoSel == null || textoSel.trim().isEmpty()) {
+<<<<<<< HEAD
                 JOptionPane.showMessageDialog(this, "Selecione um fornecedor para associar.", "Aviso",
                         JOptionPane.WARNING_MESSAGE);
+=======
+                JOptionPane.showMessageDialog(this, "Selecione um fornecedor para associar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 return;
             }
             final String nomeSel = textoSel.replace(" ▾", "").replace("▾", "").trim();
             Fornecedor fornecedorEncontrado = (listaTodosFornecedores != null) ? listaTodosFornecedores.stream()
+<<<<<<< HEAD
                     .filter(f -> f.getNome() != null && f.getNome().equalsIgnoreCase(nomeSel))
                     .findFirst().orElse(null) : null;
             if (fornecedorEncontrado == null) {
                 JOptionPane.showMessageDialog(this, "Fornecedor não encontrado na lista.", "Aviso",
                         JOptionPane.WARNING_MESSAGE);
+=======
+                .filter(f -> f.getNome() != null && f.getNome().equalsIgnoreCase(nomeSel))
+                .findFirst().orElse(null) : null;
+            if (fornecedorEncontrado == null) {
+                JOptionPane.showMessageDialog(this, "Fornecedor não encontrado na lista.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 return;
             }
             final Long idForn = fornecedorEncontrado.getIdFornecedor();
             AsyncTask.executar(
+<<<<<<< HEAD
                     () -> {
                         produtoController.associarFornecedor(idProdutoAtualFornecedores, idForn);
                         return true;
@@ -1145,6 +1399,23 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
         BotaoToolbarArredondado botaoFechar = new BotaoToolbarArredondado(
                 "Fechar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true);
+=======
+                () -> {
+                    produtoController.associarFornecedor(idProdutoAtualFornecedores, idForn);
+                    return true;
+                },
+                sucesso -> {
+                    JOptionPane.showMessageDialog(this, "Fornecedor associado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    carregarFornecedoresDoProduto(idProdutoAtualFornecedores);
+                },
+                erro -> JOptionPane.showMessageDialog(this, "Erro ao associar fornecedor: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        });
+
+        BotaoToolbarArredondado botaoFechar = new BotaoToolbarArredondado(
+                "Fechar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         botaoFechar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
         botaoFechar.setIconTextGap(6);
         botaoFechar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
@@ -1181,6 +1452,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 int col = miniTabelaFornecedores.columnAtPoint(e.getPoint());
                 int row = miniTabelaFornecedores.rowAtPoint(e.getPoint());
                 if (col == 2 && row >= 0 && row < miniTabelaFornecedores.getRowCount()) {
+<<<<<<< HEAD
                     if (idProdutoAtualFornecedores == null || listaFornecedoresDoProduto == null
                             || row >= listaFornecedoresDoProduto.size()) {
                         return;
@@ -1205,6 +1477,27 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                                 erro -> JOptionPane.showMessageDialog(ProdutosPanel.this,
                                         "Erro ao desassociar: " + erro.getMessage(), "Erro",
                                         JOptionPane.ERROR_MESSAGE));
+=======
+                    if (idProdutoAtualFornecedores == null || listaFornecedoresDoProduto == null || row >= listaFornecedoresDoProduto.size()) {
+                        return;
+                    }
+                    Fornecedor f = listaFornecedoresDoProduto.get(row);
+                    int opt = JOptionPane.showConfirmDialog(ProdutosPanel.this, 
+                        "Deseja desassociar o fornecedor \"" + f.getNome() + "\" deste produto?", 
+                        "Confirmar Remoção", JOptionPane.YES_NO_OPTION);
+                    if (opt == JOptionPane.YES_OPTION) {
+                        AsyncTask.executar(
+                            () -> {
+                                produtoController.desassociarFornecedor(idProdutoAtualFornecedores, f.getIdFornecedor());
+                                return true;
+                            },
+                            sucesso -> {
+                                JOptionPane.showMessageDialog(ProdutosPanel.this, "Fornecedor desassociado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                                carregarFornecedoresDoProduto(idProdutoAtualFornecedores);
+                            },
+                            erro -> JOptionPane.showMessageDialog(ProdutosPanel.this, "Erro ao desassociar: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+                        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                     }
                 }
             }
@@ -1268,7 +1561,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 "Nova categoria",
                 mais -> abrirDialogoNovaCategoria(seletor, mais),
                 "Eliminar categoria seleccionada",
+<<<<<<< HEAD
                 menos -> eliminarCategoriaSelecionada(seletor, menos));
+=======
+                menos -> eliminarCategoriaSelecionada(seletor, menos)
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     }
 
     private JComponent comBotaoNovaUnidade(BotaoSeletorFormulario seletor) {
@@ -1277,7 +1575,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 "Nova unidade",
                 mais -> abrirDialogoNovaUnidade(seletor),
                 "Remover unidade seleccionada",
+<<<<<<< HEAD
                 menos -> removerUnidadeSelecionada(seletor));
+=======
+                menos -> removerUnidadeSelecionada(seletor)
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     }
 
     private JComponent comBotaoNovoFornecedor(BotaoSeletorFormulario seletor) {
@@ -1289,7 +1592,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         linha.setOpaque(false);
 
         BotaoToolbarArredondado btnLeitor = new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 "Leitor Celular", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 10);
+=======
+                "Leitor Celular", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 10
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         btnLeitor.setToolTipText("Escanear código de barras pelo telemóvel na rede Wi-Fi");
         btnLeitor.addActionListener(e -> abrirLeitorCodigoBarrasParaCampo(campoAlvo));
 
@@ -1298,6 +1606,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         return linha;
     }
 
+<<<<<<< HEAD
     /*
      * private void abrirLeitorCodigoBarrasParaCampo(JTextField campoAlvo) {
      * try {
@@ -1332,6 +1641,8 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
      * }
      */
 
+=======
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     private void abrirLeitorCodigoBarrasParaCampo(JTextField campoAlvo) {
         try {
             String url = ServidorLeitorCodigoBarras.iniciarOuAtualizarOuvinte(codigo -> {
@@ -1341,6 +1652,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                     campoAlvo.repaint();
                 }
             });
+<<<<<<< HEAD
 
             JPanel painelQr = new JPanel();
             painelQr.setLayout(new BoxLayout(painelQr, BoxLayout.Y_AXIS));
@@ -1394,12 +1706,28 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                     painelQr,
                     "Scanner de Código de Barras (USB / Telemóvel)",
                     JOptionPane.PLAIN_MESSAGE);
+=======
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Leitor Mobile ativo para preencher o Código de Barras do produto!\n\n"
+                    + "1. Também pode usar diretamente qualquer leitor USB (basta clicar no campo e apontar o leitor).\n"
+                    + "2. Para usar o telemóvel, conecte-o na mesma rede Wi-Fi/Hotspot e aceda a:\n\n   " + url + "\n\n"
+                    + "O código lido será preenchido automaticamente no campo 'Código de barras'.",
+                    "Scanner de Código de Barras (USB / Telemóvel)",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(
                     this,
                     "Não foi possível iniciar o servidor do leitor móvel: " + ex.getMessage(),
                     "Erro",
+<<<<<<< HEAD
                     JOptionPane.ERROR_MESSAGE);
+=======
+                    JOptionPane.ERROR_MESSAGE
+            );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         }
     }
 
@@ -1409,7 +1737,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         linha.setOpaque(false);
 
         BotaoToolbarArredondado mais = new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 "", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 11);
+=======
+                "", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 11
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         mais.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PLUS, 15, () -> UiStyle.TEXT));
         if (mais.getIcon() == null) {
             mais.setText("+");
@@ -1432,7 +1765,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         linha.setOpaque(false);
 
         BotaoToolbarArredondado mais = new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 "", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 9);
+=======
+                "", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true, 9
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         mais.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PLUS, 14, () -> UiStyle.TEXT));
         if (mais.getIcon() == null) {
             mais.setText("+");
@@ -1441,7 +1779,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         mais.addActionListener(e -> acaoMais.accept(mais));
 
         BotaoToolbarArredondado menos = new BotaoToolbarArredondado(
+<<<<<<< HEAD
                 "", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false, 9);
+=======
+                "", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false, 9
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         menos.setIcon(UiStyle.iconeDinamico(MaterialDesignD.DELETE_OUTLINE, 14, () -> UiStyle.DANGER_TEXT));
         if (menos.getIcon() == null) {
             menos.setText("-");
@@ -1463,12 +1806,17 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         String nomeCat = textoSeletor(seletorOrigem);
         Categoria cat = buscarCategoriaPorNome(nomeCat);
         if (cat == null || cat.getIdCategoria() == null) {
+<<<<<<< HEAD
             JOptionPane.showMessageDialog(this, "Seleccione uma categoria válida para eliminar.", "Eliminar categoria",
                     JOptionPane.WARNING_MESSAGE);
+=======
+            JOptionPane.showMessageDialog(this, "Seleccione uma categoria válida para eliminar.", "Eliminar categoria", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             return;
         }
         if (listaProdutosEntidades != null) {
             long emUso = listaProdutosEntidades.stream()
+<<<<<<< HEAD
                     .filter(p -> p.getCategoria() != null
                             && cat.getIdCategoria().equals(p.getCategoria().getIdCategoria()))
                     .count();
@@ -1476,6 +1824,13 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 JOptionPane.showMessageDialog(this,
                         "Não é possível eliminar a categoria \"" + cat.getNome() + "\" porque está associada a " + emUso
                                 + " produto(s).",
+=======
+                    .filter(p -> p.getCategoria() != null && cat.getIdCategoria().equals(p.getCategoria().getIdCategoria()))
+                    .count();
+            if (emUso > 0) {
+                JOptionPane.showMessageDialog(this,
+                        "Não é possível eliminar a categoria \"" + cat.getNome() + "\" porque está associada a " + emUso + " produto(s).",
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                         "Categoria em uso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -1488,6 +1843,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         }
         botaoOrigem.setEnabled(false);
         AsyncTask.executar(
+<<<<<<< HEAD
                 () -> {
                     produtoController.eliminarCategoria(cat.getIdCategoria());
                     return true;
@@ -1504,6 +1860,24 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                             "Não foi possível eliminar a categoria (pode estar em uso): " + erro.getMessage(),
                             "Erro", JOptionPane.ERROR_MESSAGE);
                 });
+=======
+            () -> {
+                produtoController.eliminarCategoria(cat.getIdCategoria());
+                return true;
+            },
+            ok -> {
+                botaoOrigem.setEnabled(true);
+                recarregarDados();
+                JOptionPane.showMessageDialog(this, "Categoria eliminada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            },
+            erro -> {
+                botaoOrigem.setEnabled(true);
+                JOptionPane.showMessageDialog(this,
+                        "Não foi possível eliminar a categoria (pode estar em uso): " + erro.getMessage(),
+                        "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     }
 
     private void removerUnidadeSelecionada(BotaoSeletorFormulario seletorOrigem) {
@@ -1512,18 +1886,29 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             return;
         }
         if (listaUnidades.size() <= 1) {
+<<<<<<< HEAD
             JOptionPane.showMessageDialog(this, "Deve existir pelo menos uma unidade na lista.", "Aviso",
                     JOptionPane.WARNING_MESSAGE);
+=======
+            JOptionPane.showMessageDialog(this, "Deve existir pelo menos uma unidade na lista.", "Aviso", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             return;
         }
         if (listaProdutosEntidades != null) {
             boolean emUso = listaProdutosEntidades.stream()
+<<<<<<< HEAD
                     .anyMatch(p -> p.getUnidade() != null
                             && chaveUnidade(p.getUnidade()).equals(chaveUnidade(unidadeAtual)));
             if (emUso) {
                 JOptionPane.showMessageDialog(this,
                         "A unidade \"" + unidadeAtual
                                 + "\" está em uso por produtos cadastrados e não pode ser removida.",
+=======
+                    .anyMatch(p -> p.getUnidade() != null && chaveUnidade(p.getUnidade()).equals(chaveUnidade(unidadeAtual)));
+            if (emUso) {
+                JOptionPane.showMessageDialog(this,
+                        "A unidade \"" + unidadeAtual + "\" está em uso por produtos cadastrados e não pode ser removida.",
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                         "Unidade em uso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -1565,8 +1950,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         }
         String nome = entrada.trim().replaceAll("\\s+", " ");
         if (nome.isEmpty()) {
+<<<<<<< HEAD
             JOptionPane.showMessageDialog(this, "Informe o nome da unidade.", "Nova unidade",
                     JOptionPane.WARNING_MESSAGE);
+=======
+            JOptionPane.showMessageDialog(this, "Informe o nome da unidade.", "Nova unidade", JOptionPane.WARNING_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             return;
         }
         if (nome.length() > TAMANHO_MAXIMO_UNIDADE) {
@@ -1635,6 +2024,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         }
         botaoOrigem.setEnabled(false);
         AsyncTask.executar(
+<<<<<<< HEAD
                 () -> produtoController.criarCategoria(entrada),
                 nova -> {
                     botaoOrigem.setEnabled(true);
@@ -1646,6 +2036,19 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                     JOptionPane.showMessageDialog(this, erro.getMessage(), "Nova categoria",
                             JOptionPane.WARNING_MESSAGE);
                 });
+=======
+            () -> produtoController.criarCategoria(entrada),
+            nova -> {
+                botaoOrigem.setEnabled(true);
+                registarCategoriaCriada(nova);
+                seletorDestino.setText(nova.getNome());
+            },
+            erro -> {
+                botaoOrigem.setEnabled(true);
+                JOptionPane.showMessageDialog(this, erro.getMessage(), "Nova categoria", JOptionPane.WARNING_MESSAGE);
+            }
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     }
 
     private void registarCategoriaCriada(Categoria nova) {
@@ -1670,6 +2073,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     private void descontinuarProdutoSelecionado() {
         int row = tabela.getSelectedRow();
         if (row < 0 || row >= tabela.getRowCount()) {
+<<<<<<< HEAD
             JOptionPane.showMessageDialog(this, "Selecione um produto na tabela para descontinuar.", "Aviso",
                     JOptionPane.WARNING_MESSAGE);
             return;
@@ -1684,6 +2088,19 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             Produto p = (listaProdutosEntidades != null) ? listaProdutosEntidades.stream()
                     .filter(item -> item.getIdProduto() != null && item.getIdProduto().equals(idProduto))
                     .findFirst().orElse(null) : null;
+=======
+            JOptionPane.showMessageDialog(this, "Selecione um produto na tabela para descontinuar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String idStr = String.valueOf(tabela.getValueAt(row, 0));
+        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja descontinuar o produto #" + idStr + "?", "Confirmar Descontinuação", JOptionPane.YES_NO_OPTION);
+        if (opt != JOptionPane.YES_OPTION) return;
+        try {
+            Long idProduto = Long.parseLong(idStr);
+            Produto p = (listaProdutosEntidades != null) ? listaProdutosEntidades.stream()
+                .filter(item -> item.getIdProduto() != null && item.getIdProduto().equals(idProduto))
+                .findFirst().orElse(null) : null;
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             if (p == null) {
                 p = new Produto();
                 p.setIdProduto(idProduto);
@@ -1691,6 +2108,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             p.setEstado(EstadoProduto.DESCONTINUADO);
             final Produto fProd = p;
             AsyncTask.executar(
+<<<<<<< HEAD
                     () -> {
                         produtoController.atualizar(fProd);
                         return true;
@@ -1708,6 +2126,23 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Identificador de produto inválido.", "Erro",
                     JOptionPane.ERROR_MESSAGE);
+=======
+                () -> {
+                    produtoController.atualizar(fProd);
+                    return true;
+                },
+                res -> {
+                    JOptionPane.showMessageDialog(this, "Produto #" + idStr + " descontinuado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                erro -> {
+                    JOptionPane.showMessageDialog(this, "Erro ao descontinuar produto: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            );
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Identificador de produto inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         }
     }
 
@@ -1735,13 +2170,18 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                     }
                 }
             }
+<<<<<<< HEAD
         } catch (NumberFormatException ignored) {
         }
+=======
+        } catch (NumberFormatException ignored) {}
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 
         campoNomeEditarProduto.setText(nome);
         seletorCategoriaEditar.setText(categoria);
         seletorEstadoEditar.setText(estado);
         if (entidade != null) {
+<<<<<<< HEAD
             campoPrecoEditarProduto.setText(
                     String.format(Locale.GERMANY, "%.2f", entidade.getPreco() != null ? entidade.getPreco() : 0.0));
             if (seletorUnidadeEditar != null) {
@@ -1752,13 +2192,26 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             if (campoQuantidadeMinimaEditarProduto != null) {
                 campoQuantidadeMinimaEditarProduto.setText(
                         String.valueOf(entidade.getQuantidadeMinima() != null ? entidade.getQuantidadeMinima() : 0));
+=======
+            campoPrecoEditarProduto.setText(String.format(Locale.GERMANY, "%.2f", entidade.getPreco() != null ? entidade.getPreco() : 0.0));
+            if (seletorUnidadeEditar != null) {
+                String un = entidade.getUnidade() != null && !entidade.getUnidade().isEmpty() ? entidade.getUnidade() : "Unidade";
+                seletorUnidadeEditar.setText(un);
+            }
+            if (campoQuantidadeMinimaEditarProduto != null) {
+                campoQuantidadeMinimaEditarProduto.setText(String.valueOf(entidade.getQuantidadeMinima() != null ? entidade.getQuantidadeMinima() : 0));
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             }
             if (campoDescricaoEditarProduto != null) {
                 campoDescricaoEditarProduto.setText(entidade.getDescricao() != null ? entidade.getDescricao() : "");
             }
             if (campoCodigoBarrasEditarProduto != null) {
+<<<<<<< HEAD
                 campoCodigoBarrasEditarProduto
                         .setText(entidade.getCodigoBarras() != null ? entidade.getCodigoBarras() : "");
+=======
+                campoCodigoBarrasEditarProduto.setText(entidade.getCodigoBarras() != null ? entidade.getCodigoBarras() : "");
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             }
             if (seletorFornecedorEditar != null) {
                 if (entidade.getFornecedor() != null && !entidade.getFornecedor().isEmpty()) {
@@ -1791,6 +2244,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     }
 
     private void carregarFornecedoresDoProduto(Long idProduto) {
+<<<<<<< HEAD
         if (idProduto == null)
             return;
         AsyncTask.executar(
@@ -1828,6 +2282,43 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 },
                 erro -> {
                 });
+=======
+        if (idProduto == null) return;
+        AsyncTask.executar(
+            () -> {
+                List<Fornecedor> associados = produtoController.listarFornecedoresDoProduto(idProduto);
+                List<Fornecedor> todos = fornecedorController.listarTodos();
+                return new Object[] { associados, todos };
+            },
+            res -> {
+                Object[] arr = (Object[]) res;
+                @SuppressWarnings("unchecked")
+                List<Fornecedor> associados = (List<Fornecedor>) arr[0];
+                @SuppressWarnings("unchecked")
+                List<Fornecedor> todos = (List<Fornecedor>) arr[1];
+                this.listaFornecedoresDoProduto = associados != null ? associados : new ArrayList<>();
+                this.listaTodosFornecedores = todos != null ? todos : new ArrayList<>();
+                
+                if (modeloFornecedores != null) {
+                    modeloFornecedores.setRowCount(0);
+                    for (Fornecedor f : this.listaFornecedoresDoProduto) {
+                        String cto = (f.getContacto() != null && !f.getContacto().isEmpty()) 
+                            ? f.getContacto().get(0).getContacto() : "-";
+                        modeloFornecedores.addRow(new Object[] { f.getNome(), cto, "Remover" });
+                    }
+                }
+                
+                if (seletorAssociarFornecedor != null && !this.listaTodosFornecedores.isEmpty()) {
+                    String[] nomes = this.listaTodosFornecedores.stream()
+                        .map(Fornecedor::getNome)
+                        .toArray(String[]::new);
+                    seletorAssociarFornecedor.setOpcoes(nomes);
+                    seletorAssociarFornecedor.setText(nomes[0]);
+                }
+            },
+            erro -> {}
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     }
 
     private JPanel criarCampoComLabel(String textoLabel, JComponent campo) {
@@ -1902,7 +2393,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             label.setFont(UiStyle.fonteSemiBold(12));
             label.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.BORDER),
+<<<<<<< HEAD
                     new EmptyBorder(6, 8, 6, 8)));
+=======
+                    new EmptyBorder(6, 8, 6, 8)
+            ));
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             return label;
         }
     }
@@ -1922,7 +2418,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             label.setFont(UiStyle.fonte(12, Font.PLAIN));
             label.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.TABLE_ROW_BORDER),
+<<<<<<< HEAD
                     new EmptyBorder(6, 8, 6, 8)));
+=======
+                    new EmptyBorder(6, 8, 6, 8)
+            ));
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             return label;
         }
     }
@@ -1941,7 +2442,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             label.setFont(UiStyle.fonteSemiBold(13));
             label.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.BORDER),
+<<<<<<< HEAD
                     new EmptyBorder(11, 14, 11, 14)));
+=======
+                    new EmptyBorder(11, 14, 11, 14)
+            ));
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             return label;
         }
     }
@@ -1961,7 +2467,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             label.setFont(UiStyle.fonte(13, Font.PLAIN));
             label.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.TABLE_ROW_BORDER),
+<<<<<<< HEAD
                     new EmptyBorder(11, 14, 11, 14)));
+=======
+                    new EmptyBorder(11, 14, 11, 14)
+            ));
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             return label;
         }
     }
@@ -1989,7 +2500,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             container.setBackground(isSelected ? UiStyle.TABLE_SELECTION_BG : UiStyle.SURFACE);
             container.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.TABLE_ROW_BORDER),
+<<<<<<< HEAD
                     new EmptyBorder(8, 14, 8, 14)));
+=======
+                    new EmptyBorder(8, 14, 8, 14)
+            ));
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             container.add(new ChipEstado(texto, bgChip, fgChip));
             return container;
         }
@@ -2339,7 +2855,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                         atual = new Color(
                                 Math.min(255, baseBg.getRed() + 10),
                                 Math.min(255, baseBg.getGreen() + 10),
+<<<<<<< HEAD
                                 Math.min(255, baseBg.getBlue() + 10));
+=======
+                                Math.min(255, baseBg.getBlue() + 10)
+                        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                     }
                     g2.setColor(atual);
                     g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
@@ -2406,8 +2927,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
             try {
                 int arco = raio * 2;
                 Shape clipAnterior = g2.getClip();
+<<<<<<< HEAD
                 g2.clip(new RoundRectangle2D.Float(1f, 1f, Math.max(0, getWidth() - 2f), Math.max(0, getHeight() - 2f),
                         arco, arco));
+=======
+                g2.clip(new RoundRectangle2D.Float(1f, 1f, Math.max(0, getWidth() - 2f), Math.max(0, getHeight() - 2f), arco, arco));
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 super.paintChildren(g2);
                 g2.setClip(clipAnterior);
             } finally {
@@ -2442,6 +2967,7 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
     public void recarregarDados() {
         final DateTimeFormatter dtfVal = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         AsyncTask.executar(
+<<<<<<< HEAD
                 () -> produtoController.listarTodos(),
                 produtos -> {
                     this.listaProdutosEntidades = produtos != null ? produtos : new ArrayList<>();
@@ -2519,12 +3045,88 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 },
                 erro -> {
                 });
+=======
+            () -> produtoController.listarTodos(),
+            produtos -> {
+                this.listaProdutosEntidades = produtos != null ? produtos : new ArrayList<>();
+                mesclarUnidadesDosProdutos(this.listaProdutosEntidades);
+                List<Object[]> linhas = new ArrayList<>();
+                if (produtos != null) {
+                    for (Produto p : produtos) {
+                        String idStr = String.valueOf(p.getIdProduto());
+                        String nomeStr = p.getNome() != null ? p.getNome() : "";
+                        String catStr = (p.getCategoria() != null && p.getCategoria().getNome() != null)
+                                ? p.getCategoria().getNome() : "Geral";
+                        String unidStr = (p.getUnidade() != null && !p.getUnidade().isBlank()) ? p.getUnidade() : "un";
+                        String precoStr = String.format(Locale.GERMANY, "%,.2f MT / %s", p.getPreco() != null ? p.getPreco() : 0.0, unidStr);
+                        int qtdReal = p.calcularQuantidadeEmEstoque();
+                        int qtdMin = p.getQuantidadeMinima() != null ? p.getQuantidadeMinima() : 0;
+                        String estoqueStr = p.estaAbaixoDoMinimo() ? (qtdReal + " (Baixo)") : String.valueOf(qtdReal);
+                        String minStr = String.valueOf(qtdMin);
+                        LocalDate proxVal = p.obterProximaValidade();
+                        String proxValStr = proxVal != null ? proxVal.format(dtfVal) : "-";
+                        int numForn = p.getFornecedor() != null ? p.getFornecedor().size() : 0;
+                        String fornStr = String.valueOf(numForn);
+                        String estStr = p.getEstado() != null ? p.getEstado().name() : "ATIVO";
+                        linhas.add(new Object[] {idStr, nomeStr, catStr, precoStr, estoqueStr, minStr, proxValStr, fornStr, estStr});
+                    }
+                }
+                this.dadosProdutosCarregados = linhas;
+                atualizarTabelaFiltrada();
+            },
+            erro -> {
+                this.listaProdutosEntidades = new ArrayList<>();
+                this.dadosProdutosCarregados = new ArrayList<>();
+                atualizarTabelaFiltrada();
+            }
+        );
+        AsyncTask.executar(
+            () -> produtoController.listarCategorias(),
+            categorias -> {
+                this.listaCategoriasReais = categorias != null ? categorias : new ArrayList<>();
+                String[] nomesCat = this.listaCategoriasReais.stream()
+                        .map(Categoria::getNome)
+                        .toArray(String[]::new);
+                if (seletorCategoriaNovo != null && nomesCat.length > 0) {
+                    seletorCategoriaNovo.setOpcoes(nomesCat);
+                    seletorCategoriaNovo.setText(nomesCat[0]);
+                }
+                if (seletorCategoriaEditar != null && nomesCat.length > 0) {
+                    seletorCategoriaEditar.setOpcoes(nomesCat);
+                }
+            },
+            erro -> {}
+        );
+        AsyncTask.executar(
+            () -> fornecedorController.listarTodos(),
+            fornecedores -> {
+                this.listaTodosFornecedores = fornecedores != null ? fornecedores : new ArrayList<>();
+                List<String> opcoesForn = new ArrayList<>();
+                opcoesForn.add("Nenhum");
+                for (Fornecedor f : this.listaTodosFornecedores) {
+                    if (f != null && f.getNome() != null) {
+                        opcoesForn.add(f.getNome());
+                    }
+                }
+                String[] nomesForn = opcoesForn.toArray(new String[0]);
+                if (seletorFornecedorNovo != null && nomesForn.length > 0) {
+                    seletorFornecedorNovo.setOpcoes(nomesForn);
+                    seletorFornecedorNovo.setText(nomesForn[0]);
+                }
+                if (seletorFornecedorEditar != null && nomesForn.length > 0) {
+                    seletorFornecedorEditar.setOpcoes(nomesForn);
+                }
+            },
+            erro -> {}
+        );
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     }
 
     @Override
     public void aplicarPermissoes(Utilizador utilizador) {
         Perfil perfil = (utilizador != null) ? utilizador.getPerfil() : Perfil.ADMIN;
         if (perfil == Perfil.VENDEDOR) {
+<<<<<<< HEAD
             if (botaoNovoProduto != null)
                 botaoNovoProduto.setVisible(false);
             if (botaoEditar != null)
@@ -2533,10 +3135,17 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 botaoFornecedores.setVisible(false);
             if (botaoDescontinuar != null)
                 botaoDescontinuar.setVisible(false);
+=======
+            if (botaoNovoProduto != null) botaoNovoProduto.setVisible(false);
+            if (botaoEditar != null) botaoEditar.setVisible(false);
+            if (botaoFornecedores != null) botaoFornecedores.setVisible(false);
+            if (botaoDescontinuar != null) botaoDescontinuar.setVisible(false);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             if (modoLateral != ModoPainelLateral.NENHUM) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
             }
         } else {
+<<<<<<< HEAD
             if (botaoNovoProduto != null)
                 botaoNovoProduto.setVisible(true);
             if (botaoEditar != null)
@@ -2545,6 +3154,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                 botaoFornecedores.setVisible(true);
             if (botaoDescontinuar != null)
                 botaoDescontinuar.setVisible(true);
+=======
+            if (botaoNovoProduto != null) botaoNovoProduto.setVisible(true);
+            if (botaoEditar != null) botaoEditar.setVisible(true);
+            if (botaoFornecedores != null) botaoFornecedores.setVisible(true);
+            if (botaoDescontinuar != null) botaoDescontinuar.setVisible(true);
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         }
     }
 

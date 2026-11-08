@@ -706,9 +706,12 @@ public final class UiStyle {
         if (comp == null) {
             return;
         }
+<<<<<<< HEAD
         if (comp instanceof JComponent && Boolean.TRUE.equals(((JComponent) comp).getClientProperty("temaFixoClaro"))) {
             return;
         }
+=======
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         if (comp instanceof JTable) {
             JTable t = (JTable) comp;
             t.setBackground(SURFACE);

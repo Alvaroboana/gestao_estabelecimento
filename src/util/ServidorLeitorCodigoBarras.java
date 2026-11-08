@@ -64,9 +64,14 @@ public final class ServidorLeitorCodigoBarras {
 
     private static void tratarConexao(Socket socket) {
         try (Socket s = socket;
+<<<<<<< HEAD
                 BufferedReader in = new BufferedReader(
                         new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
                 OutputStream out = s.getOutputStream()) {
+=======
+             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
+             OutputStream out = s.getOutputStream()) {
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             String linhaRequisicao = in.readLine();
             if (linhaRequisicao == null || linhaRequisicao.isEmpty()) {
                 return;
@@ -82,6 +87,7 @@ public final class ServidorLeitorCodigoBarras {
         }
     }
 
+<<<<<<< HEAD
     // Versão 1 sem QR-code
 
     /*
@@ -197,6 +203,8 @@ public final class ServidorLeitorCodigoBarras {
      * }
      */
 
+=======
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     private static void servirPaginaMobile(OutputStream out) throws IOException {
         String html = "<!doctype html><html lang='pt'><head><meta charset='utf-8'>"
                 + "<meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -205,6 +213,7 @@ public final class ServidorLeitorCodigoBarras {
                 + ".card{background:#1B2030;border:1px solid #2A3040;border-radius:14px;padding:18px;max-width:420px;margin:0 auto}"
                 + "input,button{width:100%;padding:12px;border-radius:8px;border:1px solid #2E3648;font-size:16px;box-sizing:border-box;margin-top:10px}"
                 + "input{background:#151A26;color:#E8ECF4}button{background:#F5B638;color:#12151C;font-weight:700;border:none;cursor:pointer}"
+<<<<<<< HEAD
                 + "video{width:100%;border-radius:10px;margin-top:10px;background:#000}"
                 + ".modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:20px;}"
                 + ".modal-content{background:#1B2030;padding:20px;border-radius:14px;text-align:left;max-width:400px;width:100%;border:1px solid #2A3040;box-sizing:border-box;}"
@@ -213,10 +222,16 @@ public final class ServidorLeitorCodigoBarras {
 
                 + "<div class='card'><h2>Leitor de Código de Barras</h2>"
                 + "<p style='color:#A3ADC2;font-size:13px'>Aponte a câmera ou digite/leia o código abaixo para enviar à Venda ativa.</p>"
+=======
+                + "video{width:100%;border-radius:10px;margin-top:10px;background:#000}</style></head><body>"
+                + "<div class='card'><h2>Leitor de Código de Barras</h2>"
+                + "<p style='color:#A3ADC2;font-size:13px'>Aponte a câmera ou digite/leia o código abaixo para enviar à Venda ativa no computador.</p>"
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                 + "<video id='v' autoplay playsinline muted></video>"
                 + "<form onsubmit='enviar(event)'><input id='c' placeholder='Código de barras ou ID...' autofocus>"
                 + "<button type='submit'>Enviar para o Caixa</button></form>"
                 + "<p id='msg' style='color:#4ADE80;font-size:13px;min-height:20px'></p></div>"
+<<<<<<< HEAD
 
                 + "<div id='modalErro' class='modal'>"
                 + "<div class='modal-content'>"
@@ -263,6 +278,16 @@ public final class ServidorLeitorCodigoBarras {
                 + "}"
                 + "</script></body></html>";
 
+=======
+                + "<script>"
+                + "async function enviarCodigo(cod){if(!cod)return;await fetch('/scan?codigo='+encodeURIComponent(cod));"
+                + "document.getElementById('msg').innerText='Enviado: '+cod;document.getElementById('c').value='';}"
+                + "function enviar(e){e.preventDefault();enviarCodigo(document.getElementById('c').value.trim());}"
+                + "if('BarcodeDetector' in window && navigator.mediaDevices){"
+                + "navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(s=>{const v=document.getElementById('v');v.srcObject=s;"
+                + "const bd=new BarcodeDetector();setInterval(async()=>{try{const codes=await bd.detect(v);if(codes.length>0){enviarCodigo(codes[0].rawValue);}}catch(e){}},600);}).catch(()=>{});}"
+                + "</script></body></html>";
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         byte[] bytes = html.getBytes(StandardCharsets.UTF_8);
         String cabecalho = "HTTP/1.1 200 OK\r\n"
                 + "Content-Type: text/html; charset=utf-8\r\n"
@@ -299,6 +324,7 @@ public final class ServidorLeitorCodigoBarras {
         out.flush();
     }
 
+<<<<<<< HEAD
     /*
      * private static String obterIpLocal() {
      * try {
@@ -320,11 +346,14 @@ public final class ServidorLeitorCodigoBarras {
      * }
      */
 
+=======
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     private static String obterIpLocal() {
         try {
             Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
             while (nets.hasMoreElements()) {
                 NetworkInterface ni = nets.nextElement();
+<<<<<<< HEAD
 
                 // Ignorar placas desligadas ou de loopback
                 if (!ni.isUp() || ni.isLoopback())
@@ -341,6 +370,12 @@ public final class ServidorLeitorCodigoBarras {
                 while (addrs.hasMoreElements()) {
                     InetAddress addr = addrs.nextElement();
                     // Capturar apenas o endereço IPv4 real
+=======
+                if (!ni.isUp() || ni.isLoopback()) continue;
+                Enumeration<InetAddress> addrs = ni.getInetAddresses();
+                while (addrs.hasMoreElements()) {
+                    InetAddress addr = addrs.nextElement();
+>>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                     if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
                         return addr.getHostAddress();
                     }
