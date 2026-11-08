@@ -59,11 +59,7 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
             }
             stmt.setInt(7, qtdMin);
 
-<<<<<<< HEAD
             stmt.setLong(8, JdbcValidation.requireId(
-=======
-            stmt.setLong(7, JdbcValidation.requireId(
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
                     objecto.getCategoria() == null ? null : objecto.getCategoria().getIdCategoria(),
                     "categoria.idCategoria"));
 
@@ -71,15 +67,6 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
             try (ResultSet rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
                     objecto.setIdProduto(rs.getLong(1));
-                }
-            }
-            if (objecto.getIdProduto() != null && objecto.getCodigoBarras() != null) {
-                try (PreparedStatement stCb = conn.prepareStatement(
-                        "UPDATE produto SET codigo_barras = ? WHERE id_produto = ?")) {
-                    stCb.setString(1, objecto.getCodigoBarras());
-                    stCb.setLong(2, objecto.getIdProduto());
-                    stCb.executeUpdate();
-                } catch (SQLException ignored) {
                 }
             }
         } catch (SQLException e) {
@@ -135,26 +122,12 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
             }
             stmt.setInt(7, qtdMin);
 
-<<<<<<< HEAD
             stmt.setLong(8, JdbcValidation.requireId(
                     objecto.getCategoria() == null ? null : objecto.getCategoria().getIdCategoria(),
                     "categoria.idCategoria"));
             stmt.setLong(9, objecto.getIdProduto());
-=======
-            stmt.setLong(7, JdbcValidation.requireId(
-                    objecto.getCategoria() == null ? null : objecto.getCategoria().getIdCategoria(),
-                    "categoria.idCategoria"));
-            stmt.setLong(8, objecto.getIdProduto());
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 
             stmt.executeUpdate();
-            try (PreparedStatement stCb = conn.prepareStatement(
-                    "UPDATE produto SET codigo_barras = ? WHERE id_produto = ?")) {
-                stCb.setString(1, objecto.getCodigoBarras());
-                stCb.setLong(2, objecto.getIdProduto());
-                stCb.executeUpdate();
-            } catch (SQLException ignored) {
-            }
         } catch (SQLException e) {
             throw new DBException("Erro ao atualizar produto: " + e.getMessage(), e);
         }

@@ -224,11 +224,7 @@ AFTER INSERT ON utilizador
 FOR EACH ROW
 BEGIN
     INSERT INTO auditoria (tabela_afetada, id_registro, operacao, dados_antes, dados_depois, id_utilizador)
-<<<<<<< HEAD
     VALUES ('utilizador', NEW.id_utilizador, 'INSERT', NULL, JSON_OBJECT('id_utilizador', NEW.id_utilizador, 'username', NEW.username, 'perfil', NEW.perfil, 'troca_senha_obrigatoria', NEW.troca_senha_obrigatoria, 'id_funcionario', NEW.id_funcionario), @id_utilizador_atual);
-=======
-    VALUES ('utilizador', NEW.id_utilizador, 'INSERT', NULL, JSON_OBJECT('id_utilizador', NEW.id_utilizador, 'username', NEW.username, 'perfil', NEW.perfil, 'id_funcionario', NEW.id_funcionario), @id_utilizador_atual);
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 END$$
 
 DROP TRIGGER IF EXISTS trg_utilizador_au_auditoria$$
@@ -237,11 +233,7 @@ AFTER UPDATE ON utilizador
 FOR EACH ROW
 BEGIN
     INSERT INTO auditoria (tabela_afetada, id_registro, operacao, dados_antes, dados_depois, id_utilizador)
-<<<<<<< HEAD
     VALUES ('utilizador', NEW.id_utilizador, 'UPDATE', JSON_OBJECT('id_utilizador', OLD.id_utilizador, 'username', OLD.username, 'perfil', OLD.perfil, 'troca_senha_obrigatoria', OLD.troca_senha_obrigatoria, 'id_funcionario', OLD.id_funcionario), JSON_OBJECT('id_utilizador', NEW.id_utilizador, 'username', NEW.username, 'perfil', NEW.perfil, 'troca_senha_obrigatoria', NEW.troca_senha_obrigatoria, 'id_funcionario', NEW.id_funcionario), @id_utilizador_atual);
-=======
-    VALUES ('utilizador', NEW.id_utilizador, 'UPDATE', JSON_OBJECT('id_utilizador', OLD.id_utilizador, 'username', OLD.username, 'perfil', OLD.perfil, 'id_funcionario', OLD.id_funcionario), JSON_OBJECT('id_utilizador', NEW.id_utilizador, 'username', NEW.username, 'perfil', NEW.perfil, 'id_funcionario', NEW.id_funcionario), @id_utilizador_atual);
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 END$$
 
 DROP TRIGGER IF EXISTS trg_utilizador_ad_auditoria$$
@@ -250,11 +242,7 @@ AFTER DELETE ON utilizador
 FOR EACH ROW
 BEGIN
     INSERT INTO auditoria (tabela_afetada, id_registro, operacao, dados_antes, dados_depois, id_utilizador)
-<<<<<<< HEAD
     VALUES ('utilizador', OLD.id_utilizador, 'DELETE', JSON_OBJECT('id_utilizador', OLD.id_utilizador, 'username', OLD.username, 'perfil', OLD.perfil, 'troca_senha_obrigatoria', OLD.troca_senha_obrigatoria, 'id_funcionario', OLD.id_funcionario), NULL, @id_utilizador_atual);
-=======
-    VALUES ('utilizador', OLD.id_utilizador, 'DELETE', JSON_OBJECT('id_utilizador', OLD.id_utilizador, 'username', OLD.username, 'perfil', OLD.perfil, 'id_funcionario', OLD.id_funcionario), NULL, @id_utilizador_atual);
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 END$$
 
 DROP TRIGGER IF EXISTS trg_fornecedor_ai_auditoria$$
@@ -317,11 +305,7 @@ AFTER INSERT ON produto
 FOR EACH ROW
 BEGIN
     INSERT INTO auditoria (tabela_afetada, id_registro, operacao, dados_antes, dados_depois, id_utilizador)
-<<<<<<< HEAD
     VALUES ('produto', NEW.id_produto, 'INSERT', NULL, JSON_OBJECT('id_produto', NEW.id_produto, 'codigo_barras', NEW.codigo_barras, 'nome', NEW.nome, 'preco', NEW.preco, 'descricao', NEW.descricao, 'unidade', NEW.unidade, 'estado', NEW.estado, 'quantidade_minima', NEW.quantidade_minima, 'id_categoria', NEW.id_categoria), @id_utilizador_atual);
-=======
-    VALUES ('produto', NEW.id_produto, 'INSERT', NULL, JSON_OBJECT('id_produto', NEW.id_produto, 'nome', NEW.nome, 'preco', NEW.preco, 'descricao', NEW.descricao, 'unidade', NEW.unidade, 'estado', NEW.estado, 'quantidade_minima', NEW.quantidade_minima, 'id_categoria', NEW.id_categoria), @id_utilizador_atual);
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 END$$
 
 DROP TRIGGER IF EXISTS trg_produto_au_auditoria$$
@@ -330,11 +314,7 @@ AFTER UPDATE ON produto
 FOR EACH ROW
 BEGIN
     INSERT INTO auditoria (tabela_afetada, id_registro, operacao, dados_antes, dados_depois, id_utilizador)
-<<<<<<< HEAD
     VALUES ('produto', NEW.id_produto, 'UPDATE', JSON_OBJECT('id_produto', OLD.id_produto, 'codigo_barras', OLD.codigo_barras, 'nome', OLD.nome, 'preco', OLD.preco, 'descricao', OLD.descricao, 'unidade', OLD.unidade, 'estado', OLD.estado, 'quantidade_minima', OLD.quantidade_minima, 'id_categoria', OLD.id_categoria), JSON_OBJECT('id_produto', NEW.id_produto, 'codigo_barras', NEW.codigo_barras, 'nome', NEW.nome, 'preco', NEW.preco, 'descricao', NEW.descricao, 'unidade', NEW.unidade, 'estado', NEW.estado, 'quantidade_minima', NEW.quantidade_minima, 'id_categoria', NEW.id_categoria), @id_utilizador_atual);
-=======
-    VALUES ('produto', NEW.id_produto, 'UPDATE', JSON_OBJECT('id_produto', OLD.id_produto, 'nome', OLD.nome, 'preco', OLD.preco, 'descricao', OLD.descricao, 'unidade', OLD.unidade, 'estado', OLD.estado, 'quantidade_minima', OLD.quantidade_minima, 'id_categoria', OLD.id_categoria), JSON_OBJECT('id_produto', NEW.id_produto, 'nome', NEW.nome, 'preco', NEW.preco, 'descricao', NEW.descricao, 'unidade', NEW.unidade, 'estado', NEW.estado, 'quantidade_minima', NEW.quantidade_minima, 'id_categoria', NEW.id_categoria), @id_utilizador_atual);
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 END$$
 
 DROP TRIGGER IF EXISTS trg_produto_ad_auditoria$$
@@ -343,11 +323,7 @@ AFTER DELETE ON produto
 FOR EACH ROW
 BEGIN
     INSERT INTO auditoria (tabela_afetada, id_registro, operacao, dados_antes, dados_depois, id_utilizador)
-<<<<<<< HEAD
     VALUES ('produto', OLD.id_produto, 'DELETE', JSON_OBJECT('id_produto', OLD.id_produto, 'codigo_barras', OLD.codigo_barras, 'nome', OLD.nome, 'preco', OLD.preco, 'descricao', OLD.descricao, 'unidade', OLD.unidade, 'estado', OLD.estado, 'quantidade_minima', OLD.quantidade_minima, 'id_categoria', OLD.id_categoria), NULL, @id_utilizador_atual);
-=======
-    VALUES ('produto', OLD.id_produto, 'DELETE', JSON_OBJECT('id_produto', OLD.id_produto, 'nome', OLD.nome, 'preco', OLD.preco, 'descricao', OLD.descricao, 'unidade', OLD.unidade, 'estado', OLD.estado, 'quantidade_minima', OLD.quantidade_minima, 'id_categoria', OLD.id_categoria), NULL, @id_utilizador_atual);
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
 END$$
 
 DROP TRIGGER IF EXISTS trg_estoque_ai_auditoria$$

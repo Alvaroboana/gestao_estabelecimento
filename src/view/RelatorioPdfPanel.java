@@ -77,15 +77,12 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
     private static final Color CH_B_BG = new Color(0xDC, 0xE9, 0xFB);
     private static final Color CH_B_FG = new Color(0x1A, 0x4A, 0x93);
 
-<<<<<<< HEAD
     private static final Color PAINEL_BG = new Color(0xF2, 0xF4, 0xF8);
     private static final Color PAINEL_TITULO_FG = new Color(0x1B, 0x20, 0x30);
     private static final Color BOTAO_VOLTAR_BG = Color.WHITE;
     private static final Color BOTAO_VOLTAR_FG = new Color(0x1B, 0x20, 0x30);
     private static final Color BOTAO_VOLTAR_BORDA = new Color(0xDD, 0xE2, 0xEA);
 
-=======
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
     private JLabel labelSubCabecalho;
     private JLabel labelKpiVendasPeriodo;
     private JLabel labelKpiTotalConcluido;
@@ -108,15 +105,9 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
     }
 
     public RelatorioPdfPanel(boolean exibirBarraExportacao) {
-<<<<<<< HEAD
         putClientProperty("temaFixoClaro", Boolean.TRUE);
         setLayout(new BorderLayout(0, 12));
         setBackground(PAINEL_BG);
-=======
-        UiStyle.instalarTemaEscuro();
-        setLayout(new BorderLayout(0, 12));
-        setBackground(UiStyle.BACKGROUND);
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         setBorder(new EmptyBorder(16, 28, 16, 28));
 
         if (exibirBarraExportacao) {
@@ -127,12 +118,8 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         JPanel paginaA4 = criarPaginaA4();
 
         this.wrapperCentral = new JPanel(new GridBagLayout());
-<<<<<<< HEAD
         this.wrapperCentral.setBackground(PAINEL_BG);
         this.wrapperCentral.putClientProperty("temaFixoClaro", Boolean.TRUE);
-=======
-        this.wrapperCentral.setBackground(UiStyle.BACKGROUND);
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -141,15 +128,10 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
 
         this.scrollPagina = new JScrollPane(this.wrapperCentral);
         this.scrollPagina.setBorder(BorderFactory.createEmptyBorder());
-<<<<<<< HEAD
         this.scrollPagina.setBackground(PAINEL_BG);
         this.scrollPagina.getViewport().setBackground(PAINEL_BG);
         this.scrollPagina.getVerticalScrollBar().setUnitIncrement(18);
         this.scrollPagina.putClientProperty("temaFixoClaro", Boolean.TRUE);
-=======
-        this.scrollPagina.getViewport().setBackground(UiStyle.BACKGROUND);
-        this.scrollPagina.getVerticalScrollBar().setUnitIncrement(18);
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         add(this.scrollPagina, BorderLayout.CENTER);
         recarregarDados();
     }
@@ -157,22 +139,15 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
     private JPanel criarBarraTopo() {
         JPanel barra = new JPanel(new BorderLayout());
         barra.setOpaque(false);
-<<<<<<< HEAD
         barra.putClientProperty("temaFixoClaro", Boolean.TRUE);
 
         JLabel titulo = new JLabel("Pré-visualização — Relatório Completo (PDF)");
         titulo.setFont(UiStyle.fonte(18, Font.BOLD));
         titulo.setForeground(PAINEL_TITULO_FG);
-=======
-
-        JLabel titulo = new JLabel("Pré-visualização — Relatório Completo (PDF)");
-        UiStyle.aplicarTexto(titulo, 18, true);
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         barra.add(titulo, BorderLayout.WEST);
 
         JButton botaoVoltar = new JButton("Voltar aos relatórios");
         botaoVoltar.setFont(UiStyle.fonteSemiBold(13));
-<<<<<<< HEAD
         botaoVoltar.setBackground(BOTAO_VOLTAR_BG);
         botaoVoltar.setForeground(BOTAO_VOLTAR_FG);
         botaoVoltar.setIcon(UiStyle.icone(MaterialDesignA.ARROW_LEFT, 15, BOTAO_VOLTAR_FG));
@@ -183,15 +158,6 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
                 BorderFactory.createLineBorder(BOTAO_VOLTAR_BORDA, 1, true),
                 new EmptyBorder(9, 16, 9, 16)
         ));
-=======
-        botaoVoltar.setBackground(UiStyle.SECONDARY_BG);
-        botaoVoltar.setForeground(UiStyle.TEXT);
-        botaoVoltar.setIcon(UiStyle.iconeDinamico(MaterialDesignA.ARROW_LEFT, 15, () -> UiStyle.TEXT));
-        botaoVoltar.setIconTextGap(6);
-        botaoVoltar.setFocusPainted(false);
-        botaoVoltar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        botaoVoltar.setBorder(new EmptyBorder(9, 16, 9, 16));
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         botaoVoltar.addActionListener(e -> {
             Component root = SwingUtilities.getWindowAncestor(this);
             if (root instanceof MainFrame) {
@@ -221,15 +187,11 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
     public JPanel criarPaginaA4() {
         JPanel pg = new JPanel(new BorderLayout());
         pg.setBackground(PG_BG);
-<<<<<<< HEAD
         pg.putClientProperty("temaFixoClaro", Boolean.TRUE);
         pg.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(0xDD, 0xE2, 0xEA), 1),
                 new EmptyBorder(40, 44, 26, 44)
         ));
-=======
-        pg.setBorder(new EmptyBorder(40, 44, 26, 44));
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         Dimension dimA4 = new Dimension(LARGURA_PAGINA, ALTURA_PAGINA);
         pg.setPreferredSize(dimA4);
         pg.setMinimumSize(dimA4);
@@ -482,18 +444,11 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
 
     public static void abrirJanelaIsolada() {
         SwingUtilities.invokeLater(() -> {
-<<<<<<< HEAD
-=======
-            UiStyle.instalarTemaEscuro();
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             JFrame frame = new JFrame("Relatório PDF — Estabelecimento");
             frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
             frame.setSize(920, 820);
             frame.setLocationRelativeTo(null);
-<<<<<<< HEAD
             frame.getContentPane().setBackground(PAINEL_BG);
-=======
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
             frame.setContentPane(new RelatorioPdfPanel(true));
             frame.setVisible(true);
         });
@@ -810,7 +765,6 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void aplicarTema() {
-<<<<<<< HEAD
         setBackground(PAINEL_BG);
         if (wrapperCentral != null) {
             wrapperCentral.setBackground(PAINEL_BG);
@@ -818,17 +772,6 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         if (scrollPagina != null && scrollPagina.getViewport() != null) {
             scrollPagina.getViewport().setBackground(PAINEL_BG);
             scrollPagina.setBackground(PAINEL_BG);
-=======
-        setBackground(UiStyle.BACKGROUND);
-        if (wrapperCentral != null) {
-            wrapperCentral.setBackground(UiStyle.BACKGROUND);
-        }
-        if (scrollPagina != null && scrollPagina.getViewport() != null) {
-            scrollPagina.getViewport().setBackground(UiStyle.BACKGROUND);
-        }
-        if (barraTopo != null) {
-            UiStyle.atualizarComponentesTema(barraTopo);
->>>>>>> da6ec68d8ffae3fa0348004e14812c148af00b49
         }
         repaint();
     }
