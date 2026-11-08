@@ -4,20 +4,30 @@ package controller;
 import infra.DBException;
 import java.util.List;
 import java.util.Map;
-import model.dao.RelatorioDAO;
+import model.bo.RelatorioBO;
+import util.ValidadorObjeto;
 
 public class DashboardController {
-    private final RelatorioDAO relatorioDAO;
+    private final RelatorioBO relatorioBO;
 
     public DashboardController() {
-        this.relatorioDAO = new RelatorioDAO();
+        this(new RelatorioBO());
+    }
+
+    public DashboardController(RelatorioBO relatorioBO) {
+        ValidadorObjeto.validarNaoNulo(relatorioBO, "RelatorioBO");
+        this.relatorioBO = relatorioBO;
+    }
+
+    public Map<String, Integer> obterIndicadoresDashboard() throws DBException {
+        return relatorioBO.obterIndicadoresDashboard();
     }
 
     public List<Map<String, Object>> obterProdutosMaisVendidos() throws DBException {
-        return relatorioDAO.produtosMaisVendidos();
+        return relatorioBO.obterProdutosMaisVendidosDashboard();
     }
 
     public List<Map<String, Object>> obterEstoqueBaixo() throws DBException {
-        return relatorioDAO.estoqueBaixo();
+        return relatorioBO.obterEstoqueBaixoDashboard();
     }
 }
