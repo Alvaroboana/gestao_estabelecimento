@@ -15,6 +15,7 @@ public class TesteCidadeDAO {
         cidade.setNome("Cidade Teste " + System.currentTimeMillis());
 
         try {
+            // 1. Salvar
             System.out.println("-> Salvando cidade: " + cidade.getNome());
             dao.salvar(cidade);
             if (cidade.getIdCidade() != null) {
@@ -24,6 +25,7 @@ public class TesteCidadeDAO {
                 return;
             }
 
+            // 2. Buscar por ID
             System.out.println("-> Buscando cidade por ID: " + cidade.getIdCidade());
             Cidade buscada = dao.buscarPorId(cidade.getIdCidade());
             if (buscada != null && buscada.getNome().equals(cidade.getNome())) {
@@ -32,6 +34,7 @@ public class TesteCidadeDAO {
                 System.out.println("  [ERRO] Cidade nao encontrada ou dados incorretos");
             }
 
+            // 3. Atualizar
             System.out.println("-> Atualizando nome da cidade");
             cidade.setNome(cidade.getNome() + " Atualizada");
             dao.atualizar(cidade);
@@ -42,6 +45,7 @@ public class TesteCidadeDAO {
                 System.out.println("  [ERRO] Falha ao atualizar cidade");
             }
 
+            // 4. Listar todas
             System.out.println("-> Listando todas as cidades");
             List<Cidade> lista = dao.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -50,6 +54,7 @@ public class TesteCidadeDAO {
                 System.out.println("  [ERRO] Nenhuma cidade encontrada na listagem");
             }
 
+            // 5. Eliminar
             System.out.println("-> Eliminando cidade ID: " + cidade.getIdCidade());
             dao.eliminar(cidade.getIdCidade());
             Cidade apagada = dao.buscarPorId(cidade.getIdCidade());

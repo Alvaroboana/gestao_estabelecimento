@@ -26,6 +26,7 @@ public class TesteEstoqueDAO {
         ProdutoDAO produtoDAO = new ProdutoDAO();
         EstoqueDAO estoqueDAO = new EstoqueDAO();
 
+        // Entidades de apoio
         Cargo cargo = new Cargo();
         cargo.setNome("Cargo Teste Estoque " + System.currentTimeMillis());
         cargo.setSalarioBase(15000.0);
@@ -58,6 +59,7 @@ public class TesteEstoqueDAO {
         estoque.setDataValidade(LocalDate.now().plusMonths(12));
 
         try {
+            // Criando dados de apoio
             System.out.println("-> Criando dados de apoio (Cargo, Funcionario, Categoria, Produto)");
             cargoDAO.salvar(cargo);
             funcionario.setCargo(cargo);
@@ -70,6 +72,7 @@ public class TesteEstoqueDAO {
             estoque.setFuncionario(funcionario);
             estoque.setProduto(produto);
 
+            // 1. Salvar
             System.out.println("-> Salvando registro de estoque: Qtd " + estoque.getQuantidade());
             estoqueDAO.salvar(estoque);
             if (estoque.getIdEstoque() != null) {
@@ -79,6 +82,7 @@ public class TesteEstoqueDAO {
                 return;
             }
 
+            // 2. Buscar por ID
             System.out.println("-> Buscando estoque por ID: " + estoque.getIdEstoque());
             Estoque buscado = estoqueDAO.buscarPorId(estoque.getIdEstoque());
             if (buscado != null && buscado.getQuantidade().equals(estoque.getQuantidade())) {
@@ -93,6 +97,7 @@ public class TesteEstoqueDAO {
                 System.out.println("  [ERRO] Estoque nao encontrado");
             }
 
+            // 3. Buscar por Produto
             System.out.println("-> Buscando estoques pelo produto ID: " + produto.getIdProduto());
             List<Estoque> estoquesProduto = estoqueDAO.buscarPorProduto(produto.getIdProduto());
             if (estoquesProduto != null && !estoquesProduto.isEmpty()) {
@@ -101,6 +106,7 @@ public class TesteEstoqueDAO {
                 System.out.println("  [ERRO] Nenhum estoque encontrado para o produto");
             }
 
+            // 4. Atualizar
             System.out.println("-> Atualizando quantidade e validade do estoque");
             estoque.setQuantidade(40);
             estoque.setDataValidade(LocalDate.now().plusMonths(6));
@@ -112,6 +118,7 @@ public class TesteEstoqueDAO {
                 System.out.println("  [ERRO] Falha ao atualizar estoque");
             }
 
+            // 5. Listar
             System.out.println("-> Listando todos os registros de estoque");
             List<Estoque> lista = estoqueDAO.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -120,6 +127,7 @@ public class TesteEstoqueDAO {
                 System.out.println("  [ERRO] Nenhum estoque encontrado na listagem");
             }
 
+            // 6. Eliminar estoque
             System.out.println("-> Eliminando estoque ID: " + estoque.getIdEstoque());
             estoqueDAO.eliminar(estoque.getIdEstoque());
             Estoque apagado = estoqueDAO.buscarPorId(estoque.getIdEstoque());
@@ -129,6 +137,7 @@ public class TesteEstoqueDAO {
                 System.out.println("  [ERRO] Falha ao eliminar estoque");
             }
 
+            // Limpeza de entidades de apoio
             System.out.println("-> Limpando entidades de apoio");
             produtoDAO.eliminar(produto.getIdProduto());
             categoriaDAO.eliminar(categoria.getIdCategoria());

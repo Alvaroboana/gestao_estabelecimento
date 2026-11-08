@@ -13,7 +13,8 @@
             "name": "Estabelecimento",
             "group": "Estabelecimento",
             "database": "gestao",
-            "username": "gestao"
+            "username": "root",
+            "password": "root"
         }
     ]
 }

@@ -28,6 +28,7 @@ public class TesteFornecedorDAO {
         fornecedor.setContacto(contactos);
 
         try {
+            // 1. Salvar
             System.out.println("-> Salvando fornecedor: " + fornecedor.getNome());
             dao.salvar(fornecedor);
             if (fornecedor.getIdFornecedor() != null && fornecedor.getIdPessoa() != null) {
@@ -37,6 +38,7 @@ public class TesteFornecedorDAO {
                 return;
             }
 
+            // 2. Buscar por ID
             System.out.println("-> Buscando fornecedor por ID: " + fornecedor.getIdFornecedor());
             Fornecedor buscado = dao.buscarPorId(fornecedor.getIdFornecedor());
             if (buscado != null && buscado.getNome().equals(fornecedor.getNome())) {
@@ -48,6 +50,7 @@ public class TesteFornecedorDAO {
                 System.out.println("  [ERRO] Fornecedor nao encontrado");
             }
 
+            // 3. Atualizar
             System.out.println("-> Atualizando nome do fornecedor");
             fornecedor.setNome(fornecedor.getNome() + " Atualizado");
             dao.atualizar(fornecedor);
@@ -58,6 +61,7 @@ public class TesteFornecedorDAO {
                 System.out.println("  [ERRO] Falha ao atualizar fornecedor");
             }
 
+            // 4. Listar
             System.out.println("-> Listando fornecedores");
             List<Fornecedor> lista = dao.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -66,6 +70,7 @@ public class TesteFornecedorDAO {
                 System.out.println("  [ERRO] Nenhum fornecedor encontrado na listagem");
             }
 
+            // 5. Eliminar
             System.out.println("-> Eliminando fornecedor ID: " + fornecedor.getIdFornecedor());
             dao.eliminar(fornecedor.getIdFornecedor());
             Fornecedor apagado = dao.buscarPorId(fornecedor.getIdFornecedor());

@@ -28,6 +28,7 @@ public class TesteClienteDAO {
         cliente.setContacto(contactos);
 
         try {
+            // 1. Salvar (Pessoa + Cliente + Contactos em transacao)
             System.out.println("-> Salvando cliente: " + cliente.getNome());
             dao.salvar(cliente);
             if (cliente.getIdCliente() != null && cliente.getIdPessoa() != null) {
@@ -37,6 +38,7 @@ public class TesteClienteDAO {
                 return;
             }
 
+            // 2. Buscar por ID
             System.out.println("-> Buscando cliente por ID: " + cliente.getIdCliente());
             Cliente buscado = dao.buscarPorId(cliente.getIdCliente());
             if (buscado != null && buscado.getNome().equals(cliente.getNome())) {
@@ -48,6 +50,7 @@ public class TesteClienteDAO {
                 System.out.println("  [ERRO] Cliente nao encontrado");
             }
 
+            // 3. Atualizar
             System.out.println("-> Atualizando nome do cliente");
             cliente.setNome(cliente.getNome() + " Atualizado");
             dao.atualizar(cliente);
@@ -58,6 +61,7 @@ public class TesteClienteDAO {
                 System.out.println("  [ERRO] Falha ao atualizar cliente");
             }
 
+            // 4. Listar
             System.out.println("-> Listando clientes");
             List<Cliente> lista = dao.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -66,6 +70,7 @@ public class TesteClienteDAO {
                 System.out.println("  [ERRO] Nenhum cliente encontrado");
             }
 
+            // 5. Eliminar
             System.out.println("-> Eliminando cliente ID: " + cliente.getIdCliente());
             dao.eliminar(cliente.getIdCliente());
             Cliente apagado = dao.buscarPorId(cliente.getIdCliente());

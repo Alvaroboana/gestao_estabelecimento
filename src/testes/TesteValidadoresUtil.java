@@ -15,6 +15,7 @@ public class TesteValidadoresUtil {
     public static void main(String[] args) {
 
         System.out.println("========== Teste ValidadorObjeto ==========");
+        // Sucesso
         try {
             ValidadorObjeto.validarNaoNulo("qualquerCoisa", "Campo");
             sucesso("Objecto valido (nao nulo)");
@@ -22,6 +23,7 @@ public class TesteValidadoresUtil {
             erro("Objecto valido (nao nulo)", e.getMessage());
         }
 
+        // Falha
         try {
             ValidadorObjeto.validarNaoNulo(null, "Campo");
             erro("Objecto nulo", "Deveria ter lancado excecao");
@@ -30,6 +32,7 @@ public class TesteValidadoresUtil {
         }
 
         System.out.println("\n========== Teste ValidadorTexto ==========");
+        // Obrigatorio valido
         try {
             ValidadorTexto.validarObrigatorio("Maputo", "Cidade");
             sucesso("Texto obrigatorio valido");
@@ -37,6 +40,7 @@ public class TesteValidadoresUtil {
             erro("Texto obrigatorio valido", e.getMessage());
         }
 
+        // Obrigatorio nulo
         try {
             ValidadorTexto.validarObrigatorio(null, "Cidade");
             erro("Texto nulo", "Deveria ter falhado");
@@ -44,6 +48,7 @@ public class TesteValidadoresUtil {
             sucesso("Texto nulo capturado: " + e.getMessage());
         }
 
+        // Obrigatorio vazio
         try {
             ValidadorTexto.validarObrigatorio("", "Cidade");
             erro("Texto vazio", "Deveria ter falhado");
@@ -51,6 +56,7 @@ public class TesteValidadoresUtil {
             sucesso("Texto vazio capturado: " + e.getMessage());
         }
 
+        // Obrigatorio espacos
         try {
             ValidadorTexto.validarObrigatorio("     ", "Cidade");
             erro("Texto com espacos", "Deveria ter falhado");
@@ -58,6 +64,7 @@ public class TesteValidadoresUtil {
             sucesso("Texto espacos capturado: " + e.getMessage());
         }
 
+        // Tamanho maximo valido
         try {
             ValidadorTexto.validarTamanhoMax("Ola", 10, "Nome");
             sucesso("Tamanho maximo respeitado");
@@ -65,6 +72,7 @@ public class TesteValidadoresUtil {
             erro("Tamanho maximo respeitado", e.getMessage());
         }
 
+        // Tamanho maximo excedido
         try {
             ValidadorTexto.validarTamanhoMax("12345678901", 10, "Nome");
             erro("Tamanho maximo excedido", "Deveria ter falhado");
@@ -72,6 +80,7 @@ public class TesteValidadoresUtil {
             sucesso("Tamanho excedido capturado: " + e.getMessage());
         }
 
+        // Apenas digitos valido
         try {
             ValidadorTexto.validarApenasDigitos("841234567", "Telefone");
             sucesso("Apenas digitos valido");
@@ -79,6 +88,7 @@ public class TesteValidadoresUtil {
             erro("Apenas digitos valido", e.getMessage());
         }
 
+        // Apenas digitos com letras (falha)
         try {
             ValidadorTexto.validarApenasDigitos("84123A567", "Telefone");
             erro("Digitos com letras", "Deveria ter falhado");
@@ -86,6 +96,7 @@ public class TesteValidadoresUtil {
             sucesso("Digitos invalidos capturado: " + e.getMessage());
         }
 
+        // Contacto valido
         try {
             ValidadorTexto.validarContacto("845000000", "Contacto");
             sucesso("Contacto valido");
@@ -93,6 +104,7 @@ public class TesteValidadoresUtil {
             erro("Contacto valido", e.getMessage());
         }
 
+        // BI valido
         try {
             ValidadorTexto.validarBI("110100234567M", "BI");
             sucesso("BI valido");
@@ -101,6 +113,7 @@ public class TesteValidadoresUtil {
         }
 
         System.out.println("\n========== Teste ValidadorNumero ==========");
+        // Double nao negativo zero (valido)
         try {
             ValidadorNumero.validarNaoNegativo(0.0, "Preco");
             sucesso("Preco zero valido");
@@ -108,6 +121,7 @@ public class TesteValidadoresUtil {
             erro("Preco zero valido", e.getMessage());
         }
 
+        // Double negativo (falha)
         try {
             ValidadorNumero.validarNaoNegativo(-10.5, "Preco");
             erro("Preco negativo", "Deveria ter falhado");
@@ -115,6 +129,7 @@ public class TesteValidadoresUtil {
             sucesso("Preco negativo capturado: " + e.getMessage());
         }
 
+        // Integer positivo valido
         try {
             ValidadorNumero.validarPositivo(5, "Quantidade");
             sucesso("Quantidade positiva valida");
@@ -122,6 +137,7 @@ public class TesteValidadoresUtil {
             erro("Quantidade positiva valida", e.getMessage());
         }
 
+        // Integer positivo com zero (falha)
         try {
             ValidadorNumero.validarPositivo(0, "Quantidade");
             erro("Quantidade zero quando deve ser positiva", "Deveria ter falhado");
@@ -129,6 +145,7 @@ public class TesteValidadoresUtil {
             sucesso("Quantidade zero capturada: " + e.getMessage());
         }
 
+        // Intervalo valido
         try {
             ValidadorNumero.validarIntervalo(50.0, 0.0, 100.0, "Percentagem");
             sucesso("Intervalo dentro dos limites valido");
@@ -136,6 +153,7 @@ public class TesteValidadoresUtil {
             erro("Intervalo dentro dos limites valido", e.getMessage());
         }
 
+        // Intervalo acima do maximo (falha)
         try {
             ValidadorNumero.validarIntervalo(150.0, 0.0, 100.0, "Percentagem");
             erro("Intervalo acima do maximo", "Deveria ter falhado");
@@ -144,6 +162,7 @@ public class TesteValidadoresUtil {
         }
 
         System.out.println("\n========== Teste ValidadorData ==========");
+        // Data nao nula valida
         try {
             ValidadorData.validarNaoNula(LocalDate.now(), "Data");
             sucesso("Data nao nula valida");
@@ -151,6 +170,7 @@ public class TesteValidadoresUtil {
             erro("Data nao nula valida", e.getMessage());
         }
 
+        // Data nao futura (passado valido)
         try {
             ValidadorData.validarNaoFutura(LocalDate.of(2000, 1, 1), "Data Nascimento");
             sucesso("Data no passado valida");
@@ -158,6 +178,7 @@ public class TesteValidadoresUtil {
             erro("Data no passado valida", e.getMessage());
         }
 
+        // Data nao futura com data futura (falha)
         try {
             ValidadorData.validarNaoFutura(LocalDate.now().plusDays(2), "Data Nascimento");
             erro("Data futura", "Deveria ter falhado");
@@ -165,6 +186,7 @@ public class TesteValidadoresUtil {
             sucesso("Data futura capturada: " + e.getMessage());
         }
 
+        // Ordem cronologica valida
         LocalDate d1 = LocalDate.of(1995, 5, 10);
         LocalDate d2 = LocalDate.of(2020, 1, 1);
         try {
@@ -174,6 +196,7 @@ public class TesteValidadoresUtil {
             erro("Ordem cronologica valida", e.getMessage());
         }
 
+        // Ordem cronologica invertida (falha)
         try {
             ValidadorData.validarOrdem(d2, d1, "Inicio", "Nascimento");
             erro("Ordem cronologica invertida", "Deveria ter falhado");
@@ -181,6 +204,7 @@ public class TesteValidadoresUtil {
             sucesso("Ordem invertida capturada: " + e.getMessage());
         }
 
+        // Idade minima 18 anos valida
         try {
             ValidadorData.validarIdadeMinima(LocalDate.of(2000, 1, 1), 18, "Funcionario");
             sucesso("Idade minima atendida valida");
@@ -188,6 +212,7 @@ public class TesteValidadoresUtil {
             erro("Idade minima atendida valida", e.getMessage());
         }
 
+        // Idade minima nao atendida (falha)
         try {
             ValidadorData.validarIdadeMinima(LocalDate.now().minusYears(15), 18, "Funcionario");
             erro("Idade menor que o minimo", "Deveria ter falhado");

@@ -16,6 +16,7 @@ public class TestePessoaDAO {
         pessoa.setNome("Pessoa Teste " + System.currentTimeMillis());
 
         try {
+            // 1. Salvar
             System.out.println("-> Salvando pessoa: " + pessoa.getNome());
             dao.salvar(pessoa);
             if (pessoa.getIdPessoa() != null) {
@@ -25,6 +26,7 @@ public class TestePessoaDAO {
                 return;
             }
 
+            // 2. Buscar por ID
             System.out.println("-> Buscando pessoa por ID: " + pessoa.getIdPessoa());
             Pessoa buscada = dao.buscarPorId(pessoa.getIdPessoa());
             if (buscada != null && buscada.getNome().equals(pessoa.getNome())) {
@@ -33,6 +35,7 @@ public class TestePessoaDAO {
                 System.out.println("  [ERRO] Pessoa nao encontrada");
             }
 
+            // 3. Atualizar
             System.out.println("-> Atualizando nome da pessoa");
             pessoa.setNome(pessoa.getNome() + " Atualizada");
             dao.atualizar(pessoa);
@@ -43,6 +46,7 @@ public class TestePessoaDAO {
                 System.out.println("  [ERRO] Falha ao atualizar pessoa");
             }
 
+            // 4. Listar
             System.out.println("-> Listando pessoas");
             List<Pessoa> lista = dao.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -51,6 +55,7 @@ public class TestePessoaDAO {
                 System.out.println("  [ERRO] Nenhuma pessoa encontrada");
             }
 
+            // 5. Eliminar
             System.out.println("-> Eliminando pessoa ID: " + pessoa.getIdPessoa());
             dao.eliminar(pessoa.getIdPessoa());
             Pessoa apagada = dao.buscarPorId(pessoa.getIdPessoa());

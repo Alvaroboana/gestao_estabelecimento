@@ -33,6 +33,7 @@ public class TesteVendaDAO {
         ProdutoDAO produtoDAO = new ProdutoDAO();
         VendaDAO vendaDAO = new VendaDAO();
 
+        // Dados de apoio
         Cargo cargo = new Cargo();
         cargo.setNome("Cargo Para Venda " + System.currentTimeMillis());
         cargo.setSalarioBase(18000.0);
@@ -68,6 +69,7 @@ public class TesteVendaDAO {
         venda.setEstado(EstadoVenda.PENDENTE);
 
         try {
+            // Cria entidades de apoio
             System.out.println("-> Criando entidades de apoio (Cargo, Funcionario, Cliente, Categoria, Produto)");
             cargoDAO.salvar(cargo);
             funcionario.setCargo(cargo);
@@ -82,6 +84,7 @@ public class TesteVendaDAO {
             venda.setCliente(cliente);
             venda.setFuncionario(funcionario);
 
+            // Item vendido dentro da venda
             List<ItemVendido> itens = new ArrayList<>();
             ItemVendido item = new ItemVendido();
             item.setProduto(produto);
@@ -91,6 +94,7 @@ public class TesteVendaDAO {
             itens.add(item);
             venda.setItemVendido(itens);
 
+            // 1. Salvar
             System.out.println("-> Salvando venda e itens associados");
             vendaDAO.salvar(venda);
             if (venda.getIdVenda() != null) {
@@ -103,6 +107,7 @@ public class TesteVendaDAO {
                 return;
             }
 
+            // 2. Buscar por ID
             System.out.println("-> Buscando venda por ID: " + venda.getIdVenda());
             Venda buscada = vendaDAO.buscarPorId(venda.getIdVenda());
             if (buscada != null && buscada.getIdVenda().equals(venda.getIdVenda())) {
@@ -120,6 +125,7 @@ public class TesteVendaDAO {
                 System.out.println("  [ERRO] Venda nao encontrada");
             }
 
+            // 3. Atualizar
             System.out.println("-> Atualizando status da venda para CONCLUIDA");
             venda.setEstado(EstadoVenda.CONCLUIDA);
             venda.setTotal(450.0);
@@ -131,6 +137,7 @@ public class TesteVendaDAO {
                 System.out.println("  [ERRO] Falha ao atualizar venda");
             }
 
+            // 4. Listar
             System.out.println("-> Listando vendas");
             List<Venda> lista = vendaDAO.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -139,6 +146,7 @@ public class TesteVendaDAO {
                 System.out.println("  [ERRO] Nenhuma venda encontrada na listagem");
             }
 
+            // 5. Eliminar venda
             System.out.println("-> Eliminando venda ID: " + venda.getIdVenda());
             vendaDAO.eliminar(venda.getIdVenda());
             Venda apagada = vendaDAO.buscarPorId(venda.getIdVenda());
@@ -148,6 +156,7 @@ public class TesteVendaDAO {
                 System.out.println("  [ERRO] Falha ao eliminar venda");
             }
 
+            // Limpeza de dados de apoio
             System.out.println("-> Limpando dados de apoio (Produto, Categoria, Cliente, Funcionario, Cargo)");
             produtoDAO.eliminar(produto.getIdProduto());
             categoriaDAO.eliminar(categoria.getIdCategoria());

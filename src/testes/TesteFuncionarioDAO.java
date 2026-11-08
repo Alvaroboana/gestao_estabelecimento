@@ -24,6 +24,7 @@ public class TesteFuncionarioDAO {
 
         Funcionario funcionario = new Funcionario();
         funcionario.setNome("Funcionario Teste " + System.currentTimeMillis());
+        // BI unico com max 20 caracteres
         String bi = ("BI" + System.currentTimeMillis());
         if (bi.length() > 20) {
             bi = bi.substring(0, 20);
@@ -40,10 +41,12 @@ public class TesteFuncionarioDAO {
         funcionario.setContacto(contactos);
 
         try {
+            // 0. Criar Cargo
             System.out.println("-> Criando cargo para associar ao funcionario");
             cargoDAO.salvar(cargo);
             funcionario.setCargo(cargo);
 
+            // 1. Salvar
             System.out.println("-> Salvando funcionario: " + funcionario.getNome() + " | BI: " + funcionario.getBi());
             funcionarioDAO.salvar(funcionario);
             if (funcionario.getIdFuncionario() != null && funcionario.getIdPessoa() != null) {
@@ -53,6 +56,7 @@ public class TesteFuncionarioDAO {
                 return;
             }
 
+            // 2. Buscar por ID
             System.out.println("-> Buscando funcionario por ID: " + funcionario.getIdFuncionario());
             Funcionario buscado = funcionarioDAO.buscarPorId(funcionario.getIdFuncionario());
             if (buscado != null && buscado.getNome().equals(funcionario.getNome())) {
@@ -67,6 +71,7 @@ public class TesteFuncionarioDAO {
                 System.out.println("  [ERRO] Funcionario nao encontrado");
             }
 
+            // 3. Atualizar
             System.out.println("-> Atualizando funcionario");
             funcionario.setNome(funcionario.getNome() + " Atualizado");
             funcionario.setEstado(EstadoFuncionario.INATIVO);
@@ -78,6 +83,7 @@ public class TesteFuncionarioDAO {
                 System.out.println("  [ERRO] Falha ao atualizar funcionario");
             }
 
+            // 4. Listar
             System.out.println("-> Listando funcionarios");
             List<Funcionario> lista = funcionarioDAO.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -86,6 +92,7 @@ public class TesteFuncionarioDAO {
                 System.out.println("  [ERRO] Nenhum funcionario encontrado na listagem");
             }
 
+            // 5. Eliminar
             System.out.println("-> Eliminando funcionario ID: " + funcionario.getIdFuncionario());
             funcionarioDAO.eliminar(funcionario.getIdFuncionario());
             Funcionario apagado = funcionarioDAO.buscarPorId(funcionario.getIdFuncionario());
@@ -95,6 +102,7 @@ public class TesteFuncionarioDAO {
                 System.out.println("  [ERRO] Falha ao eliminar funcionario");
             }
 
+            // Limpeza de cargo de apoio
             System.out.println("-> Eliminando cargo de apoio ID: " + cargo.getIdCargo());
             cargoDAO.eliminar(cargo.getIdCargo());
 

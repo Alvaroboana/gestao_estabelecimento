@@ -19,6 +19,7 @@ public class ConexaoDB {
 
     public static Connection getConnection() {
         try {
+<<<<<<< HEAD
             Connection conn = DriverManager.getConnection(
                     DatabaseConfig.url(),
                     DatabaseConfig.username(),
@@ -50,4 +51,45 @@ public class ConexaoDB {
         }
     }
 
+=======
+            return DriverManager.getConnection(URL, USUARIO, SENHA);
+        } catch (SQLException e) {
+            throw new DBException("Erro ao conectar o banco de dados: " + e.getMessage(), e);
+        }
+    }
+
+    public static void closeConnection() {
+        // Mantido para compatibilidade de chamadas legadas
+    }
+
+    public static void closeStatement(Statement st) {
+        if (st != null) {
+            try {
+                st.close();
+            } catch (SQLException e) {
+                throw new DBException("Erro ao fechar o Statement.", e);
+            }
+        }
+    }
+
+    public static void closePreparedStatement(PreparedStatement pst) {
+        if (pst != null) {
+            try {
+                pst.close();
+            } catch (SQLException e) {
+                throw new DBException("Erro ao fechar o PreparedStatement.", e);
+            }
+        }
+    }
+
+    public static void closeresultSet(ResultSet rs) {
+        if (rs != null) {
+            try {
+                rs.close();
+            } catch (SQLException e) {
+                throw new DBException("Erro ao fecha o resuntSet.", e);
+            }
+        }
+    }
+>>>>>>> 17e879f68eff4d35866ab34526ac56e032df40a5
 }

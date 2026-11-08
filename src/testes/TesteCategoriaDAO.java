@@ -15,6 +15,7 @@ public class TesteCategoriaDAO {
         categoria.setNome("Categoria Teste " + System.currentTimeMillis());
 
         try {
+            // 1. Salvar
             System.out.println("-> Salvando categoria: " + categoria.getNome());
             dao.salvar(categoria);
             if (categoria.getIdCategoria() != null) {
@@ -24,6 +25,7 @@ public class TesteCategoriaDAO {
                 return;
             }
 
+            // 2. Buscar por ID
             System.out.println("-> Buscando categoria por ID: " + categoria.getIdCategoria());
             Categoria buscada = dao.buscarPorId(categoria.getIdCategoria());
             if (buscada != null && buscada.getNome().equals(categoria.getNome())) {
@@ -32,6 +34,7 @@ public class TesteCategoriaDAO {
                 System.out.println("  [ERRO] Categoria nao encontrada");
             }
 
+            // 3. Atualizar
             System.out.println("-> Atualizando categoria");
             categoria.setNome(categoria.getNome() + " Atualizada");
             dao.atualizar(categoria);
@@ -42,6 +45,7 @@ public class TesteCategoriaDAO {
                 System.out.println("  [ERRO] Falha ao atualizar categoria");
             }
 
+            // 4. Listar
             System.out.println("-> Listando categorias");
             List<Categoria> lista = dao.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -50,6 +54,7 @@ public class TesteCategoriaDAO {
                 System.out.println("  [ERRO] Nenhuma categoria encontrada");
             }
 
+            // 5. Eliminar
             System.out.println("-> Eliminando categoria ID: " + categoria.getIdCategoria());
             dao.eliminar(categoria.getIdCategoria());
             Categoria apagada = dao.buscarPorId(categoria.getIdCategoria());
