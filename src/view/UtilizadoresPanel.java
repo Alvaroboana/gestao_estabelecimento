@@ -17,6 +17,7 @@ import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
@@ -39,6 +40,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -51,24 +53,24 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import controller.UtilizadorController;
-import model.dao.CargoDAO;
-import model.dao.ContactoDAO;
 import model.vo.Bairro;
 import model.vo.Cargo;
+import model.vo.Categoria;
 import model.vo.Cidade;
+import model.vo.Cliente;
 import model.vo.Contacto;
+import model.vo.EstadoFuncionario;
+import model.vo.Fornecedor;
+import model.vo.Funcionario;
 import model.vo.Perfil;
+import model.vo.Pessoa;
+import model.vo.SessaoUtilizador;
 import model.vo.Utilizador;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignC;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignP;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignT;
 import util.AsyncTask;
 
-/**
- * Painel Utilizadores / Tabelas auxiliares (Cargos e Contactos) em Java Swing fiel aos designs HTML:
- * - "ADMIN · Barra superior · Escuro — Utilizadores" (Utilizadores.dc.html)
- * - "ADMIN · Barra superior · Escuro — Cargo — novo" (CargoNovo.dc.html)
- * - "ADMIN · Barra superior · Escuro — Cargo — editar" (CargoEditar.dc.html)
- * - "ADMIN · Barra superior · Escuro — Contacto — novo" (ContactoNovo.dc.html)
- * - "ADMIN · Barra superior · Escuro — Contacto — editar" (ContactoEditar.dc.html)
- */
 public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private static final long serialVersionUID = 1L;
 
@@ -80,7 +82,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     public enum AbaAuxiliar {
         CARGOS("Cargos"),
         ENDERECOS("Endereços"),
-        CONTACTOS("Contactos");
+        CONTACTOS("Contactos"),
+        CATEGORIAS("Categorias");
 
         private final String rotulo;
 
@@ -98,7 +101,13 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         NOVO_CARGO,
         EDITAR_CARGO,
         NOVO_CONTACTO,
-        EDITAR_CONTACTO
+        EDITAR_CONTACTO,
+        NOVA_CIDADE,
+        EDITAR_CIDADE,
+        NOVO_BAIRRO,
+        EDITAR_BAIRRO,
+        NOVA_CATEGORIA,
+        EDITAR_CATEGORIA
     }
 
     private static final String CARD_VISAO_PERMISSOES = "VISAO_PERMISSOES";
@@ -106,6 +115,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private static final String CARD_TABELA_CARGOS = "TABELA_CARGOS";
     private static final String CARD_TABELA_CONTACTOS = "TABELA_CONTACTOS";
     private static final String CARD_TABELA_ENDERECOS = "TABELA_ENDERECOS";
+    private static final String CARD_TABELA_CATEGORIAS = "TABELA_CATEGORIAS";
 
     private static final int RAIO_CARD = 14;
     private static final int RAIO_COMPONENTE = 8;
@@ -114,7 +124,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private static final int LARGURA_CARD_LATERAL = 420;
 
     private static final String[] ABAS_AUXILIARES = {
-        "Cargos", "Endereços", "Contactos"
+        "Cargos", "Endereços", "Contactos", "Categorias"
     };
 
     private static final String[] COLUNAS_MATRIZ = {
@@ -133,62 +143,36 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         "Nome", "Salário base", "Func."
     };
 
-    private static final Object[][] DADOS_CARGOS = {
-        {"Gerente", "[valor]", "1"},
-        {"Vendedor", "[valor]", "4"},
-        {"Caixa", "[valor]", "2"}
-    };
-
     private static final String[] COLUNAS_TABELA_CARGOS_AUX = {
         "ID", "Nome", "Salário base", "Funcionários"
-    };
-
-    private static final Object[][] DADOS_TABELA_CARGOS_AUX = {
-        {"1", "Gerente", "[valor]", "1"},
-        {"2", "Vendedor", "[valor]", "4"},
-        {"3", "Caixa", "[valor]", "2"}
     };
 
     private static final String[] COLUNAS_TABELA_CONTACTOS_AUX = {
         "ID", "Valor", "Pessoa", "Tipo"
     };
 
-    private static final Object[][] DADOS_TABELA_CONTACTOS_AUX = {
-        {"1", "84 123 4567", "Ana Macie", "Cliente"},
-        {"2", "84 000 1111", "Distribuidora Sol", "Fornecedor"},
-        {"3", "82 555 0101", "Carlos Mabjaia", "Funcionário"}
-    };
-
     private static final String[] COLUNAS_TABELA_CIDADES_AUX = {
         "ID", "Nome da Cidade"
-    };
-
-    private static final Object[][] DADOS_TABELA_CIDADES_AUX = {
-        {"1", "Maputo"},
-        {"2", "Matola"},
-        {"3", "Beira"}
     };
 
     private static final String[] COLUNAS_TABELA_BAIRROS_AUX = {
         "ID", "Nome do Bairro", "Cidade"
     };
 
-    private static final Object[][] DADOS_TABELA_BAIRROS_AUX = {
-        {"1", "Central", "Maputo"},
-        {"2", "Polana", "Maputo"},
-        {"3", "Fomento", "Matola"}
-    };
-
     private final CardLayout layoutVisao;
     private final JPanel containerVisao;
 
-    // Componentes da visão "Utilizadores e permissões" (Utilizadores.dc.html)
     private final JTable tabelaMatrizPermissoes;
     private final DefaultTableModel modeloTabelaCargos;
     private final JTable tabelaCargos;
     private final JButton botaoNovoCargo;
+    private final DefaultTableModel modeloTabelaUtilizadores;
+    private final JTable tabelaUtilizadores;
+    private final JButton botaoNovoUtilizador;
+    private final JButton botaoEditarUtilizador;
+    private final JButton botaoSenhaUtilizador;
+    private final JButton botaoEliminarUtilizador;
 
-    // Componentes da visão "Tabelas auxiliares" (CargoNovo.dc.html, CargoEditar.dc.html, ContactoNovo.dc.html)
     private final List<BotaoAbaPilula> botoesAbasAuxiliares = new ArrayList<>();
     private final JPanel containerToolbarAuxiliar;
     private final CardLayout layoutTabelasAuxiliares;
@@ -208,6 +192,10 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private final JButton botaoNovoBairroAuxiliar;
     private final JButton botaoEditarBairroAuxiliar;
     private final JButton botaoEliminarBairroAuxiliar;
+    private final CampoBuscaArredondado campoBuscarCategoria;
+    private final JButton botaoNovaCategoriaAuxiliar;
+    private final JButton botaoEditarCategoriaAuxiliar;
+    private final JButton botaoEliminarCategoriaAuxiliar;
     private final DefaultTableModel modeloTabelaCargosAux;
     private final JTable tabelaCargosAuxiliar;
     private final DefaultTableModel modeloTabelaContactosAux;
@@ -216,13 +204,41 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private final JTable tabelaCidadesAuxiliar;
     private final DefaultTableModel modeloTabelaBairrosAux;
     private final JTable tabelaBairrosAuxiliar;
+    private final DefaultTableModel modeloTabelaCategoriasAux;
+    private final JTable tabelaCategoriasAuxiliar;
     private JLabel labelTituloCidades;
     private JLabel labelTituloBairros;
     private final JPanel cardNovoCargo;
     private final JPanel cardEditarCargo;
     private final JPanel cardNovoContacto;
     private final JPanel cardEditarContacto;
+    private final JPanel cardNovaCidade;
+    private final JPanel cardEditarCidade;
+    private final JPanel cardNovoBairro;
+    private final JPanel cardEditarBairro;
+    private final JPanel cardNovaCategoria;
+    private final JPanel cardEditarCategoria;
     private final JPanel wrapperDireitaAuxiliar;
+    private final JPanel wrapperDireitaPermissoes;
+    private final JPanel cardNovoUtilizador;
+    private final JPanel cardEditarUtilizador;
+    private final JPanel cardRedefinirSenha;
+    private BotaoSeletorFormulario seletorFuncionarioNovoUser;
+    private JTextField campoUsernameNovoUser;
+    private BotaoSeletorFormulario seletorPerfilNovoUser;
+    private JTextField campoSenhaNovoUser;
+    private JTextField campoUsernameEditarUser;
+    private BotaoSeletorFormulario seletorPerfilEditarUser;
+    private JLabel labelContaRedefinirSenha;
+    private JTextField campoNovaSenhaUser;
+    private JTextField campoNomeNovaCidade;
+    private JTextField campoNomeEditarCidade;
+    private BotaoSeletorFormulario seletorCidadeNovoBairro;
+    private JTextField campoNomeNovoBairro;
+    private BotaoSeletorFormulario seletorCidadeEditarBairro;
+    private JTextField campoNomeEditarBairro;
+    private JTextField campoNomeNovaCategoria;
+    private JTextField campoNomeEditarCategoria;
     private JTextField campoNomeNovoCargo;
     private JTextField campoSalarioBaseNovoCargo;
     private JButton botaoGuardarNovoCargo;
@@ -246,12 +262,16 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private JButton botaoEliminarEditarContacto;
 
     private final UtilizadorController utilizadorController;
-    private final CargoDAO cargoDAO;
-    private final ContactoDAO contactoDAO;
-    private List<Object[]> dadosCargosCarregados = null;
-    private List<Object[]> dadosContactosCarregados = null;
-    private List<Cidade> dadosCidadesCarregados = null;
-    private List<Bairro> dadosBairrosCarregados = null;
+    private List<Object[]> dadosCargosCarregados = new ArrayList<>();
+    private List<Object[]> dadosContactosCarregados = new ArrayList<>();
+    private List<Cidade> dadosCidadesCarregados = new ArrayList<>();
+    private List<Bairro> dadosBairrosCarregados = new ArrayList<>();
+    private List<Categoria> dadosCategoriasCarregadas = new ArrayList<>();
+    private List<Utilizador> dadosUtilizadoresCarregados = new ArrayList<>();
+    private List<Funcionario> listaFuncionariosReais = new ArrayList<>();
+    private List<Cliente> listaClientesReais = new ArrayList<>();
+    private List<Fornecedor> listaFornecedoresReais = new ArrayList<>();
+    private List<Pessoa> listaPessoasReais = new ArrayList<>();
 
     private ModoVisao modoVisao;
     private String abaAuxiliarAtiva = "Cargos";
@@ -287,13 +307,10 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     public UtilizadoresPanel(ModoVisao visaoInicial, AbaAuxiliar abaInicial, ModoPainelLateral modoLateralInicial, UtilizadorController utilizadorController) {
         UiStyle.instalarTemaEscuro();
         this.utilizadorController = (utilizadorController != null) ? utilizadorController : new UtilizadorController();
-        this.cargoDAO = new CargoDAO();
-        this.contactoDAO = new ContactoDAO();
         this.modoVisao = visaoInicial != null ? visaoInicial : ModoVisao.TABELAS_AUXILIARES;
         this.abaAuxiliarAtiva = abaInicial != null ? abaInicial.getRotulo() : AbaAuxiliar.CARGOS.getRotulo();
         this.modoLateral = modoLateralInicial != null ? modoLateralInicial : ModoPainelLateral.NOVO_CONTACTO;
 
-        // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout());
         setBackground(UiStyle.BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
@@ -302,10 +319,80 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         this.modeloTabelaCargos = criarModeloTabelaCargos();
         this.tabelaCargos = criarTabelaCargos(this.modeloTabelaCargos);
         this.botaoNovoCargo = criarBotaoNovoCargo();
+        this.modeloTabelaUtilizadores = new DefaultTableModel(
+                new String[] {"ID", "Username", "Funcionário", "Perfil", "Estado Func."}, 0) {
+            private static final long serialVersionUID = 1L;
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        this.tabelaUtilizadores = criarTabelaCargosAuxiliar(this.modeloTabelaUtilizadores);
+        this.botaoNovoUtilizador = new BotaoToolbarArredondado(
+                "Nova conta", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        this.botaoNovoUtilizador.setIcon(UiStyle.icone(MaterialDesignP.PLUS, 15, UiStyle.ACCENT_TEXT));
+        this.botaoNovoUtilizador.setIconTextGap(6);
+        this.botaoNovoUtilizador.addActionListener(e -> acaoNovoUtilizador());
+        this.botaoEditarUtilizador = new BotaoToolbarArredondado(
+                "Alterar perfil / username", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        this.botaoEditarUtilizador.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PENCIL_OUTLINE, 15, () -> UiStyle.TEXT));
+        this.botaoEditarUtilizador.setIconTextGap(6);
+        this.botaoEditarUtilizador.addActionListener(e -> acaoEditarUtilizador());
+        this.botaoSenhaUtilizador = new BotaoToolbarArredondado(
+                "Redefinir senha", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        this.botaoSenhaUtilizador.addActionListener(e -> acaoRedefinirSenhaUtilizador());
+        this.botaoEliminarUtilizador = new BotaoToolbarArredondado(
+                "Eliminar conta", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
+        );
+        this.botaoEliminarUtilizador.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        this.botaoEliminarUtilizador.setIconTextGap(6);
+        this.botaoEliminarUtilizador.addActionListener(e -> acaoEliminarUtilizador());
 
-        this.containerToolbarAuxiliar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        this.containerToolbarAuxiliar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6)) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Dimension getPreferredSize() {
+                int larguraDisp = getWidth();
+                if (larguraDisp <= 0 && getParent() != null) {
+                    larguraDisp = getParent().getWidth();
+                }
+                if (larguraDisp <= 0) {
+                    return super.getPreferredSize();
+                }
+                Insets in = getInsets();
+                int maxW = Math.max(200, larguraDisp - in.left - in.right);
+                int hgap = 8;
+                int vgap = 6;
+                int x = 0;
+                int y = in.top + vgap;
+                int rowH = 0;
+                for (Component c : getComponents()) {
+                    if (!c.isVisible()) {
+                        continue;
+                    }
+                    Dimension d = c.getPreferredSize();
+                    if (x > 0 && x + hgap + d.width > maxW) {
+                        y += rowH + vgap;
+                        x = 0;
+                        rowH = 0;
+                    }
+                    if (x > 0) {
+                        x += hgap;
+                    }
+                    x += d.width;
+                    rowH = Math.max(rowH, d.height);
+                }
+                y += rowH + vgap + in.bottom;
+                return new Dimension(larguraDisp, Math.max(ALTURA_BOTAO, y));
+            }
+        };
         this.containerToolbarAuxiliar.setOpaque(false);
         this.containerToolbarAuxiliar.setAlignmentX(Component.LEFT_ALIGNMENT);
+        this.containerToolbarAuxiliar.setBorder(new EmptyBorder(-6, -8, -6, 0));
         this.layoutTabelasAuxiliares = new CardLayout();
         this.containerTabelasAuxiliares = new JPanel(this.layoutTabelasAuxiliares);
         this.containerTabelasAuxiliares.setOpaque(false);
@@ -316,6 +403,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         this.botaoEliminarCargoAuxiliar = new BotaoToolbarArredondado(
                 "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        this.botaoEliminarCargoAuxiliar.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        this.botaoEliminarCargoAuxiliar.setIconTextGap(6);
         this.botaoEliminarCargoAuxiliar.addActionListener(e -> acaoEliminarCargoSelecionado());
         this.campoBuscarContacto = criarCampoBuscarContacto();
         this.botaoNovoContactoAuxiliar = criarBotaoNovoContactoAuxiliar();
@@ -323,34 +412,68 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         this.botaoEliminarContactoAuxiliar = new BotaoToolbarArredondado(
                 "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        this.botaoEliminarContactoAuxiliar.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        this.botaoEliminarContactoAuxiliar.setIconTextGap(6);
         this.botaoEliminarContactoAuxiliar.addActionListener(e -> acaoEliminarContactoSelecionado());
 
         this.campoBuscarEndereco = criarCampoBuscarEndereco();
         this.botaoNovaCidadeAuxiliar = new BotaoToolbarArredondado(
                 "Nova cidade", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        this.botaoNovaCidadeAuxiliar.setIcon(UiStyle.icone(MaterialDesignP.PLUS, 15, UiStyle.ACCENT_TEXT));
+        this.botaoNovaCidadeAuxiliar.setIconTextGap(6);
         this.botaoNovaCidadeAuxiliar.addActionListener(e -> acaoNovaCidade());
         this.botaoEditarCidadeAuxiliar = new BotaoToolbarArredondado(
                 "Editar cidade", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        this.botaoEditarCidadeAuxiliar.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PENCIL_OUTLINE, 15, () -> UiStyle.TEXT));
+        this.botaoEditarCidadeAuxiliar.setIconTextGap(6);
         this.botaoEditarCidadeAuxiliar.addActionListener(e -> acaoEditarCidade());
         this.botaoEliminarCidadeAuxiliar = new BotaoToolbarArredondado(
                 "Eliminar cidade", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        this.botaoEliminarCidadeAuxiliar.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        this.botaoEliminarCidadeAuxiliar.setIconTextGap(6);
         this.botaoEliminarCidadeAuxiliar.addActionListener(e -> acaoEliminarCidade());
 
         this.botaoNovoBairroAuxiliar = new BotaoToolbarArredondado(
                 "Novo bairro", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        this.botaoNovoBairroAuxiliar.setIcon(UiStyle.icone(MaterialDesignP.PLUS, 15, UiStyle.ACCENT_TEXT));
+        this.botaoNovoBairroAuxiliar.setIconTextGap(6);
         this.botaoNovoBairroAuxiliar.addActionListener(e -> acaoNovoBairro());
         this.botaoEditarBairroAuxiliar = new BotaoToolbarArredondado(
                 "Editar bairro", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        this.botaoEditarBairroAuxiliar.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PENCIL_OUTLINE, 15, () -> UiStyle.TEXT));
+        this.botaoEditarBairroAuxiliar.setIconTextGap(6);
         this.botaoEditarBairroAuxiliar.addActionListener(e -> acaoEditarBairro());
         this.botaoEliminarBairroAuxiliar = new BotaoToolbarArredondado(
                 "Eliminar bairro", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        this.botaoEliminarBairroAuxiliar.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        this.botaoEliminarBairroAuxiliar.setIconTextGap(6);
         this.botaoEliminarBairroAuxiliar.addActionListener(e -> acaoEliminarBairro());
+
+        this.campoBuscarCategoria = criarCampoBuscarCategoria();
+        this.botaoNovaCategoriaAuxiliar = new BotaoToolbarArredondado(
+                "Nova categoria", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        this.botaoNovaCategoriaAuxiliar.setIcon(UiStyle.icone(MaterialDesignP.PLUS, 15, UiStyle.ACCENT_TEXT));
+        this.botaoNovaCategoriaAuxiliar.setIconTextGap(6);
+        this.botaoNovaCategoriaAuxiliar.addActionListener(e -> acaoNovaCategoria());
+        this.botaoEditarCategoriaAuxiliar = new BotaoToolbarArredondado(
+                "Editar categoria", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        this.botaoEditarCategoriaAuxiliar.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PENCIL_OUTLINE, 15, () -> UiStyle.TEXT));
+        this.botaoEditarCategoriaAuxiliar.setIconTextGap(6);
+        this.botaoEditarCategoriaAuxiliar.addActionListener(e -> acaoEditarCategoria());
+        this.botaoEliminarCategoriaAuxiliar = new BotaoToolbarArredondado(
+                "Eliminar categoria", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
+        );
+        this.botaoEliminarCategoriaAuxiliar.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        this.botaoEliminarCategoriaAuxiliar.setIconTextGap(6);
+        this.botaoEliminarCategoriaAuxiliar.addActionListener(e -> acaoEliminarCategoria());
 
         this.modeloTabelaCargosAux = criarModeloTabelaCargosAux();
         this.tabelaCargosAuxiliar = criarTabelaCargosAuxiliar(this.modeloTabelaCargosAux);
@@ -361,6 +484,26 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         this.tabelaCidadesAuxiliar = criarTabelaCargosAuxiliar(this.modeloTabelaCidadesAux);
         this.modeloTabelaBairrosAux = criarModeloTabelaBairrosAux();
         this.tabelaBairrosAuxiliar = criarTabelaCargosAuxiliar(this.modeloTabelaBairrosAux);
+        this.modeloTabelaCategoriasAux = new DefaultTableModel(new String[] {"ID", "Nome da Categoria"}, 0) {
+            private static final long serialVersionUID = 1L;
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        this.tabelaCategoriasAuxiliar = criarTabelaCargosAuxiliar(this.modeloTabelaCategoriasAux);
+        if (this.tabelaCategoriasAuxiliar.getColumnModel().getColumnCount() > 0) {
+            this.tabelaCategoriasAuxiliar.getColumnModel().getColumn(0).setMaxWidth(80);
+            this.tabelaCategoriasAuxiliar.getColumnModel().getColumn(0).setPreferredWidth(60);
+        }
+        this.tabelaCategoriasAuxiliar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && tabelaCategoriasAuxiliar.getSelectedRow() >= 0) {
+                    acaoEditarCategoria();
+                }
+            }
+        });
 
         if (this.tabelaCidadesAuxiliar.getColumnModel().getColumnCount() > 0) {
             this.tabelaCidadesAuxiliar.getColumnModel().getColumn(0).setMaxWidth(60);
@@ -375,6 +518,22 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         this.tabelaCidadesAuxiliar.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 atualizarTabelaBairrosFiltrada();
+                sincronizarDadosCidadeParaEdicao();
+            }
+        });
+        this.tabelaBairrosAuxiliar.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                sincronizarDadosBairroParaEdicao();
+            }
+        });
+        this.tabelaCategoriasAuxiliar.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                sincronizarDadosCategoriaParaEdicao();
+            }
+        });
+        this.tabelaUtilizadores.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                sincronizarDadosUtilizadorParaEdicao();
             }
         });
 
@@ -399,8 +558,20 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         this.cardEditarCargo = criarCardEditarCargo();
         this.cardNovoContacto = criarCardNovoContacto();
         this.cardEditarContacto = criarCardEditarContacto();
+        this.cardNovaCidade = criarCardNovaCidade();
+        this.cardEditarCidade = criarCardEditarCidade();
+        this.cardNovoBairro = criarCardNovoBairro();
+        this.cardEditarBairro = criarCardEditarBairro();
+        this.cardNovaCategoria = criarCardNovaCategoria();
+        this.cardEditarCategoria = criarCardEditarCategoria();
         this.wrapperDireitaAuxiliar = new JPanel(new BorderLayout());
         this.wrapperDireitaAuxiliar.setOpaque(false);
+        this.wrapperDireitaPermissoes = new JPanel(new BorderLayout());
+        this.wrapperDireitaPermissoes.setOpaque(false);
+        this.wrapperDireitaPermissoes.setVisible(false);
+        this.cardNovoUtilizador = criarCardNovoUtilizador();
+        this.cardEditarUtilizador = criarCardEditarUtilizador();
+        this.cardRedefinirSenha = criarCardRedefinirSenha();
 
         this.tabelaCargosAuxiliar.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -651,28 +822,58 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         wrapperDireitaAuxiliar.setVisible(visivel);
 
         if (this.modoLateral == ModoPainelLateral.NOVO_CARGO) {
-            wrapperDireitaAuxiliar.add(cardNovoCargo, BorderLayout.NORTH);
+            wrapperDireitaAuxiliar.add(UiStyle.envolverCardLateralComScroll(cardNovoCargo), BorderLayout.CENTER);
             tabelaCargosAuxiliar.clearSelection();
         } else if (this.modoLateral == ModoPainelLateral.EDITAR_CARGO) {
-            wrapperDireitaAuxiliar.add(cardEditarCargo, BorderLayout.NORTH);
+            wrapperDireitaAuxiliar.add(UiStyle.envolverCardLateralComScroll(cardEditarCargo), BorderLayout.CENTER);
             if (tabelaCargosAuxiliar.getRowCount() > 0 && tabelaCargosAuxiliar.getSelectedRow() < 0) {
                 tabelaCargosAuxiliar.setRowSelectionInterval(0, 0);
             }
             sincronizarDadosCargoParaEdicao();
         } else if (this.modoLateral == ModoPainelLateral.NOVO_CONTACTO) {
-            wrapperDireitaAuxiliar.add(cardNovoContacto, BorderLayout.NORTH);
+            wrapperDireitaAuxiliar.add(UiStyle.envolverCardLateralComScroll(cardNovoContacto), BorderLayout.CENTER);
             tabelaContactosAuxiliar.clearSelection();
         } else if (this.modoLateral == ModoPainelLateral.EDITAR_CONTACTO) {
-            wrapperDireitaAuxiliar.add(cardEditarContacto, BorderLayout.NORTH);
+            wrapperDireitaAuxiliar.add(UiStyle.envolverCardLateralComScroll(cardEditarContacto), BorderLayout.CENTER);
             if (tabelaContactosAuxiliar.getRowCount() > 0 && tabelaContactosAuxiliar.getSelectedRow() < 0) {
                 tabelaContactosAuxiliar.setRowSelectionInterval(0, 0);
             }
             sincronizarDadosContactoParaEdicao();
+        } else if (this.modoLateral == ModoPainelLateral.NOVA_CIDADE) {
+            wrapperDireitaAuxiliar.add(UiStyle.envolverCardLateralComScroll(cardNovaCidade), BorderLayout.CENTER);
+            tabelaCidadesAuxiliar.clearSelection();
+        } else if (this.modoLateral == ModoPainelLateral.EDITAR_CIDADE) {
+            wrapperDireitaAuxiliar.add(UiStyle.envolverCardLateralComScroll(cardEditarCidade), BorderLayout.CENTER);
+            if (tabelaCidadesAuxiliar.getRowCount() > 0 && tabelaCidadesAuxiliar.getSelectedRow() < 0) {
+                tabelaCidadesAuxiliar.setRowSelectionInterval(0, 0);
+            }
+            sincronizarDadosCidadeParaEdicao();
+        } else if (this.modoLateral == ModoPainelLateral.NOVO_BAIRRO) {
+            atualizarOpcoesCidadesNosBairros();
+            wrapperDireitaAuxiliar.add(UiStyle.envolverCardLateralComScroll(cardNovoBairro), BorderLayout.CENTER);
+            tabelaBairrosAuxiliar.clearSelection();
+        } else if (this.modoLateral == ModoPainelLateral.EDITAR_BAIRRO) {
+            atualizarOpcoesCidadesNosBairros();
+            wrapperDireitaAuxiliar.add(UiStyle.envolverCardLateralComScroll(cardEditarBairro), BorderLayout.CENTER);
+            if (tabelaBairrosAuxiliar.getRowCount() > 0 && tabelaBairrosAuxiliar.getSelectedRow() < 0) {
+                tabelaBairrosAuxiliar.setRowSelectionInterval(0, 0);
+            }
+            sincronizarDadosBairroParaEdicao();
+        } else if (this.modoLateral == ModoPainelLateral.NOVA_CATEGORIA) {
+            wrapperDireitaAuxiliar.add(UiStyle.envolverCardLateralComScroll(cardNovaCategoria), BorderLayout.CENTER);
+            tabelaCategoriasAuxiliar.clearSelection();
+        } else if (this.modoLateral == ModoPainelLateral.EDITAR_CATEGORIA) {
+            wrapperDireitaAuxiliar.add(UiStyle.envolverCardLateralComScroll(cardEditarCategoria), BorderLayout.CENTER);
+            if (tabelaCategoriasAuxiliar.getRowCount() > 0 && tabelaCategoriasAuxiliar.getSelectedRow() < 0) {
+                tabelaCategoriasAuxiliar.setRowSelectionInterval(0, 0);
+            }
+            sincronizarDadosCategoriaParaEdicao();
         } else {
             tabelaCargosAuxiliar.clearSelection();
             tabelaContactosAuxiliar.clearSelection();
         }
 
+        UiStyle.atualizarComponentesTema(wrapperDireitaAuxiliar);
         revalidate();
         repaint();
     }
@@ -684,10 +885,12 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     }
 
     public final void selecionarAbaAuxiliar(String nomeAba) {
-        if ("EndereÃ§os".equalsIgnoreCase(nomeAba) || "Enderecos".equalsIgnoreCase(nomeAba)) {
-            this.abaAuxiliarAtiva = "EndereÃ§os";
+        if ("Endereços".equalsIgnoreCase(nomeAba) || "Enderecos".equalsIgnoreCase(nomeAba)) {
+            this.abaAuxiliarAtiva = "Endereços";
         } else if ("Contactos".equalsIgnoreCase(nomeAba)) {
             this.abaAuxiliarAtiva = "Contactos";
+        } else if ("Categorias".equalsIgnoreCase(nomeAba)) {
+            this.abaAuxiliarAtiva = "Categorias";
         } else {
             this.abaAuxiliarAtiva = "Cargos";
         }
@@ -698,42 +901,42 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         containerToolbarAuxiliar.removeAll();
         if ("Contactos".equalsIgnoreCase(this.abaAuxiliarAtiva)) {
             containerToolbarAuxiliar.add(campoBuscarContacto);
-            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(10, 0)));
             containerToolbarAuxiliar.add(botaoNovoContactoAuxiliar);
-            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(10, 0)));
             containerToolbarAuxiliar.add(botaoEditarContactoAuxiliar);
-            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(10, 0)));
             containerToolbarAuxiliar.add(botaoEliminarContactoAuxiliar);
             layoutTabelasAuxiliares.show(containerTabelasAuxiliares, CARD_TABELA_CONTACTOS);
-            if (this.modoLateral == ModoPainelLateral.NOVO_CARGO || this.modoLateral == ModoPainelLateral.EDITAR_CARGO) {
+            if (this.modoLateral != ModoPainelLateral.NOVO_CONTACTO && this.modoLateral != ModoPainelLateral.EDITAR_CONTACTO) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
             }
-        } else if ("EndereÃ§os".equalsIgnoreCase(this.abaAuxiliarAtiva)) {
+        } else if ("Endereços".equalsIgnoreCase(this.abaAuxiliarAtiva)) {
             containerToolbarAuxiliar.add(campoBuscarEndereco);
-            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(10, 0)));
             containerToolbarAuxiliar.add(botaoNovaCidadeAuxiliar);
-            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(6, 0)));
             containerToolbarAuxiliar.add(botaoEditarCidadeAuxiliar);
-            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(6, 0)));
             containerToolbarAuxiliar.add(botaoEliminarCidadeAuxiliar);
-            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(14, 0)));
             containerToolbarAuxiliar.add(botaoNovoBairroAuxiliar);
-            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(6, 0)));
             containerToolbarAuxiliar.add(botaoEditarBairroAuxiliar);
-            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(6, 0)));
             containerToolbarAuxiliar.add(botaoEliminarBairroAuxiliar);
             layoutTabelasAuxiliares.show(containerTabelasAuxiliares, CARD_TABELA_ENDERECOS);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            if (this.modoLateral != ModoPainelLateral.NOVA_CIDADE && this.modoLateral != ModoPainelLateral.EDITAR_CIDADE
+                    && this.modoLateral != ModoPainelLateral.NOVO_BAIRRO && this.modoLateral != ModoPainelLateral.EDITAR_BAIRRO) {
+                definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            }
+        } else if ("Categorias".equalsIgnoreCase(this.abaAuxiliarAtiva)) {
+            containerToolbarAuxiliar.add(campoBuscarCategoria);
+            containerToolbarAuxiliar.add(botaoNovaCategoriaAuxiliar);
+            containerToolbarAuxiliar.add(botaoEditarCategoriaAuxiliar);
+            containerToolbarAuxiliar.add(botaoEliminarCategoriaAuxiliar);
+            layoutTabelasAuxiliares.show(containerTabelasAuxiliares, CARD_TABELA_CATEGORIAS);
+            if (this.modoLateral != ModoPainelLateral.NOVA_CATEGORIA && this.modoLateral != ModoPainelLateral.EDITAR_CATEGORIA) {
+                definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            }
         } else {
             containerToolbarAuxiliar.add(campoBuscarCargo);
-            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(10, 0)));
             containerToolbarAuxiliar.add(botaoNovoCargoAuxiliar);
-            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(10, 0)));
             containerToolbarAuxiliar.add(botaoEditarCargoAuxiliar);
-            containerToolbarAuxiliar.add(Box.createRigidArea(new Dimension(10, 0)));
             containerToolbarAuxiliar.add(botaoEliminarCargoAuxiliar);
             layoutTabelasAuxiliares.show(containerTabelasAuxiliares, CARD_TABELA_CARGOS);
-            if (this.modoLateral == ModoPainelLateral.NOVO_CONTACTO || this.modoLateral == ModoPainelLateral.EDITAR_CONTACTO) {
+            if (this.modoLateral != ModoPainelLateral.NOVO_CARGO && this.modoLateral != ModoPainelLateral.EDITAR_CARGO) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
             }
         }
@@ -745,20 +948,27 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         JPanel visao = new JPanel(new BorderLayout(0, 16));
         visao.setOpaque(false);
 
+        JPanel cabecalho = new JPanel(new BorderLayout());
+        cabecalho.setOpaque(false);
         JLabel titulo = new JLabel("Utilizadores e permissões");
         UiStyle.aplicarTexto(titulo, 24, true);
-        visao.add(titulo, BorderLayout.NORTH);
-        visao.add(criarCorpoPrincipal(), BorderLayout.CENTER);
+        BotaoToolbarArredondado btnIrAuxiliares = new BotaoToolbarArredondado(
+                "Tabelas auxiliares", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        btnIrAuxiliares.addActionListener(e -> definirModoVisao(ModoVisao.TABELAS_AUXILIARES));
+        cabecalho.add(titulo, BorderLayout.WEST);
+        cabecalho.add(btnIrAuxiliares, BorderLayout.EAST);
+
+        JPanel corpoPermissoes = new JPanel(new BorderLayout(16, 0));
+        corpoPermissoes.setOpaque(false);
+        corpoPermissoes.add(criarCorpoPrincipal(), BorderLayout.CENTER);
+        corpoPermissoes.add(wrapperDireitaPermissoes, BorderLayout.EAST);
+
+        visao.add(cabecalho, BorderLayout.NORTH);
+        visao.add(corpoPermissoes, BorderLayout.CENTER);
         return visao;
     }
 
-    /**
-     * Visão "Tabelas auxiliares" fiel a CargoNovo.dc.html:
-     * <h1>Tabelas auxiliares</h1>
-     * <div class="tb"><span class="tab on">Cargos</span><span class="tab">Endereços</span><span class="tab">Contactos</span></div>
-     * <div class="tb"><span class="in">Buscar cargo</span><span class="bt">Novo cargo</span><span class="bt s">Editar</span><span class="bt d">Eliminar</span></div>
-     * <div class="row" style="align-items:flex-start">...</div>
-     */
     private JPanel criarVisaoTabelasAuxiliares() {
         JPanel visao = new JPanel(new BorderLayout(0, 16));
         visao.setOpaque(false);
@@ -767,13 +977,20 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         topo.setLayout(new BoxLayout(topo, BoxLayout.Y_AXIS));
         topo.setOpaque(false);
 
+        JPanel linhaTitulo = new JPanel(new BorderLayout());
+        linhaTitulo.setOpaque(false);
+        linhaTitulo.setAlignmentX(Component.LEFT_ALIGNMENT);
         JLabel titulo = new JLabel("Tabelas auxiliares");
         UiStyle.aplicarTexto(titulo, 24, true);
-        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        topo.add(titulo);
+        BotaoToolbarArredondado btnIrPermissoes = new BotaoToolbarArredondado(
+                "Utilizadores e permissões", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        btnIrPermissoes.addActionListener(e -> definirModoVisao(ModoVisao.UTILIZADORES_PERMISSOES));
+        linhaTitulo.add(titulo, BorderLayout.WEST);
+        linhaTitulo.add(btnIrPermissoes, BorderLayout.EAST);
+        topo.add(linhaTitulo);
         topo.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        // Barra de abas em pílula: Cargos | Endereços | Contactos
         JPanel barraAbas = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraAbas.setOpaque(false);
         barraAbas.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -794,6 +1011,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         containerTabelasAuxiliares.add(criarCardTabelaAuxiliar(tabelaCargosAuxiliar), CARD_TABELA_CARGOS);
         containerTabelasAuxiliares.add(criarCardTabelaAuxiliar(tabelaContactosAuxiliar), CARD_TABELA_CONTACTOS);
         containerTabelasAuxiliares.add(criarCardEnderecosAuxiliar(), CARD_TABELA_ENDERECOS);
+        containerTabelasAuxiliares.add(criarCardTabelaAuxiliar(tabelaCategoriasAuxiliar), CARD_TABELA_CATEGORIAS);
 
         JPanel corpo = new JPanel(new BorderLayout(16, 0));
         corpo.setOpaque(false);
@@ -805,12 +1023,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         return visao;
     }
 
-    /**
-     * <div class="row">
-     *   <div class="card" style="flex:1.3">...</div>
-     *   <div class="card" style="flex:1">...</div>
-     * </div>
-     */
     private JPanel criarCorpoPrincipal() {
         JPanel container = new JPanel(new GridBagLayout());
         container.setOpaque(false);
@@ -841,11 +1053,46 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         gbcEspacador.weightx = 1.0;
         gbcEspacador.weighty = 1.0;
         gbcEspacador.fill = GridBagConstraints.BOTH;
-        JPanel espacador = new JPanel();
-        espacador.setOpaque(false);
-        container.add(espacador, gbcEspacador);
+        gbcEspacador.insets = new Insets(16, 0, 0, 0);
+        container.add(criarCardContasUtilizadores(), gbcEspacador);
 
         return container;
+    }
+
+    private JPanel criarCardContasUtilizadores() {
+        PainelCard card = new PainelCard(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
+        card.setLayout(new BorderLayout(0, 12));
+        card.setBorder(new EmptyBorder(16, 16, 16, 16));
+
+        JPanel topo = new JPanel(new BorderLayout(12, 0));
+        topo.setOpaque(false);
+        JLabel titulo = new JLabel("Contas de utilizadores");
+        titulo.setFont(UiStyle.fonte(13, Font.BOLD));
+        titulo.setForeground(UiStyle.TEXT);
+
+        JPanel botoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        botoes.setOpaque(false);
+        botoes.add(botaoNovoUtilizador);
+        botoes.add(botaoEditarUtilizador);
+        botoes.add(botaoSenhaUtilizador);
+        botoes.add(botaoEliminarUtilizador);
+
+        topo.add(titulo, BorderLayout.WEST);
+        topo.add(botoes, BorderLayout.EAST);
+        card.add(topo, BorderLayout.NORTH);
+
+        JScrollPane scroll = new JScrollPane(tabelaUtilizadores);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        scroll.getViewport().setBackground(UiStyle.SURFACE);
+
+        JPanel tabelaWrapper = new JPanel(new BorderLayout());
+        tabelaWrapper.setOpaque(false);
+        tabelaWrapper.add(tabelaUtilizadores.getTableHeader(), BorderLayout.NORTH);
+        tabelaWrapper.add(scroll, BorderLayout.CENTER);
+        card.add(tabelaWrapper, BorderLayout.CENTER);
+        return card;
     }
 
     private JPanel criarCardMatrizPermissoes() {
@@ -853,7 +1100,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.setLayout(new BorderLayout(0, 12));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        // <b>Matriz de permissões</b>
         JLabel titulo = new JLabel("Matriz de permissões");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -873,7 +1119,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        // <b>Cargos</b>
         JLabel titulo = new JLabel("Cargos");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -881,19 +1126,22 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt">Novo cargo</span></div>
         JPanel barraBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraBotoes.setOpaque(false);
         barraBotoes.setAlignmentX(Component.LEFT_ALIGNMENT);
         barraBotoes.add(botaoNovoCargo);
         card.add(barraBotoes);
 
-        // <table><tr><th>Nome</th><th>Salário base</th><th>Func.</th></tr>...</table>
         JPanel tabelaWrapper = new JPanel(new BorderLayout());
         tabelaWrapper.setOpaque(false);
         tabelaWrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JScrollPane scrollCargos = new JScrollPane(tabelaCargos);
+        scrollCargos.setBorder(BorderFactory.createEmptyBorder());
+        scrollCargos.setOpaque(false);
+        scrollCargos.getViewport().setOpaque(false);
+        scrollCargos.getViewport().setBackground(UiStyle.SURFACE);
         tabelaWrapper.add(tabelaCargos.getTableHeader(), BorderLayout.NORTH);
-        tabelaWrapper.add(tabelaCargos, BorderLayout.CENTER);
+        tabelaWrapper.add(scrollCargos, BorderLayout.CENTER);
         card.add(tabelaWrapper);
 
         return card;
@@ -903,6 +1151,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 "Novo cargo", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.icone(MaterialDesignP.PLUS, 15, UiStyle.ACCENT_TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             selecionarAbaAuxiliar("Cargos");
             definirModoPainelLateral(ModoPainelLateral.NOVO_CARGO);
@@ -915,6 +1165,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 "Novo cargo", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.icone(MaterialDesignP.PLUS, 15, UiStyle.ACCENT_TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.NOVO_CARGO) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -929,6 +1181,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 "Novo contacto", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.icone(MaterialDesignP.PLUS, 15, UiStyle.ACCENT_TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.NOVO_CONTACTO) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -943,6 +1197,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 "Editar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PENCIL_OUTLINE, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.EDITAR_CARGO) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -957,6 +1213,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 "Editar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PENCIL_OUTLINE, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.EDITAR_CONTACTO) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -1106,10 +1364,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Novo contacto" fiel a ContactoNovo.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardNovoContacto() {
         PainelCard card = new PainelCard(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD) {
             private static final long serialVersionUID = 1L;
@@ -1135,9 +1389,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
-        // <b>Novo contacto</b>
         JLabel titulo = new JLabel("Novo contacto");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -1145,16 +1398,15 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Valor * (máx. 30)</span><div class="in" style="min-width:0"></div></div>
         campoValorNovoContacto = new CampoFormularioArredondado("");
         JPanel blocoValor = criarCampoComLabel("Valor * (máx. 30)", campoValorNovoContacto);
         fixarLargura(blocoValor, larguraInterna, 60);
         card.add(blocoValor);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="fm">Tipo * (Cliente ▾) | Pessoa * (Ana Macie ▾)</div>
-        seletorTipoNovoContacto = new BotaoSeletorFormulario("Cliente ▾", new String[] {"Cliente", "Fornecedor", "Funcionário"});
-        seletorPessoaNovoContacto = new BotaoSeletorFormulario("Ana Macie ▾", new String[] {"Ana Macie", "João Sitoe", "Maria Nhaca", "Distribuidora Sol", "Carlos Mabjaia"});
+        seletorTipoNovoContacto = new BotaoSeletorFormulario("Cliente", new String[] {"Cliente", "Fornecedor", "Funcionário"});
+        seletorPessoaNovoContacto = new BotaoSeletorFormulario("Ana Macie", new String[] {"Ana Macie", "João Sitoe", "Maria Nhaca", "Distribuidora Sol", "Carlos Mabjaia"});
+        seletorTipoNovoContacto.setAoSelecionar(() -> atualizarPessoasPorTipo(seletorTipoNovoContacto, seletorPessoaNovoContacto, null));
         JPanel linhaTipoPessoa = new JPanel(new java.awt.GridLayout(1, 2, 12, 0));
         linhaTipoPessoa.setOpaque(false);
         linhaTipoPessoa.add(criarCampoComLabel("Tipo *", seletorTipoNovoContacto));
@@ -1163,7 +1415,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.add(linhaTipoPessoa);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt">Guardar</span><span class="bt s">Cancelar</span></div>
         JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -1171,10 +1422,14 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         botaoGuardarNovoContacto = new BotaoToolbarArredondado(
                 "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarNovoContacto.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoGuardarNovoContacto.setIconTextGap(6);
         botaoGuardarNovoContacto.addActionListener(e -> acaoGuardarNovoContacto());
         botaoCancelarNovoContacto = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botaoCancelarNovoContacto.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelarNovoContacto.setIconTextGap(6);
         botaoCancelarNovoContacto.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         acoes.add(botaoGuardarNovoContacto);
@@ -1185,10 +1440,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Editar contacto" fiel a ContactoEditar.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardEditarContacto() {
         PainelCard card = new PainelCard(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD) {
             private static final long serialVersionUID = 1L;
@@ -1214,9 +1465,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
-        // <b>Editar contacto</b>
         JLabel titulo = new JLabel("Editar contacto");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -1224,16 +1474,15 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Valor * (máx. 30)</span><div class="in" style="min-width:0">84 123 4567</div></div>
-        campoValorEditarContacto = new CampoFormularioArredondado("84 123 4567");
+        campoValorEditarContacto = new CampoFormularioArredondado("");
         JPanel blocoValor = criarCampoComLabel("Valor * (máx. 30)", campoValorEditarContacto);
         fixarLargura(blocoValor, larguraInterna, 60);
         card.add(blocoValor);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="fm">Tipo * (Cliente ▾) | Pessoa * (Ana Macie ▾)</div>
-        seletorTipoEditarContacto = new BotaoSeletorFormulario("Cliente ▾", new String[] {"Cliente", "Fornecedor", "Funcionário"});
-        seletorPessoaEditarContacto = new BotaoSeletorFormulario("Ana Macie ▾", new String[] {"Ana Macie", "João Sitoe", "Maria Nhaca", "Distribuidora Sol", "Carlos Mabjaia"});
+        seletorTipoEditarContacto = new BotaoSeletorFormulario("Cliente", new String[] {"Cliente", "Fornecedor", "Funcionário"});
+        seletorPessoaEditarContacto = new BotaoSeletorFormulario("Ana Macie", new String[] {"Ana Macie", "João Sitoe", "Maria Nhaca", "Distribuidora Sol", "Carlos Mabjaia"});
+        seletorTipoEditarContacto.setAoSelecionar(() -> atualizarPessoasPorTipo(seletorTipoEditarContacto, seletorPessoaEditarContacto, null));
         JPanel linhaTipoPessoa = new JPanel(new java.awt.GridLayout(1, 2, 12, 0));
         linhaTipoPessoa.setOpaque(false);
         linhaTipoPessoa.add(criarCampoComLabel("Tipo *", seletorTipoEditarContacto));
@@ -1242,7 +1491,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.add(linhaTipoPessoa);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt">Guardar alterações</span><span class="bt s">Cancelar</span><span class="bt d">Eliminar</span></div>
         JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -1250,20 +1498,29 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         botaoGuardarAlteracoesContacto = new BotaoToolbarArredondado(
                 "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarAlteracoesContacto.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoGuardarAlteracoesContacto.setIconTextGap(5);
+        botaoGuardarAlteracoesContacto.setBorder(new EmptyBorder(9, 10, 9, 10));
         botaoGuardarAlteracoesContacto.addActionListener(e -> acaoGuardarAlteracoesContacto());
         botaoCancelarEditarContacto = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botaoCancelarEditarContacto.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelarEditarContacto.setIconTextGap(5);
+        botaoCancelarEditarContacto.setBorder(new EmptyBorder(9, 10, 9, 10));
         botaoCancelarEditarContacto.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
         botaoEliminarEditarContacto = new BotaoToolbarArredondado(
                 "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        botaoEliminarEditarContacto.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        botaoEliminarEditarContacto.setIconTextGap(5);
+        botaoEliminarEditarContacto.setBorder(new EmptyBorder(9, 10, 9, 10));
         botaoEliminarEditarContacto.addActionListener(e -> acaoEliminarContactoSelecionado());
 
         acoes.add(botaoGuardarAlteracoesContacto);
-        acoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
         acoes.add(botaoCancelarEditarContacto);
-        acoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
         acoes.add(botaoEliminarEditarContacto);
         card.add(acoes);
 
@@ -1287,14 +1544,10 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         String tipo = String.valueOf(modeloTabelaContactosAux.getValueAt(row, 3));
 
         campoValorEditarContacto.setText(valor);
-        seletorTipoEditarContacto.setText(tipo + " ▾");
-        seletorPessoaEditarContacto.setText(pessoa + " ▾");
+        seletorTipoEditarContacto.setText(tipo);
+        atualizarPessoasPorTipo(seletorTipoEditarContacto, seletorPessoaEditarContacto, pessoa);
     }
 
-    /**
-     * Card lateral "Novo cargo" fiel a CargoNovo.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardNovoCargo() {
         PainelCard card = new PainelCard(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD) {
             private static final long serialVersionUID = 1L;
@@ -1320,9 +1573,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
-        // <b>Novo cargo</b>
         JLabel titulo = new JLabel("Novo cargo");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -1330,21 +1582,18 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Nome *</span><div class="in" style="min-width:0"></div></div>
         campoNomeNovoCargo = new CampoFormularioArredondado("");
         JPanel blocoNome = criarCampoComLabel("Nome *", campoNomeNovoCargo);
         fixarLargura(blocoNome, larguraInterna, 60);
         card.add(blocoNome);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Salário base (MT) *  (≥ 0)</span><div class="in" style="min-width:0"></div></div>
         campoSalarioBaseNovoCargo = new CampoFormularioArredondado("");
         JPanel blocoSalario = criarCampoComLabel("Salário base (MT) *  (≥ 0)", campoSalarioBaseNovoCargo);
         fixarLargura(blocoSalario, larguraInterna, 60);
         card.add(blocoSalario);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt">Guardar</span><span class="bt s">Cancelar</span></div>
         JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -1352,10 +1601,14 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         botaoGuardarNovoCargo = new BotaoToolbarArredondado(
                 "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarNovoCargo.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoGuardarNovoCargo.setIconTextGap(6);
         botaoGuardarNovoCargo.addActionListener(e -> acaoGuardarNovoCargo());
         botaoCancelarNovoCargo = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botaoCancelarNovoCargo.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelarNovoCargo.setIconTextGap(6);
         botaoCancelarNovoCargo.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         acoes.add(botaoGuardarNovoCargo);
@@ -1366,10 +1619,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Editar cargo" fiel a CargoEditar.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardEditarCargo() {
         PainelCard card = new PainelCard(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD) {
             private static final long serialVersionUID = 1L;
@@ -1395,9 +1644,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
-        // <b>Editar cargo</b>
         JLabel titulo = new JLabel("Editar cargo");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -1405,21 +1653,18 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Nome *</span><div class="in" style="min-width:0">Gerente</div></div>
-        campoNomeEditarCargo = new CampoFormularioArredondado("Gerente");
+        campoNomeEditarCargo = new CampoFormularioArredondado("");
         JPanel blocoNome = criarCampoComLabel("Nome *", campoNomeEditarCargo);
         fixarLargura(blocoNome, larguraInterna, 60);
         card.add(blocoNome);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Salário base (MT) *  (≥ 0)</span><div class="in" style="min-width:0">[valor]</div></div>
-        campoSalarioBaseEditarCargo = new CampoFormularioArredondado("[valor]");
+        campoSalarioBaseEditarCargo = new CampoFormularioArredondado("");
         JPanel blocoSalario = criarCampoComLabel("Salário base (MT) *  (≥ 0)", campoSalarioBaseEditarCargo);
         fixarLargura(blocoSalario, larguraInterna, 60);
         card.add(blocoSalario);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="k">1 funcionário neste cargo. Só pode ser eliminado sem funcionários.</div>
         labelAvisoFuncionariosCargo = new JLabel("1 funcionário neste cargo. Só pode ser eliminado sem funcionários.");
         labelAvisoFuncionariosCargo.setFont(UiStyle.fonte(12, Font.PLAIN));
         labelAvisoFuncionariosCargo.setForeground(UiStyle.MUTED);
@@ -1427,7 +1672,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         card.add(labelAvisoFuncionariosCargo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt">Guardar alterações</span><span class="bt s">Cancelar</span><span class="bt d">Eliminar</span></div>
         JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -1435,20 +1679,29 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         botaoGuardarAlteracoesCargo = new BotaoToolbarArredondado(
                 "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarAlteracoesCargo.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoGuardarAlteracoesCargo.setIconTextGap(5);
+        botaoGuardarAlteracoesCargo.setBorder(new EmptyBorder(9, 10, 9, 10));
         botaoGuardarAlteracoesCargo.addActionListener(e -> acaoGuardarAlteracoesCargo());
         botaoCancelarEditarCargo = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botaoCancelarEditarCargo.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelarEditarCargo.setIconTextGap(5);
+        botaoCancelarEditarCargo.setBorder(new EmptyBorder(9, 10, 9, 10));
         botaoCancelarEditarCargo.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
         botaoEliminarEditarCargo = new BotaoToolbarArredondado(
                 "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        botaoEliminarEditarCargo.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        botaoEliminarEditarCargo.setIconTextGap(5);
+        botaoEliminarEditarCargo.setBorder(new EmptyBorder(9, 10, 9, 10));
         botaoEliminarEditarCargo.addActionListener(e -> acaoEliminarCargoSelecionado());
 
         acoes.add(botaoGuardarAlteracoesCargo);
-        acoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
         acoes.add(botaoCancelarEditarCargo);
-        acoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
         acoes.add(botaoEliminarEditarCargo);
         card.add(acoes);
 
@@ -1478,6 +1731,11 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     }
 
     private JPanel criarCampoComLabel(String textoLabel, JComponent campo) {
+        if (campo instanceof javax.swing.text.JTextComponent
+                && campo.getClientProperty(FlatClientProperties.PLACEHOLDER_TEXT) == null) {
+            String dica = textoLabel.replaceAll("\\(.*?\\)", "").replace("*", "").trim().toLowerCase();
+            campo.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Introduzir " + dica);
+        }
         JPanel bloco = new JPanel(new BorderLayout(0, 6));
         bloco.setOpaque(false);
 
@@ -1505,7 +1763,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private void atualizarTabelaCargosFiltrada() {
         String termo = campoBuscarCargo.getTextoReal().trim().toLowerCase();
         modeloTabelaCargosAux.setRowCount(0);
-        List<Object[]> fonteDados = (dadosCargosCarregados != null) ? dadosCargosCarregados : Arrays.asList(DADOS_TABELA_CARGOS_AUX);
+        List<Object[]> fonteDados = (dadosCargosCarregados != null) ? dadosCargosCarregados : new ArrayList<>();
 
         for (Object[] linha : fonteDados) {
             String nome = String.valueOf(linha[1]).toLowerCase();
@@ -1518,7 +1776,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     private void atualizarTabelaContactosFiltrada() {
         String termo = campoBuscarContacto.getTextoReal().trim().toLowerCase();
         modeloTabelaContactosAux.setRowCount(0);
-        List<Object[]> fonteDados = (dadosContactosCarregados != null) ? dadosContactosCarregados : Arrays.asList(DADOS_TABELA_CONTACTOS_AUX);
+        List<Object[]> fonteDados = (dadosContactosCarregados != null) ? dadosContactosCarregados : new ArrayList<>();
 
         for (Object[] linha : fonteDados) {
             String valor = String.valueOf(linha[1]).toLowerCase();
@@ -1575,7 +1833,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     }
 
     private DefaultTableModel criarModeloTabelaCargos() {
-        return new DefaultTableModel(DADOS_CARGOS, COLUNAS_CARGOS) {
+        return new DefaultTableModel(new Object[0][COLUNAS_CARGOS.length], COLUNAS_CARGOS) {
             private static final long serialVersionUID = 1L;
 
             @Override
@@ -1614,9 +1872,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         return t;
     }
 
-    /**
-     * th { text-align:left; color:#A3ADC2; font-weight:600; padding:11px 14px; border-bottom:1px solid #2A3040 }
-     */
     private static final class RenderizadorCabecalho extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1637,9 +1892,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * td { padding:11px 14px; border-bottom:1px solid #242B3B }
-     */
     private static final class RenderizadorCelulaTexto extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1661,10 +1913,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Renderiza os chips de Permissão:
-     * Sim (.ch.g: #12402A / #7FE3A8) e Não (.ch.r: #4F1B1B / #FF9C9C).
-     */
     private static final class RenderizadorCelulaPermissao extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1704,11 +1952,13 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
 
         @Override
         protected void paintComponent(Graphics g) {
+            boolean permitido = "Sim".equalsIgnoreCase(getText() != null ? getText().trim() : "");
+            setForeground(permitido ? UiStyle.CHIP_GREEN_FG : UiStyle.ERROR_TEXT);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int h = getHeight();
-                g2.setColor(corFundo);
+                g2.setColor(permitido ? UiStyle.CHIP_GREEN_BG : UiStyle.ERROR_BG);
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), h, h, h));
             } finally {
                 g2.dispose();
@@ -1746,8 +1996,17 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setBorder(new EmptyBorder(9, 16, 9, 16));
-            Dimension pref = getPreferredSize();
-            setPreferredSize(new Dimension(pref.width, ALTURA_BOTAO));
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            Dimension d = super.getPreferredSize();
+            return new Dimension(d.width, ALTURA_BOTAO);
+        }
+
+        @Override
+        public Dimension getMinimumSize() {
+            return getPreferredSize();
         }
 
         @Override
@@ -1758,27 +2017,33 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
+                boolean ehPrimario = UiStyle.ACCENT.equals(corFundo);
 
                 if (preencherFundo && corFundo != null) {
-                    Color atual = corFundo;
+                    Color baseBg = ehPrimario ? UiStyle.ACCENT : UiStyle.SECONDARY_BG;
+                    setForeground(ehPrimario ? UiStyle.ACCENT_TEXT : UiStyle.TEXT);
+                    Color atual = baseBg;
                     if (getModel().isPressed()) {
-                        atual = corFundo.darker();
+                        atual = baseBg.darker();
                     } else if (getModel().isRollover()) {
                         atual = new Color(
-                                Math.min(255, corFundo.getRed() + 10),
-                                Math.min(255, corFundo.getGreen() + 10),
-                                Math.min(255, corFundo.getBlue() + 10)
+                                Math.min(255, baseBg.getRed() + 10),
+                                Math.min(255, baseBg.getGreen() + 10),
+                                Math.min(255, baseBg.getBlue() + 10)
                         );
                     }
                     g2.setColor(atual);
                     g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
-                } else if (getModel().isRollover()) {
-                    g2.setColor(new Color(0x4F, 0x1B, 0x1B, 90));
-                    g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
+                } else {
+                    setForeground(UiStyle.DANGER_TEXT);
+                    if (getModel().isRollover()) {
+                        g2.setColor(new Color(0x4F, 0x1B, 0x1B, 40));
+                        g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
+                    }
                 }
 
                 if (corBorda != null) {
-                    g2.setColor(corBorda);
+                    g2.setColor(preencherFundo ? UiStyle.INPUT_BORDER : UiStyle.DANGER_BORDER);
                     g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
                 }
             } finally {
@@ -1788,11 +2053,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Aba em pílula (.tab / .tab.on):
-     * .tab { padding:7px 14px; border-radius:99px; font-size:13px; background:#232A3B; color:#A3ADC2 }
-     * .tab.on { background:#F5B638; color:#12151C; font-weight:600 }
-     */
     private static final class BotaoAbaPilula extends JButton {
         private static final long serialVersionUID = 1L;
 
@@ -1828,7 +2088,8 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
-                g2.setColor(ativa ? UiStyle.ACCENT : UiStyle.SECONDARY_BG);
+                setForeground(ativa ? UiStyle.ACCENT_TEXT : UiStyle.MUTED);
+                g2.setColor(ativa ? UiStyle.ACCENT : UiStyle.TAB_BG);
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, h, h));
             } finally {
                 g2.dispose();
@@ -1837,14 +2098,14 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Seletor de formulário estilo .in com min-width:0 (ex: "Cliente ▾", "Ana Macie ▾").
-     */
     private static final class BotaoSeletorFormulario extends JButton {
         private static final long serialVersionUID = 1L;
+        private String[] opcoes;
+        private Runnable aoSelecionar;
 
         BotaoSeletorFormulario(String textoInicial, String[] opcoes) {
             super(textoInicial);
+            this.opcoes = opcoes;
             setFont(UiStyle.fonte(13, Font.PLAIN));
             setForeground(UiStyle.MUTED);
             setBackground(UiStyle.INPUT_BG);
@@ -1854,24 +2115,42 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
             setContentAreaFilled(false);
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setBorder(new EmptyBorder(0, 12, 0, 12));
+            setBorder(new EmptyBorder(0, 12, 0, 28));
 
-            if (opcoes != null && opcoes.length > 0) {
-                addActionListener(e -> {
+            addActionListener(e -> {
+                if (this.opcoes != null && this.opcoes.length > 0) {
                     JPopupMenu menu = new JPopupMenu();
                     menu.setBackground(UiStyle.SURFACE);
                     menu.setBorder(BorderFactory.createLineBorder(UiStyle.BORDER));
-                    for (String opcao : opcoes) {
+                    for (String opcao : this.opcoes) {
                         JMenuItem item = new JMenuItem(opcao);
                         item.setFont(UiStyle.fonte(13, Font.PLAIN));
                         item.setBackground(UiStyle.SURFACE);
                         item.setForeground(UiStyle.TEXT);
-                        item.addActionListener(ev -> setText(opcao + " ▾"));
+                        item.addActionListener(ev -> {
+                            setText(opcao);
+                            if (this.aoSelecionar != null) {
+                                this.aoSelecionar.run();
+                            }
+                        });
                         menu.add(item);
                     }
-                    menu.show(this, 0, getHeight() + 2);
-                });
-            }
+                    UiStyle.mostrarPopupSincronizado(menu, this);
+                }
+            });
+        }
+
+        void setOpcoes(String[] novasOpcoes) {
+            this.opcoes = novasOpcoes;
+        }
+
+        void setAoSelecionar(Runnable callback) {
+            this.aoSelecionar = callback;
+        }
+
+        @Override
+        public String getText() {
+            return UiStyle.removerMarcadorSeta(super.getText());
         }
 
         @Override
@@ -1886,21 +2165,22 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
                 g2.setColor(UiStyle.INPUT_BORDER);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
+                super.paintComponent(g);
+                UiStyle.desenharChevronExpansivel(g2, this, getForeground());
             } finally {
                 g2.dispose();
             }
-            super.paintComponent(g);
         }
     }
 
-    /**
-     * Campo de texto de formulário estilo .in com min-width:0 (ex: Nome *, Salário base (MT) *  (≥ 0)).
-     */
     private static final class CampoFormularioArredondado extends JTextField {
         private static final long serialVersionUID = 1L;
 
         CampoFormularioArredondado(String valorInicial) {
-            super(valorInicial);
+            super("");
+            if (valorInicial != null && !valorInicial.isEmpty()) {
+                putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, valorInicial);
+            }
             setOpaque(false);
             setFont(UiStyle.fonte(13, Font.PLAIN));
             setForeground(UiStyle.MUTED);
@@ -1951,9 +2231,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Campo de texto estilo .in ("Buscar cargo").
-     */
     private static final class CampoBuscaArredondado extends JTextField {
         private static final long serialVersionUID = 1L;
 
@@ -2043,13 +2320,17 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
 
         @Override
         protected void paintComponent(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                super.paintComponent(g);
+                return;
+            }
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
-                g2.setColor(corFundo);
+                g2.setColor(UiStyle.SURFACE);
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
             } finally {
                 g2.dispose();
@@ -2058,14 +2339,34 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         }
 
         @Override
+        protected void paintChildren(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                super.paintChildren(g);
+                return;
+            }
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                int arco = raio * 2;
+                Shape clip = new RoundRectangle2D.Float(1, 1, Math.max(0, getWidth() - 2), Math.max(0, getHeight() - 2), arco, arco);
+                g2.clip(clip);
+                super.paintChildren(g2);
+            } finally {
+                g2.dispose();
+            }
+        }
+
+        @Override
         protected void paintBorder(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                return;
+            }
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
-                g2.setColor(corBorda);
+                g2.setColor(UiStyle.BORDER);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
             } finally {
                 g2.dispose();
@@ -2097,7 +2398,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         c.setSalarioBase(salario);
         AsyncTask.executar(
             () -> {
-                cargoDAO.salvar(c);
+                utilizadorController.salvarCargo(c);
                 return c;
             },
             salvo -> {
@@ -2138,7 +2439,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         c.setSalarioBase(salario);
         AsyncTask.executar(
             () -> {
-                cargoDAO.atualizar(c);
+                utilizadorController.atualizarCargo(c);
                 return true;
             },
             res -> {
@@ -2162,7 +2463,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         if (op == JOptionPane.YES_OPTION) {
             AsyncTask.executar(
                 () -> {
-                    cargoDAO.eliminar(id);
+                    utilizadorController.eliminarCargo(id);
                     return true;
                 },
                 res -> {
@@ -2183,10 +2484,26 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         }
         Contacto c = new Contacto();
         c.setContacto(valor);
-        Long idPessoa = 1L;
+        String nomePessoa = seletorPessoaNovoContacto != null
+                ? seletorPessoaNovoContacto.getText().replace(" ▾", "").replace("▾", "").trim()
+                : "";
+        Long idPessoa = null;
+        if (listaPessoasReais != null) {
+            for (Pessoa p : listaPessoasReais) {
+                if (p.getNome() != null && p.getNome().equalsIgnoreCase(nomePessoa)) {
+                    idPessoa = p.getIdPessoa();
+                    break;
+                }
+            }
+        }
+        if (idPessoa == null) {
+            JOptionPane.showMessageDialog(this, "Selecione uma pessoa cadastrada para associar ao contacto.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        final Long idPessoaFinal = idPessoa;
         AsyncTask.executar(
             () -> {
-                contactoDAO.salvarComPessoa(c, idPessoa);
+                utilizadorController.salvarContactoComPessoa(c, idPessoaFinal);
                 return c;
             },
             salvo -> {
@@ -2216,7 +2533,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         c.setContacto(valor);
         AsyncTask.executar(
             () -> {
-                contactoDAO.atualizar(c);
+                utilizadorController.atualizarContacto(c);
                 return true;
             },
             res -> {
@@ -2240,7 +2557,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         if (op == JOptionPane.YES_OPTION) {
             AsyncTask.executar(
                 () -> {
-                    contactoDAO.eliminar(id);
+                    utilizadorController.eliminarContacto(id);
                     return true;
                 },
                 res -> {
@@ -2256,45 +2573,128 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     @Override
     public void recarregarDados() {
         AsyncTask.executar(
-            () -> cargoDAO.listarTodos(),
-            cargos -> {
-                if (cargos != null && !cargos.isEmpty()) {
-                    List<Object[]> linhas = new ArrayList<>();
-                    modeloTabelaCargos.setRowCount(0);
+            () -> {
+                List<Cargo> cargos = utilizadorController.listarCargos();
+                List<Funcionario> funcs = new ArrayList<>();
+                try {
+                    funcs = utilizadorController.listarFuncionarios();
+                } catch (Exception ignored) {}
+                return new Object[] { cargos, funcs };
+            },
+            resultado -> {
+                Object[] arr = (Object[]) resultado;
+                @SuppressWarnings("unchecked")
+                List<Cargo> cargos = (List<Cargo>) arr[0];
+                @SuppressWarnings("unchecked")
+                List<Funcionario> funcs = (List<Funcionario>) arr[1];
+                List<Object[]> linhas = new ArrayList<>();
+                modeloTabelaCargos.setRowCount(0);
+                if (cargos != null) {
                     for (Cargo c : cargos) {
                         String idStr = String.valueOf(c.getIdCargo());
                         String nomeStr = c.getNome() != null ? c.getNome() : "";
                         String salStr = String.format(Locale.GERMANY, "%,.2f MT", c.getSalarioBase() != null ? c.getSalarioBase() : 0.0);
-                        String funcStr = "1";
+                        int qtdFunc = 0;
+                        if (funcs != null && c.getIdCargo() != null) {
+                            for (Funcionario f : funcs) {
+                                if (f.getCargo() != null && c.getIdCargo().equals(f.getCargo().getIdCargo())) {
+                                    qtdFunc++;
+                                }
+                            }
+                        }
+                        String funcStr = String.valueOf(qtdFunc);
                         linhas.add(new Object[] {idStr, nomeStr, salStr, funcStr});
                         modeloTabelaCargos.addRow(new Object[] {nomeStr, salStr, funcStr});
                     }
-                    this.dadosCargosCarregados = linhas;
                 }
+                this.dadosCargosCarregados = linhas;
                 atualizarTabelaCargosFiltrada();
             },
             erro -> {
+                this.dadosCargosCarregados = new ArrayList<>();
+                modeloTabelaCargos.setRowCount(0);
                 atualizarTabelaCargosFiltrada();
             }
         );
 
         AsyncTask.executar(
-            () -> contactoDAO.listarTodos(),
-            contactos -> {
-                if (contactos != null && !contactos.isEmpty()) {
-                    List<Object[]> linhas = new ArrayList<>();
-                    for (Contacto c : contactos) {
-                        String idStr = String.valueOf(c.getIdContacto());
-                        String valStr = c.getContacto() != null ? c.getContacto() : "";
-                        String pessStr = "-";
-                        String tipoStr = "Geral";
-                        linhas.add(new Object[] {idStr, valStr, pessStr, tipoStr});
+            () -> {
+                List<Cliente> clientes = new ArrayList<>();
+                List<Fornecedor> fornecedores = new ArrayList<>();
+                List<Funcionario> funcs = new ArrayList<>();
+                try { clientes = utilizadorController.listarClientes(); } catch (Exception ignored) {}
+                try { fornecedores = utilizadorController.listarFornecedores(); } catch (Exception ignored) {}
+                try { funcs = utilizadorController.listarFuncionarios(); } catch (Exception ignored) {}
+                return new Object[] { clientes, fornecedores, funcs };
+            },
+            resultado -> {
+                Object[] arr = (Object[]) resultado;
+                @SuppressWarnings("unchecked")
+                List<Cliente> clientes = (List<Cliente>) arr[0];
+                @SuppressWarnings("unchecked")
+                List<Fornecedor> fornecedores = (List<Fornecedor>) arr[1];
+                @SuppressWarnings("unchecked")
+                List<Funcionario> funcs = (List<Funcionario>) arr[2];
+                List<Object[]> linhas = new ArrayList<>();
+                List<Pessoa> pessoas = new ArrayList<>();
+                if (clientes != null) {
+                    for (Cliente cli : clientes) {
+                        pessoas.add(cli);
+                        if (cli.getContacto() != null) {
+                            for (Contacto c : cli.getContacto()) {
+                                linhas.add(new Object[] {
+                                    String.valueOf(c.getIdContacto()),
+                                    c.getContacto() != null ? c.getContacto() : "",
+                                    cli.getNome() != null ? cli.getNome() : "-",
+                                    "Cliente"
+                                });
+                            }
+                        }
                     }
-                    this.dadosContactosCarregados = linhas;
                 }
+                if (fornecedores != null) {
+                    for (Fornecedor forn : fornecedores) {
+                        pessoas.add(forn);
+                        if (forn.getContacto() != null) {
+                            for (Contacto c : forn.getContacto()) {
+                                linhas.add(new Object[] {
+                                    String.valueOf(c.getIdContacto()),
+                                    c.getContacto() != null ? c.getContacto() : "",
+                                    forn.getNome() != null ? forn.getNome() : "-",
+                                    "Fornecedor"
+                                });
+                            }
+                        }
+                    }
+                }
+                if (funcs != null) {
+                    for (Funcionario f : funcs) {
+                        pessoas.add(f);
+                        if (f.getContacto() != null) {
+                            for (Contacto c : f.getContacto()) {
+                                linhas.add(new Object[] {
+                                    String.valueOf(c.getIdContacto()),
+                                    c.getContacto() != null ? c.getContacto() : "",
+                                    f.getNome() != null ? f.getNome() : "-",
+                                    "Funcionário"
+                                });
+                            }
+                        }
+                    }
+                }
+                this.listaPessoasReais = pessoas;
+                this.listaClientesReais = clientes != null ? clientes : new ArrayList<>();
+                this.listaFornecedoresReais = fornecedores != null ? fornecedores : new ArrayList<>();
+                this.listaFuncionariosReais = funcs != null ? funcs : new ArrayList<>();
+                this.dadosContactosCarregados = linhas;
+                atualizarPessoasPorTipo(seletorTipoNovoContacto, seletorPessoaNovoContacto,
+                        seletorPessoaNovoContacto != null ? seletorPessoaNovoContacto.getText() : null);
+                atualizarPessoasPorTipo(seletorTipoEditarContacto, seletorPessoaEditarContacto,
+                        seletorPessoaEditarContacto != null ? seletorPessoaEditarContacto.getText() : null);
                 atualizarTabelaContactosFiltrada();
             },
             erro -> {
+                this.dadosContactosCarregados = new ArrayList<>();
                 atualizarTabelaContactosFiltrada();
             }
         );
@@ -2302,7 +2702,11 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
             () -> {
                 List<Cidade> cids = utilizadorController.listarCidades();
                 List<Bairro> bairs = utilizadorController.listarBairros();
-                return new Object[] { cids, bairs };
+                List<Categoria> cats = new ArrayList<>();
+                List<Utilizador> users = new ArrayList<>();
+                try { cats = utilizadorController.listarCategorias(); } catch (Exception ignored) {}
+                try { users = utilizadorController.listarUtilizadores(); } catch (Exception ignored) {}
+                return new Object[] { cids, bairs, cats, users };
             },
             res -> {
                 Object[] arr = (Object[]) res;
@@ -2310,31 +2714,276 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
                 List<Cidade> cids = (List<Cidade>) arr[0];
                 @SuppressWarnings("unchecked")
                 List<Bairro> bairs = (List<Bairro>) arr[1];
+                @SuppressWarnings("unchecked")
+                List<Categoria> cats = (List<Categoria>) arr[2];
+                @SuppressWarnings("unchecked")
+                List<Utilizador> users = (List<Utilizador>) arr[3];
                 this.dadosCidadesCarregados = cids != null ? cids : new ArrayList<>();
                 this.dadosBairrosCarregados = bairs != null ? bairs : new ArrayList<>();
+                this.dadosCategoriasCarregadas = cats != null ? cats : new ArrayList<>();
+                this.dadosUtilizadoresCarregados = users != null ? users : new ArrayList<>();
                 atualizarTabelaCidadesFiltrada();
                 atualizarTabelaBairrosFiltrada();
+                atualizarTabelaCategoriasFiltrada();
+                atualizarTabelaUtilizadores();
             },
             erro -> {
+                this.dadosCidadesCarregados = new ArrayList<>();
+                this.dadosBairrosCarregados = new ArrayList<>();
+                this.dadosCategoriasCarregadas = new ArrayList<>();
+                this.dadosUtilizadoresCarregados = new ArrayList<>();
                 atualizarTabelaCidadesFiltrada();
                 atualizarTabelaBairrosFiltrada();
+                atualizarTabelaCategoriasFiltrada();
+                atualizarTabelaUtilizadores();
             }
         );
     }
 
     @Override
     public void aplicarPermissoes(Utilizador utilizador) {
-        // Acesso restrito exclusivamente ao perfil ADMIN
     }
 
     @Override
     public void aplicarTema() {
         setBackground(UiStyle.BACKGROUND);
-        repaint();
+        UiStyle.atualizarComponentesTema(this);
+        UiStyle.atualizarComponentesTema(cardNovoCargo);
+        UiStyle.atualizarComponentesTema(cardEditarCargo);
+        UiStyle.atualizarComponentesTema(cardNovoContacto);
+        UiStyle.atualizarComponentesTema(cardEditarContacto);
+        UiStyle.atualizarComponentesTema(cardNovaCidade);
+        UiStyle.atualizarComponentesTema(cardEditarCidade);
+        UiStyle.atualizarComponentesTema(cardNovoBairro);
+        UiStyle.atualizarComponentesTema(cardEditarBairro);
+        UiStyle.atualizarComponentesTema(cardNovaCategoria);
+        UiStyle.atualizarComponentesTema(cardEditarCategoria);
+        UiStyle.atualizarComponentesTema(cardNovoUtilizador);
+        UiStyle.atualizarComponentesTema(cardEditarUtilizador);
+        UiStyle.atualizarComponentesTema(cardRedefinirSenha);
+    }
+
+    private void atualizarPessoasPorTipo(
+            BotaoSeletorFormulario seletorTipo,
+            BotaoSeletorFormulario seletorPessoa,
+            String pessoaPreferida) {
+        if (seletorTipo == null || seletorPessoa == null) {
+            return;
+        }
+        String tipo = seletorTipo.getText() != null ? seletorTipo.getText().trim() : "Cliente";
+        List<String> nomes = new ArrayList<>();
+        if ("Fornecedor".equalsIgnoreCase(tipo)) {
+            if (listaFornecedoresReais != null) {
+                for (Fornecedor f : listaFornecedoresReais) {
+                    if (f != null && f.getNome() != null) nomes.add(f.getNome());
+                }
+            }
+        } else if ("Funcionário".equalsIgnoreCase(tipo) || "Funcionario".equalsIgnoreCase(tipo)) {
+            if (listaFuncionariosReais != null) {
+                for (Funcionario f : listaFuncionariosReais) {
+                    if (f != null && f.getNome() != null) nomes.add(f.getNome());
+                }
+            }
+        } else {
+            if (listaClientesReais != null) {
+                for (Cliente c : listaClientesReais) {
+                    if (c != null && c.getNome() != null) nomes.add(c.getNome());
+                }
+            }
+        }
+        String[] opcoes = nomes.toArray(new String[0]);
+        seletorPessoa.setOpcoes(opcoes);
+        String prefLimpa = pessoaPreferida != null ? UiStyle.removerMarcadorSeta(pessoaPreferida).trim() : null;
+        if (prefLimpa != null && nomes.stream().anyMatch(n -> n.equalsIgnoreCase(prefLimpa))) {
+            seletorPessoa.setText(prefLimpa);
+        } else if (opcoes.length > 0) {
+            seletorPessoa.setText(opcoes[0]);
+        } else {
+            seletorPessoa.setText("Sem registos");
+        }
+    }
+
+    private CampoBuscaArredondado criarCampoBuscarCategoria() {
+        CampoBuscaArredondado campo = new CampoBuscaArredondado("Buscar categoria");
+        campo.setPreferredSize(new Dimension(LARGURA_MIN_INPUT, ALTURA_BOTAO));
+        campo.setMinimumSize(new Dimension(LARGURA_MIN_INPUT, ALTURA_BOTAO));
+        campo.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { atualizarTabelaCategoriasFiltrada(); }
+            @Override public void removeUpdate(DocumentEvent e) { atualizarTabelaCategoriasFiltrada(); }
+            @Override public void changedUpdate(DocumentEvent e) { atualizarTabelaCategoriasFiltrada(); }
+        });
+        return campo;
+    }
+
+    private void atualizarTabelaCategoriasFiltrada() {
+        if (modeloTabelaCategoriasAux == null) return;
+        modeloTabelaCategoriasAux.setRowCount(0);
+        if (dadosCategoriasCarregadas == null) return;
+        String termo = (campoBuscarCategoria != null) ? campoBuscarCategoria.getTextoReal().trim().toLowerCase() : "";
+        for (Categoria c : dadosCategoriasCarregadas) {
+            String idStr = String.valueOf(c.getIdCategoria());
+            String nomeStr = c.getNome() != null ? c.getNome() : "";
+            if (termo.isEmpty() || nomeStr.toLowerCase().contains(termo) || idStr.contains(termo)) {
+                modeloTabelaCategoriasAux.addRow(new Object[] {idStr, nomeStr});
+            }
+        }
+    }
+
+    private void acaoNovaCategoria() {
+        if (modoLateral == ModoPainelLateral.NOVA_CATEGORIA) {
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+        } else {
+            if (campoNomeNovaCategoria != null) {
+                campoNomeNovaCategoria.setText("");
+            }
+            definirModoPainelLateral(ModoPainelLateral.NOVA_CATEGORIA);
+        }
+    }
+
+    private void acaoEditarCategoria() {
+        if (modoLateral == ModoPainelLateral.EDITAR_CATEGORIA) {
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+        } else {
+            definirModoPainelLateral(ModoPainelLateral.EDITAR_CATEGORIA);
+        }
+    }
+
+    private void acaoEliminarCategoria() {
+        int row = (tabelaCategoriasAuxiliar != null) ? tabelaCategoriasAuxiliar.getSelectedRow() : -1;
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Selecione uma categoria na tabela para eliminar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long id = Long.parseLong(String.valueOf(tabelaCategoriasAuxiliar.getValueAt(row, 0)));
+        String nome = String.valueOf(tabelaCategoriasAuxiliar.getValueAt(row, 1));
+        int opt = JOptionPane.showConfirmDialog(
+                this,
+                "Deseja eliminar a categoria \"" + nome + "\"?\n(Nota: categorias com produtos associados não podem ser eliminadas.)",
+                "Confirmar Eliminação",
+                JOptionPane.YES_NO_OPTION
+        );
+        if (opt != JOptionPane.YES_OPTION) return;
+        AsyncTask.executar(
+            () -> {
+                utilizadorController.eliminarCategoria(id);
+                return true;
+            },
+            ok -> {
+                JOptionPane.showMessageDialog(this, "Categoria eliminada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                recarregarDados();
+            },
+            err -> JOptionPane.showMessageDialog(
+                    this,
+                    "Não foi possível eliminar a categoria \"" + nome + "\".\nVerifique se existem produtos vinculados (restrição RESTRICT).\nDetalhe: " + err.getMessage(),
+                    "Erro ao Eliminar Categoria",
+                    JOptionPane.ERROR_MESSAGE
+            )
+        );
+    }
+
+    private void atualizarTabelaUtilizadores() {
+        if (modeloTabelaUtilizadores == null) return;
+        modeloTabelaUtilizadores.setRowCount(0);
+        if (dadosUtilizadoresCarregados == null) return;
+        for (Utilizador u : dadosUtilizadoresCarregados) {
+            String idStr = String.valueOf(u.getIdUtilizador());
+            String uName = u.getUsername() != null ? u.getUsername() : "";
+            String fNome = (u.getFuncionario() != null && u.getFuncionario().getNome() != null)
+                    ? u.getFuncionario().getNome() : "-";
+            String perf = u.getPerfil() != null ? u.getPerfil().name() : "VENDEDOR";
+            String est = (u.getFuncionario() != null && u.getFuncionario().getEstado() != null)
+                    ? u.getFuncionario().getEstado().name() : "ATIVO";
+            modeloTabelaUtilizadores.addRow(new Object[] {idStr, uName, fNome, perf, est});
+        }
+    }
+
+    private void acaoNovoUtilizador() {
+        List<Funcionario> disponiveis = obterFuncionariosDisponiveisParaConta();
+        if (disponiveis.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Todos os funcionários ativos já possuem conta de utilizador ou não há funcionários ativos cadastrados.",
+                    "Aviso",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            return;
+        }
+        String[] nomesFuncs = disponiveis.stream().map(Funcionario::getNome).toArray(String[]::new);
+        if (seletorFuncionarioNovoUser != null) {
+            seletorFuncionarioNovoUser.setOpcoes(nomesFuncs);
+            seletorFuncionarioNovoUser.setText(nomesFuncs[0]);
+        }
+        if (campoUsernameNovoUser != null) {
+            campoUsernameNovoUser.setText("");
+        }
+        if (campoSenhaNovoUser != null) {
+            campoSenhaNovoUser.setText("Mudar@123");
+        }
+        exibirCardLateralPermissoes(cardNovoUtilizador);
+    }
+
+    private void acaoEditarUtilizador() {
+        if (tabelaUtilizadores != null && tabelaUtilizadores.getRowCount() > 0 && tabelaUtilizadores.getSelectedRow() < 0) {
+            tabelaUtilizadores.setRowSelectionInterval(0, 0);
+        }
+        if (tabelaUtilizadores == null || tabelaUtilizadores.getSelectedRow() < 0) {
+            JOptionPane.showMessageDialog(this, "Selecione uma conta de utilizador na tabela.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        sincronizarDadosUtilizadorParaEdicao();
+        exibirCardLateralPermissoes(cardEditarUtilizador);
+    }
+
+    private void acaoRedefinirSenhaUtilizador() {
+        if (tabelaUtilizadores != null && tabelaUtilizadores.getRowCount() > 0 && tabelaUtilizadores.getSelectedRow() < 0) {
+            tabelaUtilizadores.setRowSelectionInterval(0, 0);
+        }
+        if (tabelaUtilizadores == null || tabelaUtilizadores.getSelectedRow() < 0) {
+            JOptionPane.showMessageDialog(this, "Selecione uma conta de utilizador na tabela.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        sincronizarDadosUtilizadorParaEdicao();
+        if (campoNovaSenhaUser != null) {
+            campoNovaSenhaUser.setText("");
+        }
+        exibirCardLateralPermissoes(cardRedefinirSenha);
+    }
+
+    private void acaoEliminarUtilizador() {
+        int row = (tabelaUtilizadores != null) ? tabelaUtilizadores.getSelectedRow() : -1;
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Selecione uma conta de utilizador na tabela para eliminar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Long idU = Long.parseLong(String.valueOf(tabelaUtilizadores.getValueAt(row, 0)));
+        String uName = String.valueOf(tabelaUtilizadores.getValueAt(row, 1));
+        Utilizador logado = SessaoUtilizador.getUtilizador();
+        if (logado != null && idU.equals(logado.getIdUtilizador())) {
+            JOptionPane.showMessageDialog(this, "Não é possível eliminar a sua própria conta em sessão ativa.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int opt = JOptionPane.showConfirmDialog(
+                this,
+                "Deseja eliminar a conta de acesso \"" + uName + "\"?\n(O registo do funcionário será mantido.)",
+                "Confirmar Eliminação de Conta",
+                JOptionPane.YES_NO_OPTION
+        );
+        if (opt != JOptionPane.YES_OPTION) return;
+        AsyncTask.executar(
+            () -> {
+                utilizadorController.eliminar(idU);
+                return true;
+            },
+            ok -> {
+                JOptionPane.showMessageDialog(this, "Conta de utilizador eliminada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                recarregarDados();
+            },
+            err -> JOptionPane.showMessageDialog(this, "Erro ao eliminar conta: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+        );
     }
 
     private CampoBuscaArredondado criarCampoBuscarEndereco() {
-        CampoBuscaArredondado campo = new CampoBuscaArredondado("Buscar endereÃ§o / cidade / bairro");
+        CampoBuscaArredondado campo = new CampoBuscaArredondado("Buscar endereço / cidade / bairro");
         campo.setPreferredSize(new Dimension(LARGURA_MIN_INPUT, ALTURA_BOTAO));
         campo.setMinimumSize(new Dimension(LARGURA_MIN_INPUT, ALTURA_BOTAO));
         campo.getDocument().addDocumentListener(new DocumentListener() {
@@ -2363,7 +3012,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         JPanel painel = new JPanel(new GridLayout(1, 2, 16, 0));
         painel.setOpaque(false);
 
-        // Painel Cidades
         JPanel painelCidades = new JPanel(new BorderLayout(0, 8));
         painelCidades.setOpaque(false);
         labelTituloCidades = new JLabel("Cidades");
@@ -2372,7 +3020,6 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         painelCidades.add(labelTituloCidades, BorderLayout.NORTH);
         painelCidades.add(criarCardTabelaAuxiliar(tabelaCidadesAuxiliar), BorderLayout.CENTER);
 
-        // Painel Bairros
         JPanel painelBairros = new JPanel(new BorderLayout(0, 8));
         painelBairros.setOpaque(false);
         labelTituloBairros = new JLabel("Bairros");
@@ -2425,47 +3072,22 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
     }
 
     private void acaoNovaCidade() {
-        String nome = JOptionPane.showInputDialog(this, "Nome da cidade:", "Nova Cidade", JOptionPane.PLAIN_MESSAGE);
-        if (nome == null || nome.trim().isEmpty()) return;
-        Cidade c = new Cidade();
-        c.setNome(nome.trim());
-        AsyncTask.executar(
-            () -> {
-                utilizadorController.salvarCidade(c);
-                return true;
-            },
-            ok -> {
-                JOptionPane.showMessageDialog(this, "Cidade cadastrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                recarregarDados();
-            },
-            err -> JOptionPane.showMessageDialog(this, "Erro ao salvar cidade: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
-        );
+        if (modoLateral == ModoPainelLateral.NOVA_CIDADE) {
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+        } else {
+            if (campoNomeNovaCidade != null) {
+                campoNomeNovaCidade.setText("");
+            }
+            definirModoPainelLateral(ModoPainelLateral.NOVA_CIDADE);
+        }
     }
 
     private void acaoEditarCidade() {
-        int row = (tabelaCidadesAuxiliar != null) ? tabelaCidadesAuxiliar.getSelectedRow() : -1;
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Selecione uma cidade na tabela para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
-            return;
+        if (modoLateral == ModoPainelLateral.EDITAR_CIDADE) {
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+        } else {
+            definirModoPainelLateral(ModoPainelLateral.EDITAR_CIDADE);
         }
-        Long id = Long.parseLong(String.valueOf(tabelaCidadesAuxiliar.getValueAt(row, 0)));
-        String nomeAtual = String.valueOf(tabelaCidadesAuxiliar.getValueAt(row, 1));
-        String novoNome = JOptionPane.showInputDialog(this, "Editar nome da cidade:", nomeAtual);
-        if (novoNome == null || novoNome.trim().isEmpty()) return;
-        Cidade c = new Cidade();
-        c.setIdCidade(id);
-        c.setNome(novoNome.trim());
-        AsyncTask.executar(
-            () -> {
-                utilizadorController.atualizarCidade(c);
-                return true;
-            },
-            ok -> {
-                JOptionPane.showMessageDialog(this, "Cidade atualizada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                recarregarDados();
-            },
-            err -> JOptionPane.showMessageDialog(this, "Erro ao atualizar cidade: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
-        );
     }
 
     private void acaoEliminarCidade() {
@@ -2476,7 +3098,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         }
         Long id = Long.parseLong(String.valueOf(tabelaCidadesAuxiliar.getValueAt(row, 0)));
         String nome = String.valueOf(tabelaCidadesAuxiliar.getValueAt(row, 1));
-        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar a cidade \"" + nome + "\"?", "Confirmar EliminaÃ§Ã£o", JOptionPane.YES_NO_OPTION);
+        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar a cidade \"" + nome + "\"?", "Confirmar Eliminação", JOptionPane.YES_NO_OPTION);
         if (opt != JOptionPane.YES_OPTION) return;
         AsyncTask.executar(
             () -> {
@@ -2496,60 +3118,22 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
             JOptionPane.showMessageDialog(this, "Cadastre uma cidade primeiro.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        String[] nomesCidades = dadosCidadesCarregados.stream().map(Cidade::getNome).toArray(String[]::new);
-        String cidadeEscolhida = (String) JOptionPane.showInputDialog(
-            this, "Selecione a cidade do bairro:", "Novo Bairro", JOptionPane.PLAIN_MESSAGE, null, nomesCidades, nomesCidades[0]
-        );
-        if (cidadeEscolhida == null) return;
-        Cidade cid = dadosCidadesCarregados.stream().filter(c -> c.getNome().equals(cidadeEscolhida)).findFirst().orElse(null);
-        if (cid == null) return;
-        String nomeBairro = JOptionPane.showInputDialog(this, "Nome do bairro:", "Novo Bairro", JOptionPane.PLAIN_MESSAGE);
-        if (nomeBairro == null || nomeBairro.trim().isEmpty()) return;
-        Bairro b = new Bairro();
-        b.setNome(nomeBairro.trim());
-        b.setCidade(cid);
-        AsyncTask.executar(
-            () -> {
-                utilizadorController.salvarBairro(b);
-                return true;
-            },
-            ok -> {
-                JOptionPane.showMessageDialog(this, "Bairro cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                recarregarDados();
-            },
-            err -> JOptionPane.showMessageDialog(this, "Erro ao salvar bairro: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
-        );
+        if (modoLateral == ModoPainelLateral.NOVO_BAIRRO) {
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+        } else {
+            if (campoNomeNovoBairro != null) {
+                campoNomeNovoBairro.setText("");
+            }
+            definirModoPainelLateral(ModoPainelLateral.NOVO_BAIRRO);
+        }
     }
 
     private void acaoEditarBairro() {
-        int row = (tabelaBairrosAuxiliar != null) ? tabelaBairrosAuxiliar.getSelectedRow() : -1;
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Selecione um bairro na tabela para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
-            return;
+        if (modoLateral == ModoPainelLateral.EDITAR_BAIRRO) {
+            definirModoPainelLateral(ModoPainelLateral.NENHUM);
+        } else {
+            definirModoPainelLateral(ModoPainelLateral.EDITAR_BAIRRO);
         }
-        Long id = Long.parseLong(String.valueOf(tabelaBairrosAuxiliar.getValueAt(row, 0)));
-        String nomeAtual = String.valueOf(tabelaBairrosAuxiliar.getValueAt(row, 1));
-        String novoNome = JOptionPane.showInputDialog(this, "Editar nome do bairro:", nomeAtual);
-        if (novoNome == null || novoNome.trim().isEmpty()) return;
-        Bairro bExistente = (dadosBairrosCarregados != null) ? dadosBairrosCarregados.stream()
-            .filter(item -> item.getIdBairro() != null && item.getIdBairro().equals(id))
-            .findFirst().orElse(null) : null;
-        Cidade cid = (bExistente != null) ? bExistente.getCidade() : null;
-        Bairro b = new Bairro();
-        b.setIdBairro(id);
-        b.setNome(novoNome.trim());
-        b.setCidade(cid);
-        AsyncTask.executar(
-            () -> {
-                utilizadorController.atualizarBairro(b);
-                return true;
-            },
-            ok -> {
-                JOptionPane.showMessageDialog(this, "Bairro atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                recarregarDados();
-            },
-            err -> JOptionPane.showMessageDialog(this, "Erro ao atualizar bairro: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
-        );
     }
 
     private void acaoEliminarBairro() {
@@ -2560,7 +3144,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
         }
         Long id = Long.parseLong(String.valueOf(tabelaBairrosAuxiliar.getValueAt(row, 0)));
         String nome = String.valueOf(tabelaBairrosAuxiliar.getValueAt(row, 1));
-        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar o bairro \"" + nome + "\"?", "Confirmar EliminaÃ§Ã£o", JOptionPane.YES_NO_OPTION);
+        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar o bairro \"" + nome + "\"?", "Confirmar Eliminação", JOptionPane.YES_NO_OPTION);
         if (opt != JOptionPane.YES_OPTION) return;
         AsyncTask.executar(
             () -> {
@@ -2573,5 +3157,875 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
             },
             err -> JOptionPane.showMessageDialog(this, "Erro ao eliminar bairro: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
         );
+    }
+
+    private PainelCard criarBaseCardLateral() {
+        PainelCard card = new PainelCard(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension d = super.getPreferredSize();
+                return new Dimension(LARGURA_CARD_LATERAL, d.height);
+            }
+
+            @Override
+            public Dimension getMinimumSize() {
+                Dimension d = super.getMinimumSize();
+                return new Dimension(LARGURA_CARD_LATERAL, d.height);
+            }
+
+            @Override
+            public Dimension getMaximumSize() {
+                Dimension d = super.getPreferredSize();
+                return new Dimension(LARGURA_CARD_LATERAL, d.height);
+            }
+        };
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(new EmptyBorder(16, 16, 16, 16));
+        return card;
+    }
+
+    private List<Funcionario> obterFuncionariosDisponiveisParaConta() {
+        List<Funcionario> disponiveis = new ArrayList<>();
+        if (listaFuncionariosReais != null) {
+            for (Funcionario f : listaFuncionariosReais) {
+                if (f == null || f.getIdFuncionario() == null || f.getEstado() != EstadoFuncionario.ATIVO) {
+                    continue;
+                }
+                boolean jaTem = false;
+                if (dadosUtilizadoresCarregados != null) {
+                    for (Utilizador u : dadosUtilizadoresCarregados) {
+                        if (u.getFuncionario() != null && f.getIdFuncionario().equals(u.getFuncionario().getIdFuncionario())) {
+                            jaTem = true;
+                            break;
+                        }
+                    }
+                }
+                if (!jaTem) {
+                    disponiveis.add(f);
+                }
+            }
+        }
+        return disponiveis;
+    }
+
+    private void exibirCardLateralPermissoes(JPanel card) {
+        wrapperDireitaPermissoes.removeAll();
+        wrapperDireitaPermissoes.setVisible(card != null);
+        if (card != null) {
+            UiStyle.atualizarComponentesTema(card);
+            wrapperDireitaPermissoes.add(UiStyle.envolverCardLateralComScroll(card), BorderLayout.CENTER);
+        }
+        UiStyle.atualizarComponentesTema(wrapperDireitaPermissoes);
+        revalidate();
+        repaint();
+    }
+
+    private void fecharCardLateralPermissoes() {
+        exibirCardLateralPermissoes(null);
+    }
+
+    private JPanel criarCardNovoUtilizador() {
+        PainelCard card = criarBaseCardLateral();
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
+
+        JLabel titulo = new JLabel("Nova conta de utilizador");
+        titulo.setFont(UiStyle.fonte(13, Font.BOLD));
+        titulo.setForeground(UiStyle.TEXT);
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(titulo);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        seletorFuncionarioNovoUser = new BotaoSeletorFormulario("Selecione", new String[0]);
+        JPanel blocoFunc = criarCampoComLabel("Funcionário ativo *", seletorFuncionarioNovoUser);
+        fixarLargura(blocoFunc, larguraInterna, 60);
+        card.add(blocoFunc);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoUsernameNovoUser = new CampoFormularioArredondado("");
+        JPanel blocoUser = criarCampoComLabel("Username *", campoUsernameNovoUser);
+        fixarLargura(blocoUser, larguraInterna, 60);
+        card.add(blocoUser);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        seletorPerfilNovoUser = new BotaoSeletorFormulario("VENDEDOR", new String[] {"VENDEDOR", "GERENTE", "ADMIN"});
+        JPanel blocoPerfil = criarCampoComLabel("Perfil *", seletorPerfilNovoUser);
+        fixarLargura(blocoPerfil, larguraInterna, 60);
+        card.add(blocoPerfil);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoSenhaNovoUser = new CampoFormularioArredondado("");
+        campoSenhaNovoUser.setText("Mudar@123");
+        JPanel blocoSenha = criarCampoComLabel("Senha inicial *", campoSenhaNovoUser);
+        fixarLargura(blocoSenha, larguraInterna, 60);
+        card.add(blocoSenha);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        acoes.setOpaque(false);
+        acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        BotaoToolbarArredondado btnGuardar = new BotaoToolbarArredondado(
+                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        btnGuardar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        btnGuardar.setIconTextGap(6);
+        btnGuardar.addActionListener(e -> {
+            List<Funcionario> disponiveis = obterFuncionariosDisponiveisParaConta();
+            String nomeFunc = seletorFuncionarioNovoUser.getText().trim();
+            Funcionario fEscolhido = disponiveis.stream()
+                    .filter(f -> f.getNome() != null && f.getNome().equalsIgnoreCase(nomeFunc))
+                    .findFirst().orElse(disponiveis.isEmpty() ? null : disponiveis.get(0));
+            if (fEscolhido == null) {
+                JOptionPane.showMessageDialog(this, "Selecione um funcionário ativo disponível.", "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String username = campoUsernameNovoUser.getText() != null ? campoUsernameNovoUser.getText().trim() : "";
+            String senha = campoSenhaNovoUser.getText() != null ? campoSenhaNovoUser.getText().trim() : "";
+            if (username.isEmpty() || senha.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Informe o username e a senha inicial.", "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Perfil perfil = Perfil.valueOf(seletorPerfilNovoUser.getText().trim());
+            Utilizador novo = new Utilizador();
+            novo.setFuncionario(fEscolhido);
+            novo.setUsername(username);
+            novo.setPerfil(perfil);
+            novo.setPasswordHash(org.mindrot.jbcrypt.BCrypt.hashpw(senha, org.mindrot.jbcrypt.BCrypt.gensalt()));
+            AsyncTask.executar(
+                () -> {
+                    utilizadorController.salvar(novo);
+                    return true;
+                },
+                ok -> {
+                    JOptionPane.showMessageDialog(this, "Conta de utilizador criada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    fecharCardLateralPermissoes();
+                    recarregarDados();
+                },
+                err -> JOptionPane.showMessageDialog(this, "Erro ao criar utilizador: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        });
+
+        BotaoToolbarArredondado btnCancelar = new BotaoToolbarArredondado(
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        btnCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        btnCancelar.setIconTextGap(6);
+        btnCancelar.addActionListener(e -> fecharCardLateralPermissoes());
+
+        acoes.add(btnGuardar);
+        acoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        acoes.add(btnCancelar);
+        card.add(acoes);
+        return card;
+    }
+
+    private JPanel criarCardEditarUtilizador() {
+        PainelCard card = criarBaseCardLateral();
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
+
+        JLabel titulo = new JLabel("Editar conta de utilizador");
+        titulo.setFont(UiStyle.fonte(13, Font.BOLD));
+        titulo.setForeground(UiStyle.TEXT);
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(titulo);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoUsernameEditarUser = new CampoFormularioArredondado("");
+        JPanel blocoUser = criarCampoComLabel("Username *", campoUsernameEditarUser);
+        fixarLargura(blocoUser, larguraInterna, 60);
+        card.add(blocoUser);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        seletorPerfilEditarUser = new BotaoSeletorFormulario("VENDEDOR", new String[] {"VENDEDOR", "GERENTE", "ADMIN"});
+        JPanel blocoPerfil = criarCampoComLabel("Perfil *", seletorPerfilEditarUser);
+        fixarLargura(blocoPerfil, larguraInterna, 60);
+        card.add(blocoPerfil);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        acoes.setOpaque(false);
+        acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        BotaoToolbarArredondado btnGuardar = new BotaoToolbarArredondado(
+                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        btnGuardar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        btnGuardar.setIconTextGap(5);
+        btnGuardar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        btnGuardar.addActionListener(e -> {
+            int row = (tabelaUtilizadores != null) ? tabelaUtilizadores.getSelectedRow() : -1;
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Selecione uma conta de utilizador na tabela.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Long idU = Long.parseLong(String.valueOf(tabelaUtilizadores.getValueAt(row, 0)));
+            Utilizador alvo = dadosUtilizadoresCarregados.stream()
+                    .filter(u -> idU.equals(u.getIdUtilizador()))
+                    .findFirst().orElse(null);
+            if (alvo == null) return;
+            String novoUser = campoUsernameEditarUser.getText() != null ? campoUsernameEditarUser.getText().trim() : "";
+            if (novoUser.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "O username não pode estar vazio.", "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            alvo.setUsername(novoUser);
+            alvo.setPerfil(Perfil.valueOf(seletorPerfilEditarUser.getText().trim()));
+            AsyncTask.executar(
+                () -> {
+                    utilizadorController.atualizar(alvo);
+                    return true;
+                },
+                ok -> {
+                    JOptionPane.showMessageDialog(this, "Conta de utilizador atualizada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    fecharCardLateralPermissoes();
+                    recarregarDados();
+                },
+                err -> JOptionPane.showMessageDialog(this, "Erro ao atualizar utilizador: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        });
+
+        BotaoToolbarArredondado btnCancelar = new BotaoToolbarArredondado(
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        btnCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        btnCancelar.setIconTextGap(5);
+        btnCancelar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        btnCancelar.addActionListener(e -> fecharCardLateralPermissoes());
+
+        BotaoToolbarArredondado btnEliminar = new BotaoToolbarArredondado(
+                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
+        );
+        btnEliminar.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        btnEliminar.setIconTextGap(5);
+        btnEliminar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        btnEliminar.addActionListener(e -> acaoEliminarUtilizador());
+
+        acoes.add(btnGuardar);
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
+        acoes.add(btnCancelar);
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
+        acoes.add(btnEliminar);
+        card.add(acoes);
+        return card;
+    }
+
+    private JPanel criarCardRedefinirSenha() {
+        PainelCard card = criarBaseCardLateral();
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
+
+        JLabel titulo = new JLabel("Redefinir senha");
+        titulo.setFont(UiStyle.fonte(13, Font.BOLD));
+        titulo.setForeground(UiStyle.TEXT);
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(titulo);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        labelContaRedefinirSenha = new JLabel("Conta: -");
+        labelContaRedefinirSenha.setFont(UiStyle.fonte(13, Font.PLAIN));
+        labelContaRedefinirSenha.setForeground(UiStyle.MUTED);
+        labelContaRedefinirSenha.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(labelContaRedefinirSenha);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoNovaSenhaUser = new CampoFormularioArredondado("");
+        JPanel blocoSenha = criarCampoComLabel("Nova senha *", campoNovaSenhaUser);
+        fixarLargura(blocoSenha, larguraInterna, 60);
+        card.add(blocoSenha);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        acoes.setOpaque(false);
+        acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        BotaoToolbarArredondado btnGuardar = new BotaoToolbarArredondado(
+                "Guardar senha", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        btnGuardar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        btnGuardar.setIconTextGap(6);
+        btnGuardar.addActionListener(e -> {
+            int row = (tabelaUtilizadores != null) ? tabelaUtilizadores.getSelectedRow() : -1;
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Selecione uma conta de utilizador na tabela.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Long idU = Long.parseLong(String.valueOf(tabelaUtilizadores.getValueAt(row, 0)));
+            String novaSenha = campoNovaSenhaUser.getText() != null ? campoNovaSenhaUser.getText().trim() : "";
+            if (novaSenha.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "A nova senha não pode estar vazia.", "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            AsyncTask.executar(
+                () -> {
+                    Utilizador operador = SessaoUtilizador.getUtilizador();
+                    if (operador != null && operador.getPerfil() == Perfil.ADMIN) {
+                        utilizadorController.alterarSenhaAdmin(idU, novaSenha, operador);
+                    } else {
+                        Utilizador u = utilizadorController.buscarPorId(idU);
+                        u.setPasswordHash(org.mindrot.jbcrypt.BCrypt.hashpw(novaSenha, org.mindrot.jbcrypt.BCrypt.gensalt()));
+                        utilizadorController.atualizar(u);
+                    }
+                    return true;
+                },
+                ok -> {
+                    JOptionPane.showMessageDialog(this, "Senha redefinida com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    campoNovaSenhaUser.setText("");
+                    fecharCardLateralPermissoes();
+                },
+                err -> JOptionPane.showMessageDialog(this, "Erro ao redefinir senha: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        });
+
+        BotaoToolbarArredondado btnCancelar = new BotaoToolbarArredondado(
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        btnCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        btnCancelar.setIconTextGap(6);
+        btnCancelar.addActionListener(e -> fecharCardLateralPermissoes());
+
+        acoes.add(btnGuardar);
+        acoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        acoes.add(btnCancelar);
+        card.add(acoes);
+        return card;
+    }
+
+    private void sincronizarDadosUtilizadorParaEdicao() {
+        if (tabelaUtilizadores == null || tabelaUtilizadores.getRowCount() == 0) {
+            return;
+        }
+        int row = tabelaUtilizadores.getSelectedRow();
+        if (row < 0 || row >= tabelaUtilizadores.getRowCount()) {
+            row = 0;
+        }
+        String uName = String.valueOf(tabelaUtilizadores.getValueAt(row, 1));
+        String perf = String.valueOf(tabelaUtilizadores.getValueAt(row, 3));
+        if (campoUsernameEditarUser != null) {
+            campoUsernameEditarUser.setText(uName);
+        }
+        if (seletorPerfilEditarUser != null) {
+            seletorPerfilEditarUser.setText(perf);
+        }
+        if (labelContaRedefinirSenha != null) {
+            labelContaRedefinirSenha.setText("Conta selecionada: " + uName);
+        }
+    }
+
+    private JPanel criarCardNovaCidade() {
+        PainelCard card = criarBaseCardLateral();
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
+
+        JLabel titulo = new JLabel("Nova cidade");
+        titulo.setFont(UiStyle.fonte(13, Font.BOLD));
+        titulo.setForeground(UiStyle.TEXT);
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(titulo);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoNomeNovaCidade = new CampoFormularioArredondado("");
+        JPanel blocoNome = criarCampoComLabel("Nome da cidade *", campoNomeNovaCidade);
+        fixarLargura(blocoNome, larguraInterna, 60);
+        card.add(blocoNome);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        acoes.setOpaque(false);
+        acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        BotaoToolbarArredondado btnGuardar = new BotaoToolbarArredondado(
+                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        btnGuardar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        btnGuardar.setIconTextGap(6);
+        btnGuardar.addActionListener(e -> {
+            String nome = campoNomeNovaCidade.getText() != null ? campoNomeNovaCidade.getText().trim() : "";
+            if (nome.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "O nome da cidade é obrigatório.", "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Cidade c = new Cidade();
+            c.setNome(nome);
+            AsyncTask.executar(
+                () -> {
+                    utilizadorController.salvarCidade(c);
+                    return true;
+                },
+                ok -> {
+                    JOptionPane.showMessageDialog(this, "Cidade cadastrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    campoNomeNovaCidade.setText("");
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                err -> JOptionPane.showMessageDialog(this, "Erro ao salvar cidade: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        });
+
+        BotaoToolbarArredondado btnCancelar = new BotaoToolbarArredondado(
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        btnCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        btnCancelar.setIconTextGap(6);
+        btnCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
+
+        acoes.add(btnGuardar);
+        acoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        acoes.add(btnCancelar);
+        card.add(acoes);
+        return card;
+    }
+
+    private JPanel criarCardEditarCidade() {
+        PainelCard card = criarBaseCardLateral();
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
+
+        JLabel titulo = new JLabel("Editar cidade");
+        titulo.setFont(UiStyle.fonte(13, Font.BOLD));
+        titulo.setForeground(UiStyle.TEXT);
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(titulo);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoNomeEditarCidade = new CampoFormularioArredondado("");
+        JPanel blocoNome = criarCampoComLabel("Nome da cidade *", campoNomeEditarCidade);
+        fixarLargura(blocoNome, larguraInterna, 60);
+        card.add(blocoNome);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        acoes.setOpaque(false);
+        acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        BotaoToolbarArredondado btnGuardar = new BotaoToolbarArredondado(
+                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        btnGuardar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        btnGuardar.setIconTextGap(5);
+        btnGuardar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        btnGuardar.addActionListener(e -> {
+            int row = (tabelaCidadesAuxiliar != null) ? tabelaCidadesAuxiliar.getSelectedRow() : -1;
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Selecione uma cidade na tabela para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Long id = Long.parseLong(String.valueOf(tabelaCidadesAuxiliar.getValueAt(row, 0)));
+            String novoNome = campoNomeEditarCidade.getText() != null ? campoNomeEditarCidade.getText().trim() : "";
+            if (novoNome.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "O nome da cidade é obrigatório.", "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Cidade c = new Cidade();
+            c.setIdCidade(id);
+            c.setNome(novoNome);
+            AsyncTask.executar(
+                () -> {
+                    utilizadorController.atualizarCidade(c);
+                    return true;
+                },
+                ok -> {
+                    JOptionPane.showMessageDialog(this, "Cidade atualizada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                err -> JOptionPane.showMessageDialog(this, "Erro ao atualizar cidade: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        });
+
+        BotaoToolbarArredondado btnCancelar = new BotaoToolbarArredondado(
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        btnCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        btnCancelar.setIconTextGap(5);
+        btnCancelar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        btnCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
+
+        BotaoToolbarArredondado btnEliminar = new BotaoToolbarArredondado(
+                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
+        );
+        btnEliminar.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        btnEliminar.setIconTextGap(5);
+        btnEliminar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        btnEliminar.addActionListener(e -> acaoEliminarCidade());
+
+        acoes.add(btnGuardar);
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
+        acoes.add(btnCancelar);
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
+        acoes.add(btnEliminar);
+        card.add(acoes);
+        return card;
+    }
+
+    private void sincronizarDadosCidadeParaEdicao() {
+        if (campoNomeEditarCidade == null || tabelaCidadesAuxiliar == null || tabelaCidadesAuxiliar.getRowCount() == 0) {
+            return;
+        }
+        int row = tabelaCidadesAuxiliar.getSelectedRow();
+        if (row < 0 || row >= tabelaCidadesAuxiliar.getRowCount()) {
+            row = 0;
+        }
+        campoNomeEditarCidade.setText(String.valueOf(tabelaCidadesAuxiliar.getValueAt(row, 1)));
+    }
+
+    private void atualizarOpcoesCidadesNosBairros() {
+        String[] nomesCidades = (dadosCidadesCarregados != null)
+                ? dadosCidadesCarregados.stream().map(Cidade::getNome).toArray(String[]::new)
+                : new String[0];
+        if (seletorCidadeNovoBairro != null) {
+            seletorCidadeNovoBairro.setOpcoes(nomesCidades);
+            if (nomesCidades.length > 0) {
+                seletorCidadeNovoBairro.setText(nomesCidades[0]);
+            }
+        }
+        if (seletorCidadeEditarBairro != null) {
+            seletorCidadeEditarBairro.setOpcoes(nomesCidades);
+        }
+    }
+
+    private JPanel criarCardNovoBairro() {
+        PainelCard card = criarBaseCardLateral();
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
+
+        JLabel titulo = new JLabel("Novo bairro");
+        titulo.setFont(UiStyle.fonte(13, Font.BOLD));
+        titulo.setForeground(UiStyle.TEXT);
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(titulo);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        seletorCidadeNovoBairro = new BotaoSeletorFormulario("Matola", new String[] {"Matola"});
+        JPanel blocoCidade = criarCampoComLabel("Cidade *", seletorCidadeNovoBairro);
+        fixarLargura(blocoCidade, larguraInterna, 60);
+        card.add(blocoCidade);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoNomeNovoBairro = new CampoFormularioArredondado("");
+        JPanel blocoNome = criarCampoComLabel("Nome do bairro *", campoNomeNovoBairro);
+        fixarLargura(blocoNome, larguraInterna, 60);
+        card.add(blocoNome);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        acoes.setOpaque(false);
+        acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        BotaoToolbarArredondado btnGuardar = new BotaoToolbarArredondado(
+                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        btnGuardar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        btnGuardar.setIconTextGap(6);
+        btnGuardar.addActionListener(e -> {
+            String cidadeEscolhida = seletorCidadeNovoBairro.getText().trim();
+            Cidade cid = (dadosCidadesCarregados != null)
+                    ? dadosCidadesCarregados.stream().filter(c -> c.getNome() != null && c.getNome().equalsIgnoreCase(cidadeEscolhida)).findFirst().orElse(null)
+                    : null;
+            if (cid == null && dadosCidadesCarregados != null && !dadosCidadesCarregados.isEmpty()) {
+                cid = dadosCidadesCarregados.get(0);
+            }
+            if (cid == null) {
+                JOptionPane.showMessageDialog(this, "Selecione uma cidade válida.", "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String nomeBairro = campoNomeNovoBairro.getText() != null ? campoNomeNovoBairro.getText().trim() : "";
+            if (nomeBairro.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "O nome do bairro é obrigatório.", "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Bairro b = new Bairro();
+            b.setNome(nomeBairro);
+            b.setCidade(cid);
+            AsyncTask.executar(
+                () -> {
+                    utilizadorController.salvarBairro(b);
+                    return true;
+                },
+                ok -> {
+                    JOptionPane.showMessageDialog(this, "Bairro cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    campoNomeNovoBairro.setText("");
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                err -> JOptionPane.showMessageDialog(this, "Erro ao salvar bairro: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        });
+
+        BotaoToolbarArredondado btnCancelar = new BotaoToolbarArredondado(
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        btnCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        btnCancelar.setIconTextGap(6);
+        btnCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
+
+        acoes.add(btnGuardar);
+        acoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        acoes.add(btnCancelar);
+        card.add(acoes);
+        return card;
+    }
+
+    private JPanel criarCardEditarBairro() {
+        PainelCard card = criarBaseCardLateral();
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
+
+        JLabel titulo = new JLabel("Editar bairro");
+        titulo.setFont(UiStyle.fonte(13, Font.BOLD));
+        titulo.setForeground(UiStyle.TEXT);
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(titulo);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        seletorCidadeEditarBairro = new BotaoSeletorFormulario("Matola", new String[] {"Matola"});
+        JPanel blocoCidade = criarCampoComLabel("Cidade *", seletorCidadeEditarBairro);
+        fixarLargura(blocoCidade, larguraInterna, 60);
+        card.add(blocoCidade);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoNomeEditarBairro = new CampoFormularioArredondado("");
+        JPanel blocoNome = criarCampoComLabel("Nome do bairro *", campoNomeEditarBairro);
+        fixarLargura(blocoNome, larguraInterna, 60);
+        card.add(blocoNome);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        acoes.setOpaque(false);
+        acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        BotaoToolbarArredondado btnGuardar = new BotaoToolbarArredondado(
+                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        btnGuardar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        btnGuardar.setIconTextGap(5);
+        btnGuardar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        btnGuardar.addActionListener(e -> {
+            int row = (tabelaBairrosAuxiliar != null) ? tabelaBairrosAuxiliar.getSelectedRow() : -1;
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Selecione um bairro na tabela para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Long id = Long.parseLong(String.valueOf(tabelaBairrosAuxiliar.getValueAt(row, 0)));
+            String novoNome = campoNomeEditarBairro.getText() != null ? campoNomeEditarBairro.getText().trim() : "";
+            if (novoNome.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "O nome do bairro é obrigatório.", "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String nomeCidade = seletorCidadeEditarBairro.getText().trim();
+            Cidade cid = (dadosCidadesCarregados != null)
+                    ? dadosCidadesCarregados.stream().filter(c -> c.getNome() != null && c.getNome().equalsIgnoreCase(nomeCidade)).findFirst().orElse(null)
+                    : null;
+            if (cid == null && dadosBairrosCarregados != null) {
+                Bairro bExistente = dadosBairrosCarregados.stream()
+                        .filter(item -> item.getIdBairro() != null && item.getIdBairro().equals(id))
+                        .findFirst().orElse(null);
+                if (bExistente != null) {
+                    cid = bExistente.getCidade();
+                }
+            }
+            Bairro b = new Bairro();
+            b.setIdBairro(id);
+            b.setNome(novoNome);
+            b.setCidade(cid);
+            AsyncTask.executar(
+                () -> {
+                    utilizadorController.atualizarBairro(b);
+                    return true;
+                },
+                ok -> {
+                    JOptionPane.showMessageDialog(this, "Bairro atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                err -> JOptionPane.showMessageDialog(this, "Erro ao atualizar bairro: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        });
+
+        BotaoToolbarArredondado btnCancelar = new BotaoToolbarArredondado(
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        btnCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        btnCancelar.setIconTextGap(5);
+        btnCancelar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        btnCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
+
+        BotaoToolbarArredondado btnEliminar = new BotaoToolbarArredondado(
+                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
+        );
+        btnEliminar.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        btnEliminar.setIconTextGap(5);
+        btnEliminar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        btnEliminar.addActionListener(e -> acaoEliminarBairro());
+
+        acoes.add(btnGuardar);
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
+        acoes.add(btnCancelar);
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
+        acoes.add(btnEliminar);
+        card.add(acoes);
+        return card;
+    }
+
+    private void sincronizarDadosBairroParaEdicao() {
+        if (campoNomeEditarBairro == null || tabelaBairrosAuxiliar == null || tabelaBairrosAuxiliar.getRowCount() == 0) {
+            return;
+        }
+        int row = tabelaBairrosAuxiliar.getSelectedRow();
+        if (row < 0 || row >= tabelaBairrosAuxiliar.getRowCount()) {
+            row = 0;
+        }
+        String nomeBairro = String.valueOf(tabelaBairrosAuxiliar.getValueAt(row, 1));
+        String nomeCid = String.valueOf(tabelaBairrosAuxiliar.getValueAt(row, 2));
+        campoNomeEditarBairro.setText(nomeBairro);
+        if (seletorCidadeEditarBairro != null && !"-".equals(nomeCid)) {
+            seletorCidadeEditarBairro.setText(nomeCid);
+        }
+    }
+
+    private JPanel criarCardNovaCategoria() {
+        PainelCard card = criarBaseCardLateral();
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
+
+        JLabel titulo = new JLabel("Nova categoria");
+        titulo.setFont(UiStyle.fonte(13, Font.BOLD));
+        titulo.setForeground(UiStyle.TEXT);
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(titulo);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoNomeNovaCategoria = new CampoFormularioArredondado("");
+        JPanel blocoNome = criarCampoComLabel("Nome da categoria *", campoNomeNovaCategoria);
+        fixarLargura(blocoNome, larguraInterna, 60);
+        card.add(blocoNome);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        acoes.setOpaque(false);
+        acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        BotaoToolbarArredondado btnGuardar = new BotaoToolbarArredondado(
+                "Guardar", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        btnGuardar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        btnGuardar.setIconTextGap(6);
+        btnGuardar.addActionListener(e -> {
+            String nome = campoNomeNovaCategoria.getText() != null ? campoNomeNovaCategoria.getText().trim() : "";
+            if (nome.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "O nome da categoria é obrigatório.", "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            AsyncTask.executar(
+                () -> utilizadorController.criarCategoria(nome),
+                criada -> {
+                    JOptionPane.showMessageDialog(this, "Categoria cadastrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    campoNomeNovaCategoria.setText("");
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                err -> JOptionPane.showMessageDialog(this, "Erro ao criar categoria: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        });
+
+        BotaoToolbarArredondado btnCancelar = new BotaoToolbarArredondado(
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        btnCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        btnCancelar.setIconTextGap(6);
+        btnCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
+
+        acoes.add(btnGuardar);
+        acoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        acoes.add(btnCancelar);
+        card.add(acoes);
+        return card;
+    }
+
+    private JPanel criarCardEditarCategoria() {
+        PainelCard card = criarBaseCardLateral();
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
+
+        JLabel titulo = new JLabel("Editar categoria");
+        titulo.setFont(UiStyle.fonte(13, Font.BOLD));
+        titulo.setForeground(UiStyle.TEXT);
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(titulo);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        campoNomeEditarCategoria = new CampoFormularioArredondado("");
+        JPanel blocoNome = criarCampoComLabel("Nome da categoria *", campoNomeEditarCategoria);
+        fixarLargura(blocoNome, larguraInterna, 60);
+        card.add(blocoNome);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel acoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        acoes.setOpaque(false);
+        acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        BotaoToolbarArredondado btnGuardar = new BotaoToolbarArredondado(
+                "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
+        );
+        btnGuardar.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        btnGuardar.setIconTextGap(5);
+        btnGuardar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        btnGuardar.addActionListener(e -> {
+            int row = (tabelaCategoriasAuxiliar != null) ? tabelaCategoriasAuxiliar.getSelectedRow() : -1;
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Selecione uma categoria na tabela para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Long id = Long.parseLong(String.valueOf(tabelaCategoriasAuxiliar.getValueAt(row, 0)));
+            String novoNome = campoNomeEditarCategoria.getText() != null ? campoNomeEditarCategoria.getText().trim() : "";
+            if (novoNome.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "O nome da categoria é obrigatório.", "Validação", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Categoria cat = new Categoria();
+            cat.setIdCategoria(id);
+            cat.setNome(novoNome);
+            AsyncTask.executar(
+                () -> {
+                    utilizadorController.atualizarCategoria(cat);
+                    return true;
+                },
+                ok -> {
+                    JOptionPane.showMessageDialog(this, "Categoria atualizada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                    recarregarDados();
+                },
+                err -> JOptionPane.showMessageDialog(this, "Erro ao atualizar categoria: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        });
+
+        BotaoToolbarArredondado btnCancelar = new BotaoToolbarArredondado(
+                "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
+        );
+        btnCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        btnCancelar.setIconTextGap(5);
+        btnCancelar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        btnCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
+
+        BotaoToolbarArredondado btnEliminar = new BotaoToolbarArredondado(
+                "Eliminar", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
+        );
+        btnEliminar.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        btnEliminar.setIconTextGap(5);
+        btnEliminar.setBorder(new EmptyBorder(9, 10, 9, 10));
+        btnEliminar.addActionListener(e -> acaoEliminarCategoria());
+
+        acoes.add(btnGuardar);
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
+        acoes.add(btnCancelar);
+        acoes.add(Box.createRigidArea(new Dimension(6, 0)));
+        acoes.add(btnEliminar);
+        card.add(acoes);
+        return card;
+    }
+
+    private void sincronizarDadosCategoriaParaEdicao() {
+        if (campoNomeEditarCategoria == null || tabelaCategoriasAuxiliar == null || tabelaCategoriasAuxiliar.getRowCount() == 0) {
+            return;
+        }
+        int row = tabelaCategoriasAuxiliar.getSelectedRow();
+        if (row < 0 || row >= tabelaCategoriasAuxiliar.getRowCount()) {
+            row = 0;
+        }
+        campoNomeEditarCategoria.setText(String.valueOf(tabelaCategoriasAuxiliar.getValueAt(row, 1)));
     }
 }
