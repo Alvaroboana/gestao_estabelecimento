@@ -11,6 +11,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -37,25 +38,21 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import java.awt.Shape;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import model.bo.EstoqueBO;
+import controller.EstoqueController;
 import model.vo.Estoque;
 import model.vo.Produto;
 import model.vo.SessaoUtilizador;
 import model.vo.Perfil;
 import model.vo.Utilizador;
+import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignC;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignP;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignT;
 import util.AsyncTask;
 
-/**
- * Painel Estoque, Dar Entrada, Repor, Retirar e Editar Lote em Java Swing fiel aos designs HTML:
- * - "ADMIN · Barra superior · Escuro — Estoque" (Estoque.dc.html)
- * - "ADMIN · Barra superior · Escuro — Estoque — dar entrada" (EstoqueEntrada.dc.html)
- * - "ADMIN · Barra superior · Escuro — Estoque — repor" (EstoqueRepor.dc.html)
- * - "ADMIN · Barra superior · Escuro — Estoque — retirar" (EstoqueRetirar.dc.html)
- * - "ADMIN · Barra superior · Escuro — Estoque — editar lote" (EstoqueEditar.dc.html)
- */
 public class EstoquePanel extends JPanel implements PainelRecarregavel {
     private static final long serialVersionUID = 1L;
 
@@ -74,18 +71,11 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
     private static final int LARGURA_CARD_LATERAL = 420;
 
     private static final String[] COLUNAS_COMPLETAS = {
-        "Lote", "Produto", "Quantidade", "Validade", "Situação"
+        "Lote", "Produto", "Quantidade", "Entrada", "Validade", "Dias p/ Exp.", "Registado por", "Situação"
     };
 
     private static final String[] COLUNAS_COMPACTAS = {
-        "Lote", "Produto", "Qtd", "Validade", "Situação"
-    };
-
-    private static final Object[][] DADOS_INICIAIS = {
-        {"L-201", "Leite 1L", "120", "15/12/2026", "Válido"},
-        {"L-198", "Pão", "40", "05/11/2026", "Válido"},
-        {"L-190", "Iogurte", "12", "28/10/2026", "Expirado"},
-        {"L-205", "Arroz 25kg", "4", "10/08/2027", "Válido"}
+        "Lote", "Produto", "Qtd", "Entrada", "Validade", "Dias", "Funcionário", "Situação"
     };
 
     private final DefaultTableModel modeloTabela;
@@ -103,33 +93,31 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
     private final JPanel cardEditarLote;
     private final JPanel wrapperDireita;
 
-    // Controles do formulário "Dar entrada no estoque"
     private BotaoSeletorFormulario seletorProdutoEntrada;
     private JTextField campoQuantidadeEntrada;
     private JTextField campoValidadeEntrada;
 
-    // Controles do formulário "Repor estoque"
     private JLabel labelLoteProdutoRepor;
     private CaixaValorArredondada caixaQuantidadeActualRepor;
     private CampoFormularioArredondado campoQuantidadeARepor;
     private CaixaValorArredondada caixaNovaQuantidadeRepor;
 
-    // Controles do formulário "Retirar do estoque"
     private JLabel labelLoteProdutoRetirar;
     private CaixaValorArredondada caixaQuantidadeActualRetirar;
     private JLabel labelARetirarMax;
     private CampoFormularioArredondado campoQuantidadeARetirar;
     private CaixaValorArredondada caixaNovaQuantidadeRetirar;
+    private BotaoSeletorFormulario seletorMotivoRetirada;
 
-    // Controles do formulário "Editar lote"
     private JLabel labelCodigoLoteEditar;
     private BotaoSeletorFormulario seletorProdutoEditarLote;
     private CampoFormularioArredondado campoQuantidadeEditarLote;
     private CampoFormularioArredondado campoValidadeEditarLote;
 
-    private final EstoqueBO estoqueBO;
-    private List<Object[]> dadosEstoqueCarregados = null;
-    private List<Estoque> listaEstoqueEntidades = null;
+    private final EstoqueController estoqueController;
+    private List<Object[]> dadosEstoqueCarregados = new ArrayList<>();
+    private List<Estoque> listaEstoqueEntidades = new ArrayList<>();
+    private List<Produto> listaProdutosReais = new ArrayList<>();
 
     private ModoPainelLateral modoLateral;
 
@@ -144,9 +132,8 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
     public EstoquePanel(ModoPainelLateral modoInicial) {
         UiStyle.instalarTemaEscuro();
         this.modoLateral = modoInicial != null ? modoInicial : ModoPainelLateral.NENHUM;
-        this.estoqueBO = new EstoqueBO();
+        this.estoqueController = new EstoqueController();
 
-        // .ct { padding:24px 28px; display:flex; flex-direction:column; gap:16px; flex:1 }
         setLayout(new BorderLayout(0, 16));
         setBackground(UiStyle.BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
@@ -157,6 +144,8 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         this.botaoRetirar = criarBotaoRetirarEstoque();
         this.botaoEditar = criarBotaoEditarLote();
         this.botaoEliminarLote = criarBotaoToolbar("Eliminar lote", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, false);
+        this.botaoEliminarLote.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        this.botaoEliminarLote.setIconTextGap(6);
         this.botaoEliminarLote.addActionListener(e -> eliminarLoteSelecionado());
         this.containerBotoesFinaisToolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         this.containerBotoesFinaisToolbar.setOpaque(false);
@@ -182,6 +171,7 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         add(criarCorpoPrincipal(), BorderLayout.CENTER);
 
         definirModoPainelLateral(this.modoLateral);
+        recarregarDados();
     }
 
     public JTable getTabela() {
@@ -275,26 +265,23 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         wrapperDireita.removeAll();
         wrapperDireita.setVisible(lateralAberto);
         if (this.modoLateral == ModoPainelLateral.DAR_ENTRADA) {
-            wrapperDireita.add(cardDarEntrada, BorderLayout.NORTH);
+            UiStyle.atualizarComponentesTema(cardDarEntrada);
+            wrapperDireita.add(UiStyle.envolverCardLateralComScroll(cardDarEntrada), BorderLayout.CENTER);
         } else if (this.modoLateral == ModoPainelLateral.REPOR_ESTOQUE) {
-            wrapperDireita.add(cardReporEstoque, BorderLayout.NORTH);
+            UiStyle.atualizarComponentesTema(cardReporEstoque);
+            wrapperDireita.add(UiStyle.envolverCardLateralComScroll(cardReporEstoque), BorderLayout.CENTER);
         } else if (this.modoLateral == ModoPainelLateral.RETIRAR_ESTOQUE) {
-            wrapperDireita.add(cardRetirarEstoque, BorderLayout.NORTH);
+            UiStyle.atualizarComponentesTema(cardRetirarEstoque);
+            wrapperDireita.add(UiStyle.envolverCardLateralComScroll(cardRetirarEstoque), BorderLayout.CENTER);
         } else if (this.modoLateral == ModoPainelLateral.EDITAR_LOTE) {
-            wrapperDireita.add(cardEditarLote, BorderLayout.NORTH);
+            UiStyle.atualizarComponentesTema(cardEditarLote);
+            wrapperDireita.add(UiStyle.envolverCardLateralComScroll(cardEditarLote), BorderLayout.CENTER);
         }
 
-        // Em Estoque.dc.html (sem card lateral): Repor, Retirar, Eliminar lote
-        // Em EstoqueEntrada.dc.html / EstoqueRepor.dc.html / EstoqueRetirar.dc.html / EstoqueEditar.dc.html (com card lateral): Repor, Retirar, Editar, Eliminar
-        containerBotoesFinaisToolbar.removeAll();
         if (lateralAberto) {
             botaoEliminarLote.setText("Eliminar");
-            containerBotoesFinaisToolbar.add(botaoEditar);
-            containerBotoesFinaisToolbar.add(Box.createRigidArea(new Dimension(10, 0)));
-            containerBotoesFinaisToolbar.add(botaoEliminarLote);
         } else {
             botaoEliminarLote.setText("Eliminar lote");
-            containerBotoesFinaisToolbar.add(botaoEliminarLote);
         }
         Dimension prefEliminar = botaoEliminarLote.getPreferredSize();
         botaoEliminarLote.setPreferredSize(new Dimension(prefEliminar.width, ALTURA_INPUT));
@@ -335,38 +322,66 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         cabecalho.setLayout(new BoxLayout(cabecalho, BoxLayout.Y_AXIS));
         cabecalho.setOpaque(false);
 
-        // <h1>Estoque</h1> (h1 { font-size:24px; margin:0 })
         JLabel titulo = new JLabel("Estoque");
         UiStyle.aplicarTexto(titulo, 24, true);
         titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
         cabecalho.add(titulo);
         cabecalho.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        // .tb { display:flex; gap:10px; align-items:center }
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6)) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Dimension getPreferredSize() {
+                int larguraDisp = getWidth();
+                if (larguraDisp <= 0 && getParent() != null) {
+                    larguraDisp = getParent().getWidth();
+                }
+                if (larguraDisp <= 0) {
+                    return super.getPreferredSize();
+                }
+                Insets in = getInsets();
+                int maxW = Math.max(200, larguraDisp - in.left - in.right);
+                int hgap = 8;
+                int vgap = 6;
+                int x = 0;
+                int y = in.top + vgap;
+                int rowH = 0;
+                for (Component c : getComponents()) {
+                    if (!c.isVisible()) {
+                        continue;
+                    }
+                    Dimension d = c.getPreferredSize();
+                    if (x > 0 && x + hgap + d.width > maxW) {
+                        y += rowH + vgap;
+                        x = 0;
+                        rowH = 0;
+                    }
+                    if (x > 0) {
+                        x += hgap;
+                    }
+                    x += d.width;
+                    rowH = Math.max(rowH, d.height);
+                }
+                y += rowH + vgap + in.bottom;
+                return new Dimension(larguraDisp, Math.max(ALTURA_INPUT, y));
+            }
+        };
         toolbar.setOpaque(false);
         toolbar.setAlignmentX(Component.LEFT_ALIGNMENT);
+        toolbar.setBorder(new EmptyBorder(-6, -8, -6, 0));
 
         toolbar.add(campoBuscarLote);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
         toolbar.add(botaoDarEntrada);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
         toolbar.add(botaoRepor);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
         toolbar.add(botaoRetirar);
-        toolbar.add(Box.createRigidArea(new Dimension(10, 0)));
-        toolbar.add(containerBotoesFinaisToolbar);
+        toolbar.add(botaoEditar);
+        toolbar.add(botaoEliminarLote);
 
         cabecalho.add(toolbar);
         return cabecalho;
     }
 
-    /**
-     * <div class="row" style="align-items:flex-start">
-     *   <div class="card" style="flex:1;padding:0">...</div>
-     *   <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">...</div>
-     * </div>
-     */
     private JPanel criarCorpoPrincipal() {
         JPanel linha = new JPanel(new BorderLayout(16, 0));
         linha.setOpaque(false);
@@ -375,9 +390,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         return linha;
     }
 
-    /**
-     * <span class="in">Buscar lote</span>
-     */
     private CampoBuscaArredondado criarCampoBuscarLote() {
         CampoBuscaArredondado campo = new CampoBuscaArredondado("Buscar lote");
         Dimension dim = new Dimension(LARGURA_MIN_INPUT, ALTURA_INPUT);
@@ -406,6 +418,8 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 "Dar entrada", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.icone(MaterialDesignP.PLUS, 15, UiStyle.ACCENT_TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.DAR_ENTRADA) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -420,6 +434,8 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 "Repor", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PACKAGE_UP, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.REPOR_ESTOQUE) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -434,6 +450,8 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 "Retirar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PACKAGE_DOWN, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.RETIRAR_ESTOQUE) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -449,6 +467,8 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
                 "Editar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botao.setIcon(UiStyle.iconeDinamico(MaterialDesignP.PENCIL_OUTLINE, 15, () -> UiStyle.TEXT));
+        botao.setIconTextGap(6);
         botao.addActionListener(e -> {
             if (modoLateral == ModoPainelLateral.EDITAR_LOTE) {
                 definirModoPainelLateral(ModoPainelLateral.NENHUM);
@@ -465,16 +485,9 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
             Color fg,
             Color borda,
             boolean preencherFundo) {
-        BotaoToolbarArredondado botao = new BotaoToolbarArredondado(
+        return new BotaoToolbarArredondado(
                 texto, bg, fg, borda, RAIO_COMPONENTE, preencherFundo
         );
-        botao.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                "A ação \"" + texto + "\" está reservada para a próxima etapa.",
-                "Módulo reservado",
-                JOptionPane.INFORMATION_MESSAGE
-        ));
-        return botao;
     }
 
     private DefaultTableModel criarModeloTabela() {
@@ -520,7 +533,7 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         RenderizadorCelulaTexto renderizadorTexto = new RenderizadorCelulaTexto();
         RenderizadorCelulaSituacao renderizadorSituacao = new RenderizadorCelulaSituacao();
         for (int i = 0; i < t.getColumnModel().getColumnCount(); i++) {
-            if (i == 4) {
+            if (i == 7) {
                 t.getColumnModel().getColumn(i).setCellRenderer(renderizadorSituacao);
             } else {
                 t.getColumnModel().getColumn(i).setCellRenderer(renderizadorTexto);
@@ -535,9 +548,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         aplicarRenderizadoresColunas(tabela);
     }
 
-    /**
-     * <div class="card" style="padding:0"><table>...</table></div>
-     */
     private JPanel criarCardTabela() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BorderLayout());
@@ -558,18 +568,13 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Dar entrada no estoque" fiel a EstoqueEntrada.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardDarEntrada() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
-        // <b>Dar entrada no estoque</b>
         JLabel titulo = new JLabel("Dar entrada no estoque");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -577,29 +582,26 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Produto *</span><div class="in" style="min-width:0">Leite 1L ▾</div></div>
         seletorProdutoEntrada = new BotaoSeletorFormulario(
-                "Leite 1L ▾",
-                new String[] {"Leite 1L", "Pão", "Iogurte", "Arroz 25kg"}
+                "Selecione",
+                new String[0]
         );
         JPanel blocoProduto = criarCampoComLabel("Produto *", seletorProdutoEntrada);
         fixarLargura(blocoProduto, larguraInterna, 60);
         card.add(blocoProduto);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="fm"> Quantidade * -> 0 | Validade * -> dd/mm/aaaa
         JPanel linhaQtdValidade = new JPanel(new GridLayout(1, 2, 12, 0));
         linhaQtdValidade.setOpaque(false);
 
-        campoQuantidadeEntrada = new CampoFormularioArredondado("0");
+        campoQuantidadeEntrada = new CampoFormularioArredondado("");
         campoValidadeEntrada = new CampoFormularioArredondado("dd/mm/aaaa");
         linhaQtdValidade.add(criarCampoComLabel("Quantidade *", campoQuantidadeEntrada));
-        linhaQtdValidade.add(criarCampoComLabel("Validade *", campoValidadeEntrada));
+        linhaQtdValidade.add(criarCampoComLabel("Validade", campoValidadeEntrada));
         fixarLargura(linhaQtdValidade, larguraInterna, 60);
         card.add(linhaQtdValidade);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="k">Cria um novo lote para o produto.</div>
         JLabel notaLote = new JLabel("Cria um novo lote para o produto.");
         notaLote.setFont(UiStyle.fonte(12, Font.PLAIN));
         notaLote.setForeground(UiStyle.MUTED);
@@ -607,13 +609,14 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         card.add(notaLote);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt">Guardar entrada</span><span class="bt s">Cancelar</span></div>
         JPanel barraBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraBotoes.setOpaque(false);
 
         BotaoToolbarArredondado botaoGuardarEntrada = new BotaoToolbarArredondado(
                 "Guardar entrada", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarEntrada.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoGuardarEntrada.setIconTextGap(6);
         botaoGuardarEntrada.addActionListener(e -> {
             String qtdStr = (campoQuantidadeEntrada != null) ? campoQuantidadeEntrada.getText().trim() : "0";
             int qtd;
@@ -621,37 +624,59 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                 qtd = Integer.parseInt(qtdStr);
                 if (qtd <= 0) throw new NumberFormatException();
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Informe uma quantidade vÃ¡lida e positiva.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Informe uma quantidade válida e positiva.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             String valStr = (campoValidadeEntrada != null) ? campoValidadeEntrada.getText().trim() : "";
             LocalDate validade = null;
-            try {
-                validade = LocalDate.parse(valStr, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-            } catch (Exception ex) {
-                validade = LocalDate.now().plusMonths(6);
+            if (!valStr.isEmpty() && !"-".equals(valStr)) {
+                try {
+                    validade = LocalDate.parse(valStr, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Validade inválida. Use o formato dd/mm/aaaa ou deixe em branco.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                if (validade.isBefore(LocalDate.now())) {
+                    JOptionPane.showMessageDialog(this, "A data de validade já passou.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
             }
             Utilizador user = SessaoUtilizador.getUtilizador();
             if (user == null || user.getFuncionario() == null) {
-                JOptionPane.showMessageDialog(this, "SessÃ£o invÃ¡lida.", "Erro", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Sessão inválida.", "Erro", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+            String nomeProdSel = seletorProdutoEntrada != null
+                    ? seletorProdutoEntrada.getText().replace(" ▾", "").replace("▾", "").trim()
+                    : "";
+            Produto prod = null;
+            if (listaProdutosReais != null) {
+                for (Produto p : listaProdutosReais) {
+                    if (p.getNome() != null && p.getNome().equalsIgnoreCase(nomeProdSel)) {
+                        prod = p;
+                        break;
+                    }
+                }
+                if (prod == null && !listaProdutosReais.isEmpty()) {
+                    prod = listaProdutosReais.get(0);
+                }
+            }
+            if (prod == null) {
+                JOptionPane.showMessageDialog(this, "Selecione um produto válido cadastrado.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
             Estoque novoLote = new Estoque();
             novoLote.setQuantidade(qtd);
             novoLote.setDataEntrada(LocalDate.now());
             novoLote.setDataValidade(validade);
             novoLote.setFuncionario(user.getFuncionario());
-            Produto prod = new Produto();
-            prod.setIdProduto(1L);
-            if (listaEstoqueEntidades != null && !listaEstoqueEntidades.isEmpty() && listaEstoqueEntidades.get(0).getProduto() != null) {
-                prod = listaEstoqueEntidades.get(0).getProduto();
-            }
             novoLote.setProduto(prod);
 
             botaoGuardarEntrada.setEnabled(false);
             AsyncTask.executar(
                 () -> {
-                    estoqueBO.salvar(novoLote);
+                    estoqueController.salvar(novoLote);
                     return true;
                 },
                 res -> {
@@ -670,6 +695,8 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botaoCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelar.setIconTextGap(6);
         botaoCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         barraBotoes.add(botaoGuardarEntrada);
@@ -686,18 +713,13 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Repor estoque" fiel a EstoqueRepor.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardReporEstoque() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
-        // <b>Repor estoque</b>
         JLabel titulo = new JLabel("Repor estoque");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -705,7 +727,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="font-size:14px">Lote L-201 · Leite 1L</div>
         labelLoteProdutoRepor = new JLabel("Lote L-201 · Leite 1L");
         labelLoteProdutoRepor.setFont(UiStyle.fonte(14, Font.PLAIN));
         labelLoteProdutoRepor.setForeground(UiStyle.TEXT);
@@ -713,12 +734,11 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         card.add(labelLoteProdutoRepor);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="fm"> Quantidade actual -> 120 | A repor (maior que 0) -> 30
         JPanel linhaQuantidades = new JPanel(new GridLayout(1, 2, 12, 0));
         linhaQuantidades.setOpaque(false);
 
         caixaQuantidadeActualRepor = new CaixaValorArredondada("120");
-        campoQuantidadeARepor = new CampoFormularioArredondado("30");
+        campoQuantidadeARepor = new CampoFormularioArredondado("");
         campoQuantidadeARepor.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -742,9 +762,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         card.add(linhaQuantidades);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Nova quantidade</span>
-        //   <div class="in" style="min-width:0;background:#4A3A0F;border-color:#4A3A0F;color:#FFD36B;font-weight:700">150</div>
-        // </div>
         caixaNovaQuantidadeRepor = new CaixaValorArredondada(
                 "150",
                 UiStyle.CHIP_YELLOW_BG,
@@ -757,22 +774,71 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         card.add(blocoNovaQuantidade);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt">Confirmar reposição</span><span class="bt s">Cancelar</span></div>
         JPanel barraBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraBotoes.setOpaque(false);
 
         BotaoToolbarArredondado botaoConfirmarReposicao = new BotaoToolbarArredondado(
                 "Confirmar reposição", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoConfirmarReposicao.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoConfirmarReposicao.setIconTextGap(6);
         botaoConfirmarReposicao.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Reposição de estoque registrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
+            int row = tabela.getSelectedRow();
+            if (row < 0 || row >= tabela.getRowCount()) {
+                JOptionPane.showMessageDialog(this, "Selecione um lote na tabela para repor.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String qtdStr = (campoQuantidadeARepor != null) ? campoQuantidadeARepor.getText().trim() : "0";
+            int qtdRepor;
+            try {
+                qtdRepor = Integer.parseInt(qtdStr);
+                if (qtdRepor <= 0) throw new NumberFormatException();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Informe uma quantidade válida e positiva para repor.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String loteStr = String.valueOf(tabela.getValueAt(row, 0)).replace("L-", "").trim();
+            try {
+                Long idEstoque = Long.parseLong(loteStr);
+                Estoque lote = (listaEstoqueEntidades != null) ? listaEstoqueEntidades.stream()
+                        .filter(item -> item.getIdEstoque() != null && item.getIdEstoque().equals(idEstoque))
+                        .findFirst().orElse(null) : null;
+                if (lote == null) {
+                    lote = estoqueController.buscarPorId(idEstoque);
+                }
+                if (lote.getFuncionario() != null && lote.getFuncionario().getEstado() == null) {
+                    lote.getFuncionario().setEstado(model.vo.EstadoFuncionario.ATIVO);
+                }
+                int qtdAtual = lote.getQuantidade() != null ? lote.getQuantidade() : 0;
+                lote.setQuantidade(qtdAtual + qtdRepor);
+                final Estoque fLote = lote;
+                botaoConfirmarReposicao.setEnabled(false);
+                AsyncTask.executar(
+                    () -> {
+                        estoqueController.atualizar(fLote);
+                        return true;
+                    },
+                    res -> {
+                        JOptionPane.showMessageDialog(this, "Reposição de estoque registrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                        recarregarDados();
+                        botaoConfirmarReposicao.setEnabled(true);
+                    },
+                    erro -> {
+                        JOptionPane.showMessageDialog(this, "Erro ao repor estoque: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                        botaoConfirmarReposicao.setEnabled(true);
+                    }
+                );
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Identificador de lote inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botaoCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelar.setIconTextGap(6);
         botaoCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         barraBotoes.add(botaoConfirmarReposicao);
@@ -789,18 +855,13 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Retirar do estoque" fiel a EstoqueRetirar.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardRetirarEstoque() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
-        // <b>Retirar do estoque</b>
         JLabel titulo = new JLabel("Retirar do estoque");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -808,7 +869,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="font-size:14px">Lote L-198 · Pão</div>
         labelLoteProdutoRetirar = new JLabel("Lote L-198 · Pão");
         labelLoteProdutoRetirar.setFont(UiStyle.fonte(14, Font.PLAIN));
         labelLoteProdutoRetirar.setForeground(UiStyle.TEXT);
@@ -816,12 +876,11 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         card.add(labelLoteProdutoRetirar);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="fm"> Quantidade actual -> 40 | A retirar (máx. 40) -> 5
         JPanel linhaQuantidades = new JPanel(new GridLayout(1, 2, 12, 0));
         linhaQuantidades.setOpaque(false);
 
         caixaQuantidadeActualRetirar = new CaixaValorArredondada("40");
-        campoQuantidadeARetirar = new CampoFormularioArredondado("5");
+        campoQuantidadeARetirar = new CampoFormularioArredondado("");
         campoQuantidadeARetirar.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -860,9 +919,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         card.add(linhaQuantidades);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Nova quantidade</span>
-        //   <div class="in" style="min-width:0;background:#4A3A0F;border-color:#4A3A0F;color:#FFD36B;font-weight:700">35</div>
-        // </div>
         caixaNovaQuantidadeRetirar = new CaixaValorArredondada(
                 "35",
                 UiStyle.CHIP_YELLOW_BG,
@@ -875,13 +931,23 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         card.add(blocoNovaQuantidade);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt">Confirmar retirada</span><span class="bt s">Cancelar</span></div>
+        seletorMotivoRetirada = new BotaoSeletorFormulario(
+                "Perda / Quebra",
+                new String[] {"Perda / Quebra", "Dano / Avaria", "Produto expirado", "Ajuste de inventário"}
+        );
+        JPanel blocoMotivoRetirada = criarCampoComLabel("Motivo da retirada *", seletorMotivoRetirada);
+        fixarLargura(blocoMotivoRetirada, larguraInterna, 60);
+        card.add(blocoMotivoRetirada);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
         JPanel barraBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraBotoes.setOpaque(false);
 
         BotaoToolbarArredondado botaoConfirmarRetirada = new BotaoToolbarArredondado(
                 "Confirmar retirada", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoConfirmarRetirada.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoConfirmarRetirada.setIconTextGap(6);
         botaoConfirmarRetirada.addActionListener(e -> {
             int row = tabela.getSelectedRow();
             if (row < 0 || row >= tabela.getRowCount()) {
@@ -894,7 +960,7 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                 qtdRetirar = Integer.parseInt(qtdStr);
                 if (qtdRetirar <= 0) throw new NumberFormatException();
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Informe uma quantidade vÃ¡lida para retirar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Informe uma quantidade válida para retirar.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             String loteStr = String.valueOf(tabela.getValueAt(row, 0)).replace("L-", "").trim();
@@ -904,24 +970,29 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                     .filter(item -> item.getIdEstoque() != null && item.getIdEstoque().equals(idEstoque))
                     .findFirst().orElse(null) : null;
                 if (lote == null) {
-                    JOptionPane.showMessageDialog(this, "Lote nÃ£o encontrado.", "Erro", JOptionPane.ERROR_MESSAGE);
-                    return;
+                    lote = estoqueController.buscarPorId(idEstoque);
+                }
+                if (lote.getFuncionario() != null && lote.getFuncionario().getEstado() == null) {
+                    lote.getFuncionario().setEstado(model.vo.EstadoFuncionario.ATIVO);
                 }
                 int qtdAtual = lote.getQuantidade() != null ? lote.getQuantidade() : 0;
                 if (qtdRetirar > qtdAtual) {
-                    JOptionPane.showMessageDialog(this, "Quantidade a retirar excede o estoque disponÃ­vel no lote.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Quantidade a retirar excede o estoque disponível no lote.", "Aviso", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
                 lote.setQuantidade(qtdAtual - qtdRetirar);
                 final Estoque fLote = lote;
+                final String motivoEscolhido = seletorMotivoRetirada != null ? seletorMotivoRetirada.getText() : "Ajuste";
                 botaoConfirmarRetirada.setEnabled(false);
                 AsyncTask.executar(
                     () -> {
-                        estoqueBO.atualizar(fLote);
+                        estoqueController.atualizar(fLote);
                         return true;
                     },
                     res -> {
-                        JOptionPane.showMessageDialog(this, "Retirada de estoque registrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        JOptionPane.showMessageDialog(this,
+                                "Retirada de estoque registrada com sucesso! (Motivo: " + motivoEscolhido + ")",
+                                "Sucesso", JOptionPane.INFORMATION_MESSAGE);
                         definirModoPainelLateral(ModoPainelLateral.NENHUM);
                         recarregarDados();
                         botaoConfirmarRetirada.setEnabled(true);
@@ -932,13 +1003,15 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                     }
                 );
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Identificador de lote invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Identificador de lote inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
             }
         });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botaoCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelar.setIconTextGap(6);
         botaoCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         barraBotoes.add(botaoConfirmarRetirada);
@@ -955,18 +1028,13 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         return card;
     }
 
-    /**
-     * Card lateral "Editar lote" fiel a EstoqueEditar.dc.html:
-     * <div class="card" style="width:420px;height:fit-content;display:flex;flex-direction:column;gap:12px">
-     */
     private JPanel criarCardEditarLote() {
         PainelCardTabela card = new PainelCardTabela(UiStyle.SURFACE, UiStyle.BORDER, RAIO_CARD);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        int larguraInterna = LARGURA_CARD_LATERAL - 32; // 388px
+        int larguraInterna = LARGURA_CARD_LATERAL - 32;
 
-        // <b>Editar lote</b>
         JLabel titulo = new JLabel("Editar lote");
         titulo.setFont(UiStyle.fonte(13, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
@@ -974,7 +1042,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         card.add(titulo);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="font-size:14px">Lote L-201</div>
         labelCodigoLoteEditar = new JLabel("Lote L-201");
         labelCodigoLoteEditar.setFont(UiStyle.fonte(14, Font.PLAIN));
         labelCodigoLoteEditar.setForeground(UiStyle.TEXT);
@@ -982,55 +1049,127 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         card.add(labelCodigoLoteEditar);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div style="display:flex;flex-direction:column;gap:6px"><span class="k">Produto</span><div class="in" style="min-width:0">Leite 1L ▾</div></div>
         seletorProdutoEditarLote = new BotaoSeletorFormulario(
-                "Leite 1L ▾",
-                new String[] {"Leite 1L", "Pão", "Iogurte", "Arroz 25kg"}
+                "Selecione",
+                new String[0]
         );
         JPanel blocoProduto = criarCampoComLabel("Produto", seletorProdutoEditarLote);
         fixarLargura(blocoProduto, larguraInterna, 60);
         card.add(blocoProduto);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="fm"> Quantidade -> 120 | Validade -> 15/12/2026
         JPanel linhaQtdValidade = new JPanel(new GridLayout(1, 2, 12, 0));
         linhaQtdValidade.setOpaque(false);
 
-        campoQuantidadeEditarLote = new CampoFormularioArredondado("120");
-        campoValidadeEditarLote = new CampoFormularioArredondado("15/12/2026");
+        campoQuantidadeEditarLote = new CampoFormularioArredondado("");
+        campoValidadeEditarLote = new CampoFormularioArredondado("");
         linhaQtdValidade.add(criarCampoComLabel("Quantidade", campoQuantidadeEditarLote));
         linhaQtdValidade.add(criarCampoComLabel("Validade", campoValidadeEditarLote));
         fixarLargura(linhaQtdValidade, larguraInterna, 60);
         card.add(linhaQtdValidade);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // <div class="tb"><span class="bt">Guardar alterações</span><span class="bt s">Cancelar</span><span class="bt d">Eliminar lote</span></div>
         JPanel barraBotoes = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         barraBotoes.setOpaque(false);
 
         BotaoToolbarArredondado botaoGuardarAlteracoes = new BotaoToolbarArredondado(
                 "Guardar alterações", UiStyle.ACCENT, UiStyle.ACCENT_TEXT, null, RAIO_COMPONENTE, true
         );
+        botaoGuardarAlteracoes.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
+        botaoGuardarAlteracoes.setIconTextGap(5);
+        botaoGuardarAlteracoes.setBorder(new EmptyBorder(9, 9, 9, 9));
         botaoGuardarAlteracoes.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Alterações do lote guardadas com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            definirModoPainelLateral(ModoPainelLateral.NENHUM);
-            recarregarDados();
+            int row = tabela.getSelectedRow();
+            if (row < 0 || row >= tabela.getRowCount()) {
+                JOptionPane.showMessageDialog(this, "Selecione um lote na tabela para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            int novaQtd;
+            try {
+                novaQtd = Integer.parseInt(campoQuantidadeEditarLote.getText().trim());
+                if (novaQtd < 0) throw new NumberFormatException();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Quantidade inválida.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String valStr = campoValidadeEditarLote.getText().trim();
+            LocalDate novaValidade = null;
+            if (!valStr.isEmpty() && !"-".equals(valStr)) {
+                try {
+                    novaValidade = LocalDate.parse(valStr, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Data de validade inválida (use dd/mm/aaaa).", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
+            String loteStr = String.valueOf(tabela.getValueAt(row, 0)).replace("L-", "").trim();
+            try {
+                Long idEstoque = Long.parseLong(loteStr);
+                Estoque lote = (listaEstoqueEntidades != null) ? listaEstoqueEntidades.stream()
+                        .filter(item -> item.getIdEstoque() != null && item.getIdEstoque().equals(idEstoque))
+                        .findFirst().orElse(null) : null;
+                if (lote == null) {
+                    lote = estoqueController.buscarPorId(idEstoque);
+                }
+                if (lote.getFuncionario() != null && lote.getFuncionario().getEstado() == null) {
+                    lote.getFuncionario().setEstado(model.vo.EstadoFuncionario.ATIVO);
+                }
+                String nomeProdSel = seletorProdutoEditarLote != null
+                        ? seletorProdutoEditarLote.getText().replace(" ▾", "").replace("▾", "").trim()
+                        : "";
+                if (listaProdutosReais != null) {
+                    for (Produto p : listaProdutosReais) {
+                        if (p.getNome() != null && p.getNome().equalsIgnoreCase(nomeProdSel)) {
+                            lote.setProduto(p);
+                            break;
+                        }
+                    }
+                }
+                lote.setQuantidade(novaQtd);
+                lote.setDataValidade(novaValidade);
+                final Estoque fLote = lote;
+                botaoGuardarAlteracoes.setEnabled(false);
+                AsyncTask.executar(
+                    () -> {
+                        estoqueController.atualizar(fLote);
+                        return true;
+                    },
+                    res -> {
+                        JOptionPane.showMessageDialog(this, "Alterações do lote guardadas com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        definirModoPainelLateral(ModoPainelLateral.NENHUM);
+                        recarregarDados();
+                        botaoGuardarAlteracoes.setEnabled(true);
+                    },
+                    erro -> {
+                        JOptionPane.showMessageDialog(this, "Erro ao guardar alterações: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                        botaoGuardarAlteracoes.setEnabled(true);
+                    }
+                );
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Identificador de lote inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         BotaoToolbarArredondado botaoCancelar = new BotaoToolbarArredondado(
                 "Cancelar", UiStyle.SECONDARY_BG, UiStyle.TEXT, UiStyle.INPUT_BORDER, RAIO_COMPONENTE, true
         );
+        botaoCancelar.setIcon(UiStyle.iconeDinamico(MaterialDesignC.CLOSE, 15, () -> UiStyle.TEXT));
+        botaoCancelar.setIconTextGap(5);
+        botaoCancelar.setBorder(new EmptyBorder(9, 9, 9, 9));
         botaoCancelar.addActionListener(e -> definirModoPainelLateral(ModoPainelLateral.NENHUM));
 
         BotaoToolbarArredondado botaoEliminarCard = new BotaoToolbarArredondado(
                 "Eliminar lote", new Color(0, 0, 0, 0), UiStyle.ERROR_TEXT, UiStyle.DANGER_BORDER, RAIO_COMPONENTE, false
         );
+        botaoEliminarCard.setIcon(UiStyle.iconeDinamico(MaterialDesignT.TRASH_CAN_OUTLINE, 15, () -> UiStyle.DANGER_TEXT));
+        botaoEliminarCard.setIconTextGap(5);
+        botaoEliminarCard.setBorder(new EmptyBorder(9, 9, 9, 9));
         botaoEliminarCard.addActionListener(e -> eliminarLoteSelecionado());
 
         barraBotoes.add(botaoGuardarAlteracoes);
-        barraBotoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        barraBotoes.add(Box.createRigidArea(new Dimension(6, 0)));
         barraBotoes.add(botaoCancelar);
-        barraBotoes.add(Box.createRigidArea(new Dimension(10, 0)));
+        barraBotoes.add(Box.createRigidArea(new Dimension(6, 0)));
         barraBotoes.add(botaoEliminarCard);
         fixarLargura(barraBotoes, larguraInterna, 38);
         card.add(barraBotoes);
@@ -1103,13 +1242,13 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
             return;
         }
         String loteStr = String.valueOf(tabela.getValueAt(row, 0)).replace("L-", "").trim();
-        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar o lote L-" + loteStr + "?", "Confirmar ExclusÃ£o", JOptionPane.YES_NO_OPTION);
+        int opt = JOptionPane.showConfirmDialog(this, "Tem certeza que deseja eliminar o lote L-" + loteStr + "?", "Confirmar Exclusão", JOptionPane.YES_NO_OPTION);
         if (opt != JOptionPane.YES_OPTION) return;
         try {
             Long idEstoque = Long.parseLong(loteStr);
             AsyncTask.executar(
                 () -> {
-                    estoqueBO.eliminar(idEstoque);
+                    estoqueController.eliminar(idEstoque);
                     return true;
                 },
                 res -> {
@@ -1122,7 +1261,7 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                 }
             );
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Identificador de lote invÃ¡lido.", "Erro", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Identificador de lote inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -1137,10 +1276,10 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         String lote = String.valueOf(tabela.getValueAt(row, 0));
         String produto = String.valueOf(tabela.getValueAt(row, 1));
         String qtd = String.valueOf(tabela.getValueAt(row, 2));
-        String validade = String.valueOf(tabela.getValueAt(row, 3));
+        String validade = String.valueOf(tabela.getValueAt(row, 4));
 
         labelCodigoLoteEditar.setText("Lote " + lote);
-        seletorProdutoEditarLote.setText(produto + " ▾");
+        seletorProdutoEditarLote.setText(produto);
         campoQuantidadeEditarLote.setText(qtd);
         campoValidadeEditarLote.setText(validade);
     }
@@ -1157,6 +1296,11 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
     }
 
     private JPanel criarCampoComLabel(String textoLabel, JComponent campo) {
+        if (campo instanceof javax.swing.text.JTextComponent
+                && campo.getClientProperty(FlatClientProperties.PLACEHOLDER_TEXT) == null) {
+            String dica = textoLabel.replaceAll("\\(.*?\\)", "").replace("*", "").trim().toLowerCase();
+            campo.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Introduzir " + dica);
+        }
         JPanel painel = new JPanel();
         painel.setOpaque(false);
         painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
@@ -1188,7 +1332,7 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
 
     private void atualizarTabelaFiltrada() {
         String termo = campoBuscarLote.getTextoReal().trim().toLowerCase();
-        List<Object[]> fonteDados = (dadosEstoqueCarregados != null) ? dadosEstoqueCarregados : Arrays.asList(DADOS_INICIAIS);
+        List<Object[]> fonteDados = (dadosEstoqueCarregados != null) ? dadosEstoqueCarregados : new ArrayList<>();
         List<Object[]> filtrados = new ArrayList<>();
         for (Object[] linha : fonteDados) {
             String lote = String.valueOf(linha[0]).toLowerCase();
@@ -1204,9 +1348,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * th { text-align:left; color:#A3ADC2; font-weight:600; padding:11px 14px; border-bottom:1px solid #2A3040 }
-     */
     private static final class RenderizadorCabecalho extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1227,9 +1368,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * td { padding:11px 14px; border-bottom:1px solid #242B3B }
-     */
     private static final class RenderizadorCelulaTexto extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1251,11 +1389,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Renderiza os chips da coluna Situação:
-     * .ch.g -> Válido (#12402A / #7FE3A8)
-     * .ch.r -> Expirado (#4F1B1B / #FF9C9C)
-     */
     private static final class RenderizadorCelulaSituacao extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -1302,11 +1435,16 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
 
         @Override
         protected void paintComponent(Graphics g) {
+            String txt = getText() != null ? getText().trim() : "";
+            boolean valido = "Válido".equalsIgnoreCase(txt) || "Valido".equalsIgnoreCase(txt);
+            Color bgDinamico = valido ? UiStyle.CHIP_GREEN_BG : UiStyle.ERROR_BG;
+            Color fgDinamico = valido ? UiStyle.CHIP_GREEN_FG : UiStyle.ERROR_TEXT;
+            setForeground(fgDinamico);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int h = getHeight();
-                g2.setColor(corFundo);
+                g2.setColor(bgDinamico);
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), h, h, h));
             } finally {
                 g2.dispose();
@@ -1315,24 +1453,27 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Caixa de valor estática/calculada estilo .in (usada para Quantidade actual e Nova quantidade em #4A3A0F/#FFD36B).
-     */
     private static final class CaixaValorArredondada extends JPanel {
         private static final long serialVersionUID = 1L;
 
         private final Color corFundo;
         private final Color corBorda;
+        private final boolean destaque;
         private final JLabel labelValor;
 
         CaixaValorArredondada(String texto) {
-            this(texto, UiStyle.INPUT_BG, UiStyle.INPUT_BORDER, UiStyle.MUTED, UiStyle.fonte(13, Font.PLAIN));
+            this(texto, UiStyle.INPUT_BG, UiStyle.INPUT_BORDER, UiStyle.MUTED, UiStyle.fonte(13, Font.PLAIN), false);
         }
 
         CaixaValorArredondada(String texto, Color corFundo, Color corBorda, Color corTexto, Font fonte) {
+            this(texto, corFundo, corBorda, corTexto, fonte, true);
+        }
+
+        CaixaValorArredondada(String texto, Color corFundo, Color corBorda, Color corTexto, Font fonte, boolean destaque) {
             super(new BorderLayout());
             this.corFundo = corFundo;
             this.corBorda = corBorda;
+            this.destaque = destaque;
             setOpaque(false);
             setBorder(new EmptyBorder(0, 12, 0, 12));
             setPreferredSize(new Dimension(60, ALTURA_INPUT));
@@ -1360,10 +1501,11 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                 int w = getWidth();
                 int h = getHeight();
                 int arco = RAIO_COMPONENTE * 2;
-                g2.setColor(corFundo);
+                g2.setColor(destaque ? UiStyle.CHIP_YELLOW_BG : UiStyle.INPUT_BG);
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
-                g2.setColor(corBorda);
+                g2.setColor(destaque ? UiStyle.CHIP_YELLOW_BG : UiStyle.INPUT_BORDER);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
+                labelValor.setForeground(destaque ? UiStyle.CHIP_YELLOW_FG : UiStyle.MUTED);
             } finally {
                 g2.dispose();
             }
@@ -1371,14 +1513,13 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Seletor de formulário estilo .in com min-width:0 (ex: "Leite 1L ▾").
-     */
     private static final class BotaoSeletorFormulario extends JButton {
         private static final long serialVersionUID = 1L;
+        private String[] opcoes;
 
         BotaoSeletorFormulario(String textoInicial, String[] opcoes) {
             super(textoInicial);
+            this.opcoes = opcoes;
             setFont(UiStyle.fonte(13, Font.PLAIN));
             setForeground(UiStyle.MUTED);
             setBackground(UiStyle.INPUT_BG);
@@ -1388,28 +1529,38 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
             setContentAreaFilled(false);
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setBorder(new EmptyBorder(0, 12, 0, 12));
+            setBorder(new EmptyBorder(0, 12, 0, 28));
 
-            if (opcoes != null && opcoes.length > 0) {
-                addActionListener(e -> {
+            addActionListener(e -> {
+                if (this.opcoes != null && this.opcoes.length > 0) {
                     JPopupMenu menu = new JPopupMenu();
                     menu.setBackground(UiStyle.SURFACE);
                     menu.setBorder(BorderFactory.createLineBorder(UiStyle.BORDER));
-                    for (String opcao : opcoes) {
+                    for (String opcao : this.opcoes) {
                         JMenuItem item = new JMenuItem(opcao);
                         item.setFont(UiStyle.fonte(13, Font.PLAIN));
                         item.setBackground(UiStyle.SURFACE);
                         item.setForeground(UiStyle.TEXT);
-                        item.addActionListener(ev -> setText(opcao + " ▾"));
+                        item.addActionListener(ev -> setText(opcao));
                         menu.add(item);
                     }
-                    menu.show(this, 0, getHeight() + 2);
-                });
-            }
+                    UiStyle.mostrarPopupSincronizado(menu, this);
+                }
+            });
+        }
+
+        void setOpcoes(String[] novasOpcoes) {
+            this.opcoes = novasOpcoes;
+        }
+
+        @Override
+        public String getText() {
+            return UiStyle.removerMarcadorSeta(super.getText());
         }
 
         @Override
         protected void paintComponent(Graphics g) {
+            setForeground(UiStyle.TEXT);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -1420,21 +1571,22 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
                 g2.setColor(UiStyle.INPUT_BORDER);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
+                super.paintComponent(g);
+                UiStyle.desenharChevronExpansivel(g2, w, h, UiStyle.MUTED);
             } finally {
                 g2.dispose();
             }
-            super.paintComponent(g);
         }
     }
 
-    /**
-     * Campo de texto de formulário estilo .in com min-width:0 (ex: Quantidade *, Validade *).
-     */
     private static final class CampoFormularioArredondado extends JTextField {
         private static final long serialVersionUID = 1L;
 
         CampoFormularioArredondado(String valorInicial) {
-            super(valorInicial);
+            super("");
+            if (valorInicial != null && !valorInicial.isEmpty()) {
+                putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, valorInicial);
+            }
             setOpaque(false);
             setFont(UiStyle.fonte(13, Font.PLAIN));
             setForeground(UiStyle.MUTED);
@@ -1459,6 +1611,8 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
 
         @Override
         protected void paintComponent(Graphics g) {
+            setForeground(UiStyle.TEXT);
+            setCaretColor(UiStyle.TEXT);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -1485,52 +1639,22 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Campo de texto estilo .in ("Buscar lote").
-     */
     private static final class CampoBuscaArredondado extends JTextField {
         private static final long serialVersionUID = 1L;
 
-        private final String placeholder;
-        private boolean exibindoPlaceholder;
-
         CampoBuscaArredondado(String placeholder) {
-            super(placeholder);
-            this.placeholder = placeholder;
-            this.exibindoPlaceholder = true;
+            super("");
             setOpaque(false);
             setFont(UiStyle.fonte(13, Font.PLAIN));
-            setForeground(UiStyle.MUTED);
+            setForeground(UiStyle.TEXT);
             setCaretColor(UiStyle.TEXT);
             setBackground(UiStyle.INPUT_BG);
             setBorder(new EmptyBorder(0, 12, 0, 12));
             putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
-
-            addFocusListener(new FocusAdapter() {
-                @Override
-                public void focusGained(FocusEvent e) {
-                    if (exibindoPlaceholder) {
-                        exibindoPlaceholder = false;
-                        setText("");
-                        setForeground(UiStyle.TEXT);
-                    }
-                    repaint();
-                }
-
-                @Override
-                public void focusLost(FocusEvent e) {
-                    if (getText().trim().isEmpty()) {
-                        exibindoPlaceholder = true;
-                        setText(placeholder);
-                        setForeground(UiStyle.MUTED);
-                    }
-                    repaint();
-                }
-            });
         }
 
         String getTextoReal() {
-            return exibindoPlaceholder ? "" : getText();
+            return getText();
         }
 
         @Override
@@ -1561,9 +1685,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Botão da toolbar (.bt / .bt.s / .bt.d) com padding 9px 16px, altura 38px e border-radius 8px.
-     */
     private static final class BotaoToolbarArredondado extends JButton {
         private static final long serialVersionUID = 1L;
 
@@ -1593,8 +1714,17 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setBorder(new EmptyBorder(9, 16, 9, 16));
-            Dimension pref = getPreferredSize();
-            setPreferredSize(new Dimension(pref.width, ALTURA_INPUT));
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            Dimension d = super.getPreferredSize();
+            return new Dimension(d.width, ALTURA_INPUT);
+        }
+
+        @Override
+        public Dimension getMinimumSize() {
+            return getPreferredSize();
         }
 
         @Override
@@ -1605,27 +1735,33 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
+                boolean ehPrimario = UiStyle.ACCENT.equals(corFundo);
 
                 if (preencherFundo && corFundo != null) {
-                    Color atual = corFundo;
+                    Color baseBg = ehPrimario ? UiStyle.ACCENT : UiStyle.SECONDARY_BG;
+                    setForeground(ehPrimario ? UiStyle.ACCENT_TEXT : UiStyle.TEXT);
+                    Color atual = baseBg;
                     if (getModel().isPressed()) {
-                        atual = corFundo.darker();
+                        atual = baseBg.darker();
                     } else if (getModel().isRollover()) {
                         atual = new Color(
-                                Math.min(255, corFundo.getRed() + 10),
-                                Math.min(255, corFundo.getGreen() + 10),
-                                Math.min(255, corFundo.getBlue() + 10)
+                                Math.min(255, baseBg.getRed() + 10),
+                                Math.min(255, baseBg.getGreen() + 10),
+                                Math.min(255, baseBg.getBlue() + 10)
                         );
                     }
                     g2.setColor(atual);
                     g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
-                } else if (getModel().isRollover()) {
-                    g2.setColor(new Color(0x4F, 0x1B, 0x1B, 90));
-                    g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
+                } else {
+                    setForeground(UiStyle.DANGER_TEXT);
+                    if (getModel().isRollover()) {
+                        g2.setColor(new Color(0x4F, 0x1B, 0x1B, 40));
+                        g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
+                    }
                 }
 
                 if (corBorda != null) {
-                    g2.setColor(corBorda);
+                    g2.setColor(preencherFundo ? UiStyle.INPUT_BORDER : UiStyle.DANGER_BORDER);
                     g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
                 }
             } finally {
@@ -1635,9 +1771,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    /**
-     * Card da tabela com padding:0, background #1B2030, border 1px #2A3040 e border-radius 14px.
-     */
     private static final class PainelCardTabela extends JPanel {
         private static final long serialVersionUID = 1L;
 
@@ -1654,13 +1787,17 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
 
         @Override
         protected void paintComponent(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                super.paintComponent(g);
+                return;
+            }
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
-                g2.setColor(corFundo);
+                g2.setColor(UiStyle.SURFACE);
                 g2.fill(new RoundRectangle2D.Float(0, 0, w, h, arco, arco));
             } finally {
                 g2.dispose();
@@ -1669,14 +1806,35 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         }
 
         @Override
+        protected void paintChildren(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                super.paintChildren(g);
+                return;
+            }
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                int arco = raio * 2;
+                Shape clipAnterior = g2.getClip();
+                g2.clip(new RoundRectangle2D.Float(1f, 1f, Math.max(0, getWidth() - 2f), Math.max(0, getHeight() - 2f), arco, arco));
+                super.paintChildren(g2);
+                g2.setClip(clipAnterior);
+            } finally {
+                g2.dispose();
+            }
+        }
+
+        @Override
         protected void paintBorder(Graphics g) {
+            if (Boolean.TRUE.equals(getClientProperty("UiStyle.internoScroll"))) {
+                return;
+            }
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
                 int h = getHeight();
                 int arco = raio * 2;
-                g2.setColor(corBorda);
+                g2.setColor(UiStyle.BORDER);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1f, h - 1f, arco, arco));
             } finally {
                 g2.dispose();
@@ -1691,11 +1849,11 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
     @Override
     public void recarregarDados() {
         AsyncTask.executar(
-            () -> estoqueBO.listarTodos(),
+            () -> estoqueController.listarTodos(),
             estoques -> {
-                this.listaEstoqueEntidades = estoques;
-                if (estoques != null && !estoques.isEmpty()) {
-                    List<Object[]> linhas = new ArrayList<>();
+                this.listaEstoqueEntidades = estoques != null ? estoques : new ArrayList<>();
+                List<Object[]> linhas = new ArrayList<>();
+                if (estoques != null) {
                     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
                     LocalDate hoje = LocalDate.now();
                     for (Estoque est : estoques) {
@@ -1703,18 +1861,47 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                         String prodStr = (est.getProduto() != null && est.getProduto().getNome() != null)
                                 ? est.getProduto().getNome() : "";
                         String qtdStr = est.getQuantidade() != null ? String.valueOf(est.getQuantidade()) : "0";
+                        String entStr = est.getDataEntrada() != null ? est.getDataEntrada().format(dtf) : "-";
                         String valStr = est.getDataValidade() != null ? est.getDataValidade().format(dtf) : "-";
+                        String diasStr = "-";
+                        if (est.getDataValidade() != null) {
+                            int dias = est.calcularDiasParaExpirar();
+                            diasStr = dias < 0 ? ("Exp. há " + Math.abs(dias) + "d") : (dias + " d");
+                        }
+                        String funcStr = (est.getFuncionario() != null && est.getFuncionario().getNome() != null)
+                                ? est.getFuncionario().getNome() : "-";
                         String sitStr = (est.getDataValidade() != null && est.getDataValidade().isBefore(hoje))
                                 ? "Expirado" : "Válido";
-                        linhas.add(new Object[] {loteStr, prodStr, qtdStr, valStr, sitStr});
+                        linhas.add(new Object[] {loteStr, prodStr, qtdStr, entStr, valStr, diasStr, funcStr, sitStr});
                     }
-                    this.dadosEstoqueCarregados = linhas;
                 }
+                this.dadosEstoqueCarregados = linhas;
                 atualizarTabelaFiltrada();
             },
             erro -> {
+                this.listaEstoqueEntidades = new ArrayList<>();
+                this.dadosEstoqueCarregados = new ArrayList<>();
                 atualizarTabelaFiltrada();
             }
+        );
+        AsyncTask.executar(
+            () -> estoqueController.listarProdutos(),
+            produtos -> {
+                this.listaProdutosReais = produtos != null ? produtos : new ArrayList<>();
+                String[] nomes = this.listaProdutosReais.stream()
+                        .map(Produto::getNome)
+                        .toArray(String[]::new);
+                if (seletorProdutoEntrada != null) {
+                    seletorProdutoEntrada.setOpcoes(nomes);
+                    if (nomes.length > 0) {
+                        seletorProdutoEntrada.setText(nomes[0]);
+                    }
+                }
+                if (seletorProdutoEditarLote != null) {
+                    seletorProdutoEditarLote.setOpcoes(nomes);
+                }
+            },
+            erro -> {}
         );
     }
 
@@ -1722,9 +1909,18 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
     public void aplicarPermissoes(Utilizador utilizador) {
         Perfil perfil = (utilizador != null) ? utilizador.getPerfil() : Perfil.ADMIN;
         if (perfil == Perfil.VENDEDOR) {
+            if (botaoDarEntrada != null) botaoDarEntrada.setVisible(false);
+            if (botaoRepor != null) botaoRepor.setVisible(false);
+            if (botaoRetirar != null) botaoRetirar.setVisible(false);
             if (botaoEditar != null) botaoEditar.setVisible(false);
             if (botaoEliminarLote != null) botaoEliminarLote.setVisible(false);
+            if (modoLateral != ModoPainelLateral.NENHUM) {
+                definirModoPainelLateral(ModoPainelLateral.NENHUM);
+            }
         } else {
+            if (botaoDarEntrada != null) botaoDarEntrada.setVisible(true);
+            if (botaoRepor != null) botaoRepor.setVisible(true);
+            if (botaoRetirar != null) botaoRetirar.setVisible(true);
             if (botaoEditar != null) botaoEditar.setVisible(true);
             if (botaoEliminarLote != null) botaoEliminarLote.setVisible(true);
         }
@@ -1733,13 +1929,10 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
     @Override
     public void aplicarTema() {
         setBackground(UiStyle.BACKGROUND);
-        if (tabela != null) {
-            tabela.setBackground(UiStyle.SURFACE);
-            tabela.setForeground(UiStyle.TEXT);
-            tabela.setGridColor(UiStyle.TABLE_ROW_BORDER);
-            tabela.getTableHeader().setBackground(UiStyle.SURFACE);
-            tabela.getTableHeader().setForeground(UiStyle.MUTED);
-        }
-        repaint();
+        UiStyle.atualizarComponentesTema(this);
+        UiStyle.atualizarComponentesTema(cardDarEntrada);
+        UiStyle.atualizarComponentesTema(cardReporEstoque);
+        UiStyle.atualizarComponentesTema(cardRetirarEstoque);
+        UiStyle.atualizarComponentesTema(cardEditarLote);
     }
 }
