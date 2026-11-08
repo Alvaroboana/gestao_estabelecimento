@@ -21,6 +21,12 @@ public class TesteRelatorioDAO {
             testarResultado("estoque baixo", dao.estoqueBaixo());
             testarResultado("produtos mais vendidos", dao.produtosMaisVendidos());
             testarResultado("reembolsos", dao.reembolsosPeriodo(inicio, fim));
+            testarResultado("resumo de vendas por estado", dao.resumoVendasPorEstado(inicio, fim));
+            Map<String, Integer> kpis = dao.obterIndicadoresDashboard();
+            if (kpis == null || !kpis.containsKey("lotesAExpirar")) {
+                throw new AssertionError("Indicadores do dashboard invalidos.");
+            }
+            System.out.println("[OK] indicadores do dashboard: " + kpis);
             System.out.println("=== Teste RelatorioDAO concluido com sucesso ===");
         } catch (DBException e) {
             System.out.println("[ERRO DE BANCO] " + e.getMessage());

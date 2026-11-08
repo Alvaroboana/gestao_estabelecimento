@@ -21,12 +21,10 @@ public class TesteBairroDAO {
         bairro.setNome("Bairro Teste " + System.currentTimeMillis());
 
         try {
-            // Cria cidade
             System.out.println("Criando cidade para teste");
             cidadeDAO.salvar(cidade);
             bairro.setCidade(cidade);
 
-            // 1. Salvar Bairro
             System.out.println("Salvando bairro: " + bairro.getNome());
             bairroDAO.salvar(bairro);
             if (bairro.getIdBairro() != null) {
@@ -36,7 +34,6 @@ public class TesteBairroDAO {
                 return;
             }
 
-            // 2. Buscar por ID 
             System.out.println("Buscar bairro por ID: " + bairro.getIdBairro());
             Bairro buscado = bairroDAO.buscarPorId(bairro.getIdBairro());
             if (buscado != null && buscado.getCidade() != null && buscado.getCidade().getNome() != null) {
@@ -45,7 +42,6 @@ public class TesteBairroDAO {
                 System.out.println("ERRO Bairro ou cidade associada nao carregada");
             }
 
-            // 3. Atualizar Bairro
             System.out.println("Atualizando nome do bairro");
             bairro.setNome(bairro.getNome() + " Modificado");
             bairroDAO.atualizar(bairro);
@@ -56,7 +52,6 @@ public class TesteBairroDAO {
                 System.out.println("ERRO Falha ao atualizar bairro");
             }
 
-            // 4. Listar
             System.out.println("Listar bairros");
             List<Bairro> lista = bairroDAO.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -65,7 +60,6 @@ public class TesteBairroDAO {
                 System.out.println("ERRO Nenhum bairro encontrado");
             }
 
-            // 5. Eliminar Bairro e Cidade
             System.out.println("Eliminar bairro");
             bairroDAO.eliminar(bairro.getIdBairro());
             Bairro apagado = bairroDAO.buscarPorId(bairro.getIdBairro());

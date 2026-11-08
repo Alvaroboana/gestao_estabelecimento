@@ -82,15 +82,11 @@ public class TesteExportacaoRelatorios {
 
             String conteudo = lerArquivoUtf8(tempFile);
 
-            // Verifica BOM UTF-8
             assertTrue(conteudo.startsWith("\uFEFF"), "Ficheiro deve iniciar com Byte Order Mark (BOM) UTF-8");
 
-            // Verifica delimitador ponto e vírgula
             assertTrue(conteudo.contains("ID;Produto;Qtd;Preço"), "Cabecalho com ponto e virgula esperado");
             assertTrue(conteudo.contains("1;Pão Francês;10;5,00 MT"), "Linha 1 com acentuacao esperada");
-            // Verifica escape de ';'
             assertTrue(conteudo.contains("\"Leite; Longa Vida\""), "Campo contendo ponto e virgula deve estar entre aspas");
-            // Verifica escape de aspas
             assertTrue(conteudo.contains("\"Água mineral \"\"Pure\"\"\""), "Aspas duplas devem ser escapadas com aspas duplas adicionais");
 
             System.out.println("[OK] Exportacao CSV via RelatorioController validada.");
@@ -106,6 +102,10 @@ public class TesteExportacaoRelatorios {
     private static void testarExportacaoCsvPainel() {
         System.out.println("[Teste] Exportacao CSV programatica via RelatoriosPanel...");
         RelatoriosPanel panel = new RelatoriosPanel(AbaRelatorio.MAIS_VENDIDOS);
+        DefaultTableModel m = (DefaultTableModel) panel.getTabelaMaisVendidos().getModel();
+        if (m.getRowCount() == 0) {
+            m.addRow(new Object[] {"1", "Pão", "10", "50,00 MT"});
+        }
 
         File tempFile = null;
         try {

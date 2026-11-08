@@ -15,7 +15,6 @@ public class TesteMainFrame {
         try {
             verificar("Estabelecimento".equals(frame.getTitle()), "titulo da janela");
             verificar(frame.getPainelCentral() != null, "painel central criado");
-            // Na arquitectura Single JFrame, o contentPane tem apenas 1 componente (rootPanel com CardLayout)
             verificar(frame.getContentPane().getComponentCount() >= 1, "navegacao superior e painel central");
             frame.mostrarPainel("inicio");
             System.out.println("=== Teste MainFrame concluido com sucesso ===");

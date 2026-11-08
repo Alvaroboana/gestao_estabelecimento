@@ -1,5 +1,6 @@
 package testes;
 
+import controller.LoginController;
 import java.awt.GraphicsEnvironment;
 import model.bo.LoginBO;
 import model.bo.UtilizadorBO;
@@ -14,7 +15,7 @@ public class TesteLoginFrame {
             return;
         }
 
-        LoginFrame frame = new LoginFrame(new LoginBO(new UtilizadorBO(new UtilizadorDAO())));
+        LoginFrame frame = new LoginFrame(new LoginController(new LoginBO(new UtilizadorBO(new UtilizadorDAO()))));
         try {
             verificar(frame.getTitle() != null && !frame.getTitle().isEmpty(), "titulo");
             verificar(frame.getCampoUsername() != null, "campo username");

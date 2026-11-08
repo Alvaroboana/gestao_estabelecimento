@@ -27,12 +27,10 @@ public class TesteProdutoDAO {
         produto.setQuantidadeMinima(5);
 
         try {
-            // 0. Criar Categoria de apoio
             System.out.println("-> Criando categoria de apoio");
             categoriaDAO.salvar(categoria);
             produto.setCategoria(categoria);
 
-            // 1. Salvar
             System.out.println("-> Salvando produto: " + produto.getNome());
             produtoDAO.salvar(produto);
             if (produto.getIdProduto() != null) {
@@ -42,7 +40,6 @@ public class TesteProdutoDAO {
                 return;
             }
 
-            // 2. Buscar por ID
             System.out.println("-> Buscando produto por ID: " + produto.getIdProduto());
             Produto buscado = produtoDAO.buscarPorId(produto.getIdProduto());
             if (buscado != null && buscado.getNome().equals(produto.getNome())) {
@@ -54,7 +51,6 @@ public class TesteProdutoDAO {
                 System.out.println("  [ERRO] Produto nao encontrado");
             }
 
-            // 3. Atualizar
             System.out.println("-> Atualizando produto");
             produto.setNome(produto.getNome() + " Atualizado");
             produto.setPreco(175.50);
@@ -67,7 +63,6 @@ public class TesteProdutoDAO {
                 System.out.println("  [ERRO] Falha ao atualizar produto");
             }
 
-            // 4. Listar
             System.out.println("-> Listando produtos");
             List<Produto> lista = produtoDAO.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -76,7 +71,6 @@ public class TesteProdutoDAO {
                 System.out.println("  [ERRO] Nenhum produto encontrado na listagem");
             }
 
-            // 5. Eliminar
             System.out.println("-> Eliminando produto ID: " + produto.getIdProduto());
             produtoDAO.eliminar(produto.getIdProduto());
             Produto apagado = produtoDAO.buscarPorId(produto.getIdProduto());
@@ -86,7 +80,6 @@ public class TesteProdutoDAO {
                 System.out.println("  [ERRO] Falha ao eliminar produto");
             }
 
-            // Limpeza de categoria de apoio
             System.out.println("-> Eliminando categoria de apoio ID: " + categoria.getIdCategoria());
             categoriaDAO.eliminar(categoria.getIdCategoria());
 

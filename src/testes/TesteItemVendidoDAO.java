@@ -34,7 +34,6 @@ public class TesteItemVendidoDAO {
         VendaDAO vendaDAO = new VendaDAO();
         ItemVendidoDAO itemVendidoDAO = new ItemVendidoDAO();
 
-        // Entidades de apoio
         Cargo cargo = new Cargo();
         cargo.setNome("Cargo Para ItemVendido " + System.currentTimeMillis());
         cargo.setSalarioBase(19000.0);
@@ -75,7 +74,6 @@ public class TesteItemVendidoDAO {
         item.setDesconto(10.0);
 
         try {
-            // Cria entidades de apoio
             System.out.println("-> Criando entidades de apoio (Cargo, Funcionario, Cliente, Categoria, Produto, Venda)");
             cargoDAO.salvar(cargo);
             funcionario.setCargo(cargo);
@@ -94,7 +92,6 @@ public class TesteItemVendidoDAO {
             item.setVenda(venda);
             item.setProduto(produto);
 
-            // 1. Salvar
             System.out.println("-> Salvando item vendido");
             itemVendidoDAO.salvar(item);
             if (item.getIdItem() != null) {
@@ -104,7 +101,6 @@ public class TesteItemVendidoDAO {
                 return;
             }
 
-            // 2. Buscar por ID
             System.out.println("-> Buscando item vendido por ID: " + item.getIdItem());
             ItemVendido buscado = itemVendidoDAO.buscarPorId(item.getIdItem());
             if (buscado != null && buscado.getQuantidade().equals(item.getQuantidade())) {
@@ -116,7 +112,6 @@ public class TesteItemVendidoDAO {
                 System.out.println("  [ERRO] Item vendido nao encontrado");
             }
 
-            // 3. Buscar por Venda
             System.out.println("-> Buscando itens da venda ID: " + venda.getIdVenda());
             List<ItemVendido> itensVenda = itemVendidoDAO.buscarPorVenda(venda.getIdVenda());
             if (itensVenda != null && !itensVenda.isEmpty()) {
@@ -125,7 +120,6 @@ public class TesteItemVendidoDAO {
                 System.out.println("  [ERRO] Nenhum item encontrado para a venda");
             }
 
-            // 4. Atualizar
             System.out.println("-> Atualizando quantidade e preco do item vendido");
             item.setQuantidade(5);
             item.setPreco(110.0);
@@ -138,7 +132,6 @@ public class TesteItemVendidoDAO {
                 System.out.println("  [ERRO] Falha ao atualizar item vendido");
             }
 
-            // 5. Listar
             System.out.println("-> Listando todos os itens vendidos");
             List<ItemVendido> lista = itemVendidoDAO.listarTodos();
             if (lista != null && !lista.isEmpty()) {
@@ -147,7 +140,6 @@ public class TesteItemVendidoDAO {
                 System.out.println("  [ERRO] Nenhum item vendido encontrado na listagem");
             }
 
-            // 6. Eliminar item vendido
             System.out.println("-> Eliminando item vendido ID: " + item.getIdItem());
             itemVendidoDAO.eliminar(item.getIdItem());
             ItemVendido apagado = itemVendidoDAO.buscarPorId(item.getIdItem());
@@ -157,7 +149,6 @@ public class TesteItemVendidoDAO {
                 System.out.println("  [ERRO] Falha ao eliminar item vendido");
             }
 
-            // Limpeza de entidades de apoio
             System.out.println("-> Limpando dados de apoio (Venda, Produto, Categoria, Cliente, Funcionario, Cargo)");
             vendaDAO.eliminar(venda.getIdVenda());
             produtoDAO.eliminar(produto.getIdProduto());

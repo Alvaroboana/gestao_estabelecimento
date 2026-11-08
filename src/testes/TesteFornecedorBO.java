@@ -13,7 +13,6 @@ public class TesteFornecedorBO {
         System.out.println("========== Teste FornecedorBO (Validacoes) ==========");
         FornecedorBO bo = new FornecedorBO();
 
-        // 1. Salvar nulo
         try {
             bo.salvar(null);
             erro("Salvar fornecedor nulo", "Deveria ter falhado");
@@ -21,7 +20,6 @@ public class TesteFornecedorBO {
             sucesso("Fornecedor nulo rejeitado: " + e.getMessage());
         }
 
-        // 2. Salvar nome nulo
         try {
             Fornecedor f = new Fornecedor();
             f.setNome(null);
@@ -31,7 +29,6 @@ public class TesteFornecedorBO {
             sucesso("Nome nulo rejeitado: " + e.getMessage());
         }
 
-        // 3. Salvar nome em branco
         try {
             Fornecedor f = new Fornecedor();
             f.setNome("   ");
@@ -41,7 +38,6 @@ public class TesteFornecedorBO {
             sucesso("Nome em branco rejeitado: " + e.getMessage());
         }
 
-        // 4. Salvar nome maior que 100 caracteres
         try {
             Fornecedor f = new Fornecedor();
             StringBuilder sb = new StringBuilder();
@@ -55,7 +51,6 @@ public class TesteFornecedorBO {
             sucesso("Nome > 100 caracteres rejeitado: " + e.getMessage());
         }
 
-        // 5. Atualizar sem ID
         try {
             Fornecedor f = new Fornecedor();
             f.setNome("Fornecedor Valido");
@@ -65,7 +60,6 @@ public class TesteFornecedorBO {
             sucesso("Atualizacao sem ID rejeitada: " + e.getMessage());
         }
 
-        // 6. Eliminar com ID invalido
         try {
             bo.eliminar(-1L);
             erro("Eliminar com ID negativo", "Deveria ter falhado");
@@ -73,7 +67,6 @@ public class TesteFornecedorBO {
             sucesso("ID negativo rejeitado: " + e.getMessage());
         }
 
-        // 7. Buscar por ID nulo
         try {
             bo.buscarPorId(null);
             erro("Buscar com ID nulo", "Deveria ter falhado");
