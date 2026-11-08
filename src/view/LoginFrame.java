@@ -1,15 +1,11 @@
 package view;
 
+import controller.LoginController;
 import java.awt.Dimension;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
-import model.bo.LoginBO;
 import model.vo.Utilizador;
 
-/**
- * Wrapper de janela independente para LoginPanel.
- * Preservado para execução isolada e testes de regressão (ex: TesteLoginFrame).
- */
 public class LoginFrame extends JFrame {
     private static final long serialVersionUID = 1L;
 
@@ -19,14 +15,14 @@ public class LoginFrame extends JFrame {
     private final LoginPanel loginPanel;
 
     public LoginFrame() {
-        this(new LoginBO());
+        this(new LoginController());
     }
 
-    public LoginFrame(LoginBO loginBO) {
+    public LoginFrame(LoginController loginController) {
         super("Gestão de Estabelecimento - Login");
         UiStyle.instalarTemaEscuro();
 
-        this.loginPanel = new LoginPanel(loginBO, this::onLoginSucesso);
+        this.loginPanel = new LoginPanel(loginController, this::onLoginSucesso);
         setContentPane(loginPanel);
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
