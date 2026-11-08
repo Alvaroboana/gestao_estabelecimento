@@ -1,5 +1,7 @@
 package view;
 
+import controller.RelatorioController;
+import controller.UtilizadorController;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -43,19 +45,21 @@ import javax.swing.JPopupMenu;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
-import model.bo.RelatorioBO;
-import model.bo.UtilizadorBO;
 import model.vo.Perfil;
 import model.vo.SessaoUtilizador;
 import model.vo.Utilizador;
+import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignA;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignB;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignC;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignH;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignL;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignP;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignS;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignT;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignW;
 import util.AsyncTask;
 
-/**
- * Janela principal única (Single JFrame) da aplicação.
- * Hospeda tanto a tela de login (ECRA_LOGIN) quanto a área de trabalho do sistema (ECRA_APLICACAO),
- * eliminando a destruição de janelas, aplicando controle de perfis (ADMIN/GERENTE/VENDEDOR)
- * e suportando alternância em tempo real entre Tema Escuro e Tema Claro.
- */
 public class MainFrame extends JFrame {
     private static final long serialVersionUID = 1L;
 
@@ -72,7 +76,7 @@ public class MainFrame extends JFrame {
 
     private static final String ECRA_LOGIN = "ECRA_LOGIN";
     private static final String ECRA_APLICACAO = "ECRA_APLICACAO";
-    private static final int LARGURA_MENU_UTILIZADOR = 270;
+    private static final int LARGURA_MENU_UTILIZADOR = 286;
 
     private final CardLayout rootCardLayout;
     private final JPanel rootPanel;
@@ -84,17 +88,22 @@ public class MainFrame extends JFrame {
 
     private final Map<String, JPanel> mapaPaineis = new HashMap<>();
     private final List<ItemMenuNavegacao> itensNavegacao = new ArrayList<>();
+    private final List<GrupoCategoriaSidebar> gruposCategoriaSidebar = new ArrayList<>();
 
     private JPanel barraNavegacaoAtual;
     private JMenuBar menuBarItens;
     private BotaoAvatar botaoAvatar;
+    private JPopupMenu popupMenuUtilizadorAtivo;
     private JLabel labelMenuUsername;
     private JLabel labelMenuPerfilChip;
     private JLabel labelMenuVendasMes;
 
     private Utilizador utilizadorLogado;
+    private final RelatorioController relatorioController = new RelatorioController();
+    private final UtilizadorController utilizadorController = new UtilizadorController();
     private boolean temaEscuroAtivo = true;
     private boolean navegacaoSuperiorAtiva = true;
+    private String painelAtivoId = PAINEL_INICIO;
 
     private ScheduledExecutorService executorMonitoramento;
 
@@ -159,7 +168,6 @@ public class MainFrame extends JFrame {
 
         painelCentral.setBackground(UiStyle.BACKGROUND);
 
-        // Instancia os painéis principais
         DashboardPanel dashPanel = new DashboardPanel(utilizadorLogado);
         VendasPanel vendasPanel = new VendasPanel();
         ProdutosPanel produtosPanel = new ProdutosPanel();
@@ -205,7 +213,6 @@ public class MainFrame extends JFrame {
         rootCardLayout.show(rootPanel, ECRA_APLICACAO);
         mostrarPainel(PAINEL_INICIO);
 
-        // Recarrega o dashboard
         JPanel inicio = mapaPaineis.get(PAINEL_INICIO);
         if (inicio instanceof PainelRecarregavel) {
             ((PainelRecarregavel) inicio).recarregarDados();
@@ -248,7 +255,7 @@ public class MainFrame extends JFrame {
         final Long idFunc = utilizadorLogado.getFuncionario().getIdFuncionario();
         AsyncTask.executar(() -> {
             try {
-                return new RelatorioBO().obterTotalVendasFuncionarioMes(idFunc);
+                return relatorioController.obterTotalVendasFuncionarioMes(idFunc);
             } catch (Exception e) {
                 return 0.0;
             }
@@ -271,13 +278,11 @@ public class MainFrame extends JFrame {
             boolean visivel = true;
 
             if (perfil == Perfil.VENDEDOR) {
-                // Vendedor acessa apenas Início, Vendas, Produtos, Estoque e Clientes
                 if (p.equals(PAINEL_RELATORIOS) || p.equals(PAINEL_FUNCIONARIOS)
                         || p.equals(PAINEL_FORNECEDORES) || p.equals(PAINEL_UTILIZADORES)) {
                     visivel = false;
                 }
             } else if (perfil == Perfil.GERENTE) {
-                // Gerente acessa tudo exceto Funcionários e Utilizadores
                 if (p.equals(PAINEL_FUNCIONARIOS) || p.equals(PAINEL_UTILIZADORES)) {
                     visivel = false;
                 }
@@ -286,7 +291,10 @@ public class MainFrame extends JFrame {
             item.setVisible(visivel);
         }
 
-        // Notifica todos os painéis para ajustarem seus botões e ações
+        for (GrupoCategoriaSidebar grupo : gruposCategoriaSidebar) {
+            grupo.atualizarVisibilidade();
+        }
+
         for (JPanel painel : mapaPaineis.values()) {
             if (painel instanceof PainelRecarregavel) {
                 ((PainelRecarregavel) painel).aplicarPermissoes(utilizadorLogado);
@@ -299,6 +307,7 @@ public class MainFrame extends JFrame {
             throw new IllegalArgumentException("O nome do painel é obrigatório.");
         }
 
+        this.painelAtivoId = nomePainel;
         layoutCentral.show(painelCentral, nomePainel);
 
         for (ItemMenuNavegacao item : itensNavegacao) {
@@ -316,36 +325,42 @@ public class MainFrame extends JFrame {
     }
 
     private JPanel criarBarraNavegacaoSuperior() {
-        JPanel barra = new JPanel(new BorderLayout(28, 0));
+        PainelBarraNavegacao barra = new PainelBarraNavegacao(true);
+        barra.setLayout(new BorderLayout(28, 0));
         barra.setBackground(UiStyle.HEADER_BG);
         barra.setPreferredSize(new Dimension(1280, 64));
         barra.setMinimumSize(new Dimension(600, 64));
-        barra.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UiStyle.BORDER),
-                BorderFactory.createEmptyBorder(0, 28, 0, 28)
-        ));
+        barra.setBorder(BorderFactory.createEmptyBorder(0, 28, 0, 28));
 
-        JLabel marca = new JLabel("Estabelecimento");
-        marca.setForeground(UiStyle.ACCENT);
+        JLabel marca = new JLabel("Mercearia Kumbeza");
+        marca.setForeground(UiStyle.BRAND_TEXT);
         marca.setFont(UiStyle.fonte(15, Font.BOLD));
+        marca.setIcon(UiStyle.iconeDinamico(MaterialDesignS.STORE, 18, () -> UiStyle.BRAND_TEXT));
+        marca.setIconTextGap(8);
         barra.add(marca, BorderLayout.WEST);
 
         this.menuBarItens = new JMenuBar();
+        menuBarItens.setBackground(UiStyle.HEADER_BG);
         menuBarItens.setOpaque(false);
         menuBarItens.setBorderPainted(false);
         menuBarItens.setBorder(new EmptyBorder(0, 0, 0, 0));
         menuBarItens.setLayout(new BoxLayout(menuBarItens, BoxLayout.X_AXIS));
 
         itensNavegacao.clear();
-        adicionarItemMenu(menuBarItens, itemNavegacao("Início", PAINEL_INICIO));
-        adicionarItemMenu(menuBarItens, itemNavegacao("Vendas", PAINEL_VENDAS));
-        adicionarItemMenu(menuBarItens, itemNavegacao("Produtos", PAINEL_PRODUTOS));
-        adicionarItemMenu(menuBarItens, itemNavegacao("Estoque", PAINEL_ESTOQUE));
-        adicionarItemMenu(menuBarItens, itemNavegacao("Relatórios", PAINEL_RELATORIOS));
-        adicionarItemMenu(menuBarItens, itemNavegacao("Funcionários", PAINEL_FUNCIONARIOS));
-        adicionarItemMenu(menuBarItens, itemNavegacao("Clientes", PAINEL_CLIENTES));
-        adicionarItemMenu(menuBarItens, itemNavegacao("Fornecedores", PAINEL_FORNECEDORES));
-        adicionarItemMenu(menuBarItens, itemNavegacao("Utilizadores", PAINEL_UTILIZADORES));
+        gruposCategoriaSidebar.clear();
+        adicionarItemMenu(menuBarItens, itemNavegacao("Início", PAINEL_INICIO, MaterialDesignH.HOME_OUTLINE));
+        adicionarItemMenu(menuBarItens, itemNavegacao("Vendas", PAINEL_VENDAS, MaterialDesignC.CART_OUTLINE));
+        adicionarItemMenu(menuBarItens,
+                itemNavegacao("Produtos", PAINEL_PRODUTOS, MaterialDesignP.PACKAGE_VARIANT_CLOSED));
+        adicionarItemMenu(menuBarItens, itemNavegacao("Estoque", PAINEL_ESTOQUE, MaterialDesignW.WAREHOUSE));
+        adicionarItemMenu(menuBarItens, itemNavegacao("Relatórios", PAINEL_RELATORIOS, MaterialDesignC.CHART_BOX));
+        adicionarItemMenu(menuBarItens,
+                itemNavegacao("Funcionários", PAINEL_FUNCIONARIOS, MaterialDesignB.BRIEFCASE_OUTLINE));
+        adicionarItemMenu(menuBarItens, itemNavegacao("Clientes", PAINEL_CLIENTES, MaterialDesignA.ACCOUNT_GROUP));
+        adicionarItemMenu(menuBarItens,
+                itemNavegacao("Fornecedores", PAINEL_FORNECEDORES, MaterialDesignT.TRUCK_DELIVERY));
+        adicionarItemMenu(menuBarItens,
+                itemNavegacao("Utilizadores", PAINEL_UTILIZADORES, MaterialDesignS.SHIELD_ACCOUNT));
         menuBarItens.add(Box.createHorizontalGlue());
 
         JPanel centroWrapper = new JPanel(new GridBagLayout());
@@ -383,8 +398,8 @@ public class MainFrame extends JFrame {
         menuBar.add(item);
     }
 
-    private JMenu itemNavegacao(String titulo, String painel) {
-        ItemMenuNavegacao menu = new ItemMenuNavegacao(titulo, painel, PAINEL_INICIO.equals(painel));
+    private JMenu itemNavegacao(String titulo, String painel, Ikon ikon) {
+        ItemMenuNavegacao menu = new ItemMenuNavegacao(titulo, painel, ikon, painelAtivoId.equalsIgnoreCase(painel));
         menu.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -397,6 +412,7 @@ public class MainFrame extends JFrame {
 
     private void mostrarMenuUtilizador(JButton origem) {
         JPopupMenu popup = new JPopupMenu();
+        this.popupMenuUtilizadorAtivo = popup;
         popup.setOpaque(false);
         popup.setBorder(new EmptyBorder(0, 0, 0, 0));
         popup.setBackground(new Color(0, 0, 0, 0));
@@ -412,14 +428,20 @@ public class MainFrame extends JFrame {
                 ? utilizadorLogado.getPerfil()
                 : Perfil.ADMIN;
 
-        // Cabeçalho do utilizador
         JPanel blocoUtilizador = new JPanel();
         blocoUtilizador.setOpaque(false);
         blocoUtilizador.setLayout(new BoxLayout(blocoUtilizador, BoxLayout.Y_AXIS));
         blocoUtilizador.setBorder(new EmptyBorder(10, 12, 10, 12));
         blocoUtilizador.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        this.labelMenuUsername = new JLabel(username);
+        this.labelMenuUsername = new JLabel(username) {
+            private static final long serialVersionUID = 1L;
+            @Override
+            protected void paintComponent(Graphics g) {
+                setForeground(UiStyle.TEXT);
+                super.paintComponent(g);
+            }
+        };
         labelMenuUsername.setFont(UiStyle.fonte(14, Font.BOLD));
         labelMenuUsername.setForeground(UiStyle.TEXT);
         labelMenuUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -434,41 +456,41 @@ public class MainFrame extends JFrame {
 
         cardMenu.add(criarDivisorMenu());
 
-        // Seletor Tema: Escuro | Claro
         SeletorToggle toggleTema = new SeletorToggle(
                 "Escuro",
                 "Claro",
                 temaEscuroAtivo,
-                escuro -> alternarTema(escuro)
-        );
-        cardMenu.add(criarLinhaComControle("Tema", toggleTema));
+                escuro -> alternarTema(escuro));
+        cardMenu.add(criarLinhaComControle("Tema", MaterialDesignT.THEME_LIGHT_DARK, toggleTema));
 
-        // Seletor Navegação: Superior | Lateral
         SeletorToggle toggleNavegacao = new SeletorToggle(
                 "Superior",
                 "Lateral",
                 navegacaoSuperiorAtiva,
-                superior -> alternarOrientacaoNavegacao(superior)
-        );
-        cardMenu.add(criarLinhaComControle("Navegação", toggleNavegacao));
+                superior -> alternarOrientacaoNavegacao(superior));
+        cardMenu.add(criarLinhaComControle("Navegação", MaterialDesignL.LAYERS, toggleNavegacao));
 
-        // Alterar Senha
-        cardMenu.add(criarLinhaClicavel("Alterar senha", UiStyle.TEXT, false, () -> {
+        cardMenu.add(criarLinhaClicavel("Alterar senha", MaterialDesignL.LOCK_OUTLINE, UiStyle.TEXT, false, () -> {
             popup.setVisible(false);
             abrirModalAlterarSenha();
         }));
 
-        // Linha: As minhas vendas do mês
-        this.labelMenuVendasMes = new JLabel("0,00 MT");
+        this.labelMenuVendasMes = new JLabel("0,00 MT") {
+            private static final long serialVersionUID = 1L;
+            @Override
+            protected void paintComponent(Graphics g) {
+                setForeground(UiStyle.MUTED);
+                super.paintComponent(g);
+            }
+        };
         labelMenuVendasMes.setFont(UiStyle.fonte(12, Font.PLAIN));
         labelMenuVendasMes.setForeground(UiStyle.MUTED);
-        cardMenu.add(criarLinhaComControle("As minhas vendas do mês", labelMenuVendasMes));
+        cardMenu.add(criarLinhaComControle("As minhas vendas do mês", MaterialDesignC.CASH, labelMenuVendasMes));
         buscarVendasDoMesAssincrono();
 
         cardMenu.add(criarDivisorMenu());
 
-        // Linha Sair
-        cardMenu.add(criarLinhaClicavel("Sair", UiStyle.ERROR_TEXT, true, () -> {
+        cardMenu.add(criarLinhaClicavel("Sair", MaterialDesignL.LOGOUT, UiStyle.DANGER_TEXT, true, () -> {
             popup.setVisible(false);
             fazerLogout();
         }));
@@ -481,23 +503,27 @@ public class MainFrame extends JFrame {
 
         popup.add(cardMenu);
 
-        int x = origem.getWidth() - LARGURA_MENU_UTILIZADOR + 8;
-        int y = origem.getHeight() + 9;
+        int x;
+        int y;
+        if (navegacaoSuperiorAtiva) {
+            x = origem.getWidth() - LARGURA_MENU_UTILIZADOR + 8;
+            y = origem.getHeight() + 9;
+        } else {
+            x = 0;
+            y = -pref.height - 8;
+        }
         popup.show(origem, x, y);
     }
 
     private void alternarTema(boolean escuro) {
         this.temaEscuroAtivo = escuro;
         UiStyle.alternarTema(escuro);
+        SwingUtilities.updateComponentTreeUI(this);
 
         getContentPane().setBackground(UiStyle.BACKGROUND);
         rootPanel.setBackground(UiStyle.BACKGROUND);
         appContainer.setBackground(UiStyle.BACKGROUND);
         painelCentral.setBackground(UiStyle.BACKGROUND);
-
-        if (barraNavegacaoAtual != null) {
-            barraNavegacaoAtual.setBackground(UiStyle.HEADER_BG);
-        }
 
         loginPanel.aplicarTema();
 
@@ -505,9 +531,14 @@ public class MainFrame extends JFrame {
             if (p instanceof PainelRecarregavel) {
                 ((PainelRecarregavel) p).aplicarTema();
             }
+            UiStyle.atualizarComponentesTema(p);
         }
 
-        SwingUtilities.updateComponentTreeUI(this);
+        alternarOrientacaoNavegacao(this.navegacaoSuperiorAtiva);
+        if (popupMenuUtilizadorAtivo != null && popupMenuUtilizadorAtivo.isVisible()) {
+            UiStyle.atualizarComponentesTema(popupMenuUtilizadorAtivo);
+            popupMenuUtilizadorAtivo.repaint();
+        }
         repaint();
     }
 
@@ -529,40 +560,66 @@ public class MainFrame extends JFrame {
     }
 
     private JPanel criarBarraNavegacaoLateral() {
-        JPanel barra = new JPanel();
+        PainelBarraNavegacao barra = new PainelBarraNavegacao(false);
         barra.setLayout(new BoxLayout(barra, BoxLayout.Y_AXIS));
         barra.setBackground(UiStyle.HEADER_BG);
-        barra.setPreferredSize(new Dimension(200, 720));
-        barra.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 0, 1, UiStyle.BORDER),
-                BorderFactory.createEmptyBorder(20, 16, 20, 16)
-        ));
+        barra.setPreferredSize(new Dimension(224, 720));
+        barra.setMinimumSize(new Dimension(224, 400));
+        barra.setBorder(BorderFactory.createEmptyBorder(20, 16, 20, 16));
 
-        JLabel marca = new JLabel("Estabelecimento");
-        marca.setForeground(UiStyle.ACCENT);
+        JLabel marca = new JLabel("Mercearia Kumbeza");
+        marca.setForeground(UiStyle.BRAND_TEXT);
         marca.setFont(UiStyle.fonte(15, Font.BOLD));
+        marca.setIcon(UiStyle.iconeDinamico(MaterialDesignS.STORE, 18, () -> UiStyle.BRAND_TEXT));
+        marca.setIconTextGap(8);
         marca.setAlignmentX(Component.LEFT_ALIGNMENT);
         barra.add(marca);
-        barra.add(Box.createRigidArea(new Dimension(0, 24)));
+        barra.add(Box.createRigidArea(new Dimension(0, 18)));
 
         this.menuBarItens = new JMenuBar();
+        menuBarItens.setBackground(UiStyle.HEADER_BG);
         menuBarItens.setOpaque(false);
         menuBarItens.setBorderPainted(false);
+        menuBarItens.setBorder(new EmptyBorder(0, 0, 0, 0));
         menuBarItens.setLayout(new BoxLayout(menuBarItens, BoxLayout.Y_AXIS));
         menuBarItens.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         itensNavegacao.clear();
-        adicionarItemMenuVertical(menuBarItens, itemNavegacao("Início", PAINEL_INICIO));
-        adicionarItemMenuVertical(menuBarItens, itemNavegacao("Vendas", PAINEL_VENDAS));
-        adicionarItemMenuVertical(menuBarItens, itemNavegacao("Produtos", PAINEL_PRODUTOS));
-        adicionarItemMenuVertical(menuBarItens, itemNavegacao("Estoque", PAINEL_ESTOQUE));
-        adicionarItemMenuVertical(menuBarItens, itemNavegacao("Relatórios", PAINEL_RELATORIOS));
-        adicionarItemMenuVertical(menuBarItens, itemNavegacao("Funcionários", PAINEL_FUNCIONARIOS));
-        adicionarItemMenuVertical(menuBarItens, itemNavegacao("Clientes", PAINEL_CLIENTES));
-        adicionarItemMenuVertical(menuBarItens, itemNavegacao("Fornecedores", PAINEL_FORNECEDORES));
-        adicionarItemMenuVertical(menuBarItens, itemNavegacao("Utilizadores", PAINEL_UTILIZADORES));
+        gruposCategoriaSidebar.clear();
 
-        barra.add(menuBarItens);
+        adicionarCategoriaMenuVertical(menuBarItens, "VISÃO GERAL", new JMenu[] {
+                itemNavegacao("Início", PAINEL_INICIO, MaterialDesignH.HOME_OUTLINE),
+                itemNavegacao("Relatórios", PAINEL_RELATORIOS, MaterialDesignC.CHART_BOX)
+        });
+
+        adicionarCategoriaMenuVertical(menuBarItens, "OPERAÇÕES", new JMenu[] {
+                itemNavegacao("Vendas", PAINEL_VENDAS, MaterialDesignC.CART_OUTLINE),
+                itemNavegacao("Produtos", PAINEL_PRODUTOS, MaterialDesignP.PACKAGE_VARIANT_CLOSED),
+                itemNavegacao("Estoque", PAINEL_ESTOQUE, MaterialDesignW.WAREHOUSE)
+        });
+
+        adicionarCategoriaMenuVertical(menuBarItens, "PARCEIROS", new JMenu[] {
+                itemNavegacao("Clientes", PAINEL_CLIENTES, MaterialDesignA.ACCOUNT_GROUP),
+                itemNavegacao("Fornecedores", PAINEL_FORNECEDORES, MaterialDesignT.TRUCK_DELIVERY)
+        });
+
+        adicionarCategoriaMenuVertical(menuBarItens, "ADMINISTRAÇÃO", new JMenu[] {
+                itemNavegacao("Funcionários", PAINEL_FUNCIONARIOS, MaterialDesignB.BRIEFCASE_OUTLINE),
+                itemNavegacao("Utilizadores", PAINEL_UTILIZADORES, MaterialDesignS.SHIELD_ACCOUNT)
+        });
+
+        javax.swing.JScrollPane scrollSidebar = new javax.swing.JScrollPane(
+                menuBarItens,
+                javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+        );
+        scrollSidebar.setBorder(BorderFactory.createEmptyBorder());
+        scrollSidebar.setOpaque(false);
+        scrollSidebar.getViewport().setOpaque(false);
+        scrollSidebar.getVerticalScrollBar().setUnitIncrement(14);
+        scrollSidebar.getVerticalScrollBar().setPreferredSize(new Dimension(4, 0));
+        scrollSidebar.setAlignmentX(Component.LEFT_ALIGNMENT);
+        barra.add(scrollSidebar);
         barra.add(Box.createVerticalGlue());
 
         String username = (utilizadorLogado != null && utilizadorLogado.getUsername() != null)
@@ -572,19 +629,112 @@ public class MainFrame extends JFrame {
 
         this.botaoAvatar = new BotaoAvatar(inicial);
         botaoAvatar.setToolTipText(username);
-        botaoAvatar.setAlignmentX(Component.LEFT_ALIGNMENT);
         botaoAvatar.addActionListener(e -> mostrarMenuUtilizador(botaoAvatar));
-        barra.add(botaoAvatar);
+
+        JPanel rodapeUsuario = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        rodapeUsuario.setOpaque(false);
+        rodapeUsuario.setAlignmentX(Component.LEFT_ALIGNMENT);
+        rodapeUsuario.setMaximumSize(new Dimension(192, 42));
+        rodapeUsuario.add(botaoAvatar);
+        JLabel lblUserLateral = new JLabel(username);
+        lblUserLateral.setFont(UiStyle.fonteSemiBold(13));
+        lblUserLateral.setForeground(UiStyle.TEXT);
+        lblUserLateral.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        lblUserLateral.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                mostrarMenuUtilizador(botaoAvatar);
+            }
+        });
+        rodapeUsuario.add(lblUserLateral);
+        barra.add(rodapeUsuario);
 
         return barra;
     }
 
-    private void adicionarItemMenuVertical(JMenuBar menuBar, JMenu item) {
+    private void adicionarCategoriaMenuVertical(JMenuBar menuBar, String tituloCategoria, JMenu[] itens) {
+        Component espacadorTopo = null;
         if (menuBar.getComponentCount() > 0) {
-            menuBar.add(Box.createRigidArea(new Dimension(0, 4)));
+            espacadorTopo = Box.createRigidArea(new Dimension(0, 14));
+            menuBar.add(espacadorTopo);
         }
-        item.setMaximumSize(new Dimension(170, 36));
-        menuBar.add(item);
+
+        JLabel labelCategoria = new JLabel(tituloCategoria);
+        labelCategoria.setFont(UiStyle.fonte(10, Font.BOLD));
+        labelCategoria.setForeground(UiStyle.MUTED);
+        labelCategoria.setBorder(new EmptyBorder(0, 10, 4, 0));
+        labelCategoria.setAlignmentX(Component.LEFT_ALIGNMENT);
+        menuBar.add(labelCategoria);
+
+        List<JMenu> listaItens = new ArrayList<>();
+        for (int i = 0; i < itens.length; i++) {
+            JMenu item = itens[i];
+            if (i > 0) {
+                menuBar.add(Box.createRigidArea(new Dimension(0, 3)));
+            }
+            Dimension dimItem = new Dimension(192, 36);
+            item.setPreferredSize(dimItem);
+            item.setMaximumSize(dimItem);
+            item.setAlignmentX(Component.LEFT_ALIGNMENT);
+            menuBar.add(item);
+            listaItens.add(item);
+        }
+
+        gruposCategoriaSidebar.add(new GrupoCategoriaSidebar(espacadorTopo, labelCategoria, listaItens));
+    }
+
+    private static final class GrupoCategoriaSidebar {
+        private final Component espacadorTopo;
+        private final JLabel labelCategoria;
+        private final List<JMenu> itens;
+
+        GrupoCategoriaSidebar(Component espacadorTopo, JLabel labelCategoria, List<JMenu> itens) {
+            this.espacadorTopo = espacadorTopo;
+            this.labelCategoria = labelCategoria;
+            this.itens = itens;
+        }
+
+        void atualizarVisibilidade() {
+            boolean algumVisivel = false;
+            for (JMenu item : itens) {
+                if (item.isVisible()) {
+                    algumVisivel = true;
+                    break;
+                }
+            }
+            labelCategoria.setVisible(algumVisivel);
+            if (espacadorTopo != null) {
+                espacadorTopo.setVisible(algumVisivel);
+            }
+        }
+    }
+
+    private static final class PainelBarraNavegacao extends JPanel {
+        private static final long serialVersionUID = 1L;
+        private final boolean superior;
+
+        PainelBarraNavegacao(boolean superior) {
+            this.superior = superior;
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                g2.setColor(UiStyle.HEADER_BG);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.setColor(UiStyle.BORDER);
+                if (superior) {
+                    g2.fillRect(0, getHeight() - 1, getWidth(), 1);
+                } else {
+                    g2.fillRect(getWidth() - 1, 0, 1, getHeight());
+                }
+            } finally {
+                g2.dispose();
+            }
+            super.paintComponent(g);
+        }
     }
 
     private void abrirModalAlterarSenha() {
@@ -600,37 +750,48 @@ public class MainFrame extends JFrame {
         JLabel titulo = new JLabel("Alterar a sua senha");
         titulo.setFont(UiStyle.fonte(16, Font.BOLD));
         titulo.setForeground(UiStyle.TEXT);
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
         painelCorpo.add(titulo);
         painelCorpo.add(Box.createRigidArea(new Dimension(0, 16)));
 
         JLabel lblAtual = new JLabel("Senha atual");
         lblAtual.setFont(UiStyle.fonte(12, Font.PLAIN));
         lblAtual.setForeground(UiStyle.MUTED);
+        lblAtual.setAlignmentX(Component.LEFT_ALIGNMENT);
         painelCorpo.add(lblAtual);
         painelCorpo.add(Box.createRigidArea(new Dimension(0, 4)));
 
         JPasswordField txtAtual = new JPasswordField();
         txtAtual.setBackground(UiStyle.INPUT_BG);
         txtAtual.setForeground(UiStyle.TEXT);
+        txtAtual.setCaretColor(UiStyle.TEXT);
+        txtAtual.setPreferredSize(new Dimension(300, 36));
         txtAtual.setMaximumSize(new Dimension(300, 36));
+        txtAtual.setAlignmentX(Component.LEFT_ALIGNMENT);
         painelCorpo.add(txtAtual);
         painelCorpo.add(Box.createRigidArea(new Dimension(0, 12)));
 
         JLabel lblNova = new JLabel("Nova senha");
         lblNova.setFont(UiStyle.fonte(12, Font.PLAIN));
         lblNova.setForeground(UiStyle.MUTED);
+        lblNova.setAlignmentX(Component.LEFT_ALIGNMENT);
         painelCorpo.add(lblNova);
         painelCorpo.add(Box.createRigidArea(new Dimension(0, 4)));
 
         JPasswordField txtNova = new JPasswordField();
         txtNova.setBackground(UiStyle.INPUT_BG);
         txtNova.setForeground(UiStyle.TEXT);
+        txtNova.setCaretColor(UiStyle.TEXT);
+        txtNova.setPreferredSize(new Dimension(300, 36));
         txtNova.setMaximumSize(new Dimension(300, 36));
+        txtNova.setAlignmentX(Component.LEFT_ALIGNMENT);
         painelCorpo.add(txtNova);
         painelCorpo.add(Box.createRigidArea(new Dimension(0, 20)));
 
         JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         painelBotoes.setOpaque(false);
+        painelBotoes.setAlignmentX(Component.LEFT_ALIGNMENT);
+        painelBotoes.setMaximumSize(new Dimension(300, 40));
 
         JButton btnCancelar = new JButton("Cancelar");
         btnCancelar.setBackground(UiStyle.SECONDARY_BG);
@@ -646,7 +807,8 @@ public class MainFrame extends JFrame {
             String senhaNova = new String(txtNova.getPassword());
 
             if (senhaAtual.isEmpty() || senhaNova.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "Preencha a senha atual e a nova senha.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Preencha a senha atual e a nova senha.", "Aviso",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -663,15 +825,17 @@ public class MainFrame extends JFrame {
                 if (novoHash == null) {
                     throw new RuntimeException("Senha atual incorreta.");
                 }
-                new UtilizadorBO().atualizar(utilizadorLogado);
+                utilizadorController.atualizar(utilizadorLogado);
                 return true;
             }, ok -> {
-                JOptionPane.showMessageDialog(dialog, "Senha alterada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Senha alterada com sucesso!", "Sucesso",
+                        JOptionPane.INFORMATION_MESSAGE);
                 dialog.dispose();
             }, err -> {
                 btnSalvar.setEnabled(true);
                 btnSalvar.setText("Salvar Senha");
-                JOptionPane.showMessageDialog(dialog, "Erro ao alterar senha: " + err.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Erro ao alterar senha: " + err.getMessage(), "Erro",
+                        JOptionPane.ERROR_MESSAGE);
             });
         });
 
@@ -693,7 +857,6 @@ public class MainFrame extends JFrame {
             return t;
         });
 
-        // Executa a cada 30 segundos
         executorMonitoramento.scheduleAtFixedRate(() -> {
             if (utilizadorLogado != null) {
                 buscarVendasDoMesAssincrono();
@@ -714,32 +877,32 @@ public class MainFrame extends JFrame {
 
     private JLabel criarChipPerfil(Perfil perfil) {
         String texto = (perfil != null) ? perfil.name() : "ADMIN";
-        Color bg = UiStyle.CHIP_YELLOW_BG;
-        Color fg = UiStyle.CHIP_YELLOW_FG;
-
-        if (perfil == Perfil.GERENTE) {
-            bg = UiStyle.CHIP_BLUE_BG;
-            fg = UiStyle.CHIP_BLUE_FG;
-        } else if (perfil == Perfil.VENDEDOR) {
-            bg = UiStyle.CHIP_GREEN_BG;
-            fg = UiStyle.CHIP_GREEN_FG;
-        }
 
         JLabel chip = new JLabel(texto) {
             private static final long serialVersionUID = 1L;
+
             @Override
             protected void paintComponent(Graphics g) {
+                Color bgAtual = UiStyle.CHIP_YELLOW_BG;
+                Color fgAtual = UiStyle.CHIP_YELLOW_FG;
+                if (perfil == Perfil.GERENTE) {
+                    bgAtual = UiStyle.CHIP_BLUE_BG;
+                    fgAtual = UiStyle.CHIP_BLUE_FG;
+                } else if (perfil == Perfil.VENDEDOR) {
+                    bgAtual = UiStyle.CHIP_GREEN_BG;
+                    fgAtual = UiStyle.CHIP_GREEN_FG;
+                }
+                setForeground(fgAtual);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getBackground());
+                g2.setColor(bgAtual);
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 6, 6));
                 g2.dispose();
                 super.paintComponent(g);
             }
         };
         chip.setFont(UiStyle.fonte(11, Font.BOLD));
-        chip.setForeground(fg);
-        chip.setBackground(bg);
+        chip.setForeground(UiStyle.CHIP_YELLOW_FG);
         chip.setOpaque(false);
         chip.setBorder(new EmptyBorder(2, 6, 2, 6));
         return chip;
@@ -750,43 +913,81 @@ public class MainFrame extends JFrame {
         divisor.setOpaque(false);
         divisor.setBorder(new EmptyBorder(4, 0, 4, 0));
         divisor.setLayout(new BorderLayout());
-        divisor.setMaximumSize(new Dimension(LARGURA_MENU_UTILIZADOR, 9));
+        Dimension dimDiv = new Dimension(LARGURA_MENU_UTILIZADOR - 16, 9);
+        divisor.setPreferredSize(dimDiv);
+        divisor.setMaximumSize(dimDiv);
         divisor.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JPanel linha = new JPanel();
+        JPanel linha = new JPanel() {
+            private static final long serialVersionUID = 1L;
+            @Override
+            protected void paintComponent(Graphics g) {
+                setBackground(UiStyle.BORDER);
+                super.paintComponent(g);
+            }
+        };
         linha.setBackground(UiStyle.BORDER);
-        linha.setPreferredSize(new Dimension(LARGURA_MENU_UTILIZADOR, 1));
+        linha.setPreferredSize(new Dimension(LARGURA_MENU_UTILIZADOR - 16, 1));
         divisor.add(linha, BorderLayout.CENTER);
         return divisor;
     }
 
-    private JPanel criarLinhaComControle(String rotulo, JComponent controle) {
+    private JPanel criarLinhaComControle(String rotulo, Ikon ikon, JComponent controle) {
         JPanel linha = new JPanel(new BorderLayout(8, 0));
         linha.setOpaque(false);
         linha.setBorder(new EmptyBorder(8, 12, 8, 12));
         linha.setAlignmentX(Component.LEFT_ALIGNMENT);
-        linha.setMaximumSize(new Dimension(LARGURA_MENU_UTILIZADOR, 38));
+        Dimension dimLinha = new Dimension(LARGURA_MENU_UTILIZADOR - 16, 38);
+        linha.setPreferredSize(dimLinha);
+        linha.setMinimumSize(dimLinha);
+        linha.setMaximumSize(dimLinha);
 
-        JLabel label = new JLabel(rotulo);
+        JLabel label = new JLabel(rotulo) {
+            private static final long serialVersionUID = 1L;
+            @Override
+            protected void paintComponent(Graphics g) {
+                setForeground(UiStyle.MUTED);
+                super.paintComponent(g);
+            }
+        };
         label.setFont(UiStyle.fonte(12, Font.PLAIN));
         label.setForeground(UiStyle.MUTED);
+        if (ikon != null) {
+            label.setIcon(UiStyle.iconeDinamico(ikon, 15, () -> UiStyle.MUTED));
+            label.setIconTextGap(6);
+        }
 
         linha.add(label, BorderLayout.WEST);
         linha.add(controle, BorderLayout.EAST);
         return linha;
     }
 
-    private JPanel criarLinhaClicavel(String texto, Color corTexto, boolean negrito, Runnable acao) {
+    private JPanel criarLinhaClicavel(String texto, Ikon ikon, Color corTexto, boolean negrito, Runnable acao) {
         JPanel linha = new JPanel(new BorderLayout());
         linha.setOpaque(false);
         linha.setBorder(new EmptyBorder(8, 12, 8, 12));
         linha.setAlignmentX(Component.LEFT_ALIGNMENT);
-        linha.setMaximumSize(new Dimension(LARGURA_MENU_UTILIZADOR, 36));
+        Dimension dimLinha = new Dimension(LARGURA_MENU_UTILIZADOR - 16, 36);
+        linha.setPreferredSize(dimLinha);
+        linha.setMinimumSize(dimLinha);
+        linha.setMaximumSize(dimLinha);
         linha.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        JLabel label = new JLabel(texto);
+        final boolean ehPerigo = (corTexto == UiStyle.DANGER_TEXT);
+        JLabel label = new JLabel(texto) {
+            private static final long serialVersionUID = 1L;
+            @Override
+            protected void paintComponent(Graphics g) {
+                setForeground(ehPerigo ? UiStyle.DANGER_TEXT : UiStyle.TEXT);
+                super.paintComponent(g);
+            }
+        };
         label.setFont(UiStyle.fonte(13, negrito ? Font.BOLD : Font.PLAIN));
-        label.setForeground(corTexto);
+        label.setForeground(ehPerigo ? UiStyle.DANGER_TEXT : UiStyle.TEXT);
+        if (ikon != null) {
+            label.setIcon(UiStyle.iconeDinamico(ikon, 15, () -> ehPerigo ? UiStyle.DANGER_TEXT : UiStyle.TEXT));
+            label.setIconTextGap(6);
+        }
         linha.add(label, BorderLayout.WEST);
 
         linha.addMouseListener(new MouseAdapter() {
@@ -801,7 +1002,6 @@ public class MainFrame extends JFrame {
         return linha;
     }
 
-    // Componentes internos reutilizáveis
     private static final class BotaoAvatar extends JButton {
         private static final long serialVersionUID = 1L;
 
@@ -823,9 +1023,11 @@ public class MainFrame extends JFrame {
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            setForeground(UiStyle.TEXT);
             g2.setColor(UiStyle.AVATAR_BG);
             g2.fill(new Ellipse2D.Float(1, 1, getWidth() - 2, getHeight() - 2));
             g2.setColor(UiStyle.ACCENT);
+            g2.setStroke(new java.awt.BasicStroke(2f));
             g2.draw(new Ellipse2D.Float(1, 1, getWidth() - 3, getHeight() - 3));
             g2.dispose();
             super.paintComponent(g);
@@ -855,17 +1057,20 @@ public class MainFrame extends JFrame {
     private static final class ItemMenuNavegacao extends JMenu {
         private static final long serialVersionUID = 1L;
         private final String painel;
+        private final Ikon ikon;
         private boolean ativo;
 
-        public ItemMenuNavegacao(String titulo, String painel, boolean ativoInicial) {
+        public ItemMenuNavegacao(String titulo, String painel, Ikon ikon, boolean ativoInicial) {
             super(titulo);
             this.painel = painel;
+            this.ikon = ikon;
             this.ativo = ativoInicial;
             setOpaque(false);
             setBorderPainted(false);
             setFocusable(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setBorder(new EmptyBorder(8, 12, 8, 12));
+            setIconTextGap(6);
             atualizarVisual();
         }
 
@@ -879,21 +1084,52 @@ public class MainFrame extends JFrame {
             repaint();
         }
 
+
         private void atualizarVisual() {
             setFont(UiStyle.fonte(13, ativo ? Font.BOLD : Font.PLAIN));
-            setForeground(ativo ? UiStyle.ACCENT_TEXT : UiStyle.MUTED);
+
+            
+            Color corTextoEIcone = ativo ? new Color(0x1B, 0x22, 0x32) : UiStyle.MUTED;
+
+            setForeground(corTextoEIcone);
+            if (ikon != null) {
+                
+                setIcon(UiStyle.icone(ikon, 15, corTextoEIcone));
+            }
         }
 
-        @Override
+
+           @Override
         protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
             if (ativo) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(UiStyle.ACCENT);
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 8, 8));
-                g2.dispose();
             }
-            super.paintComponent(g);
+
+            Insets insets = getInsets();
+            int x = insets.left;
+            int yMid = getHeight() / 2;
+
+            Color corComponentes = ativo ? new Color(0x1B, 0x22, 0x32) : UiStyle.MUTED;
+            g2.setColor(corComponentes);
+
+            javax.swing.Icon currentIcon = getIcon();
+            if (currentIcon != null) {
+                int iconY = yMid - (currentIcon.getIconHeight() / 2);
+                currentIcon.paintIcon(this, g2, x, iconY);
+                x += currentIcon.getIconWidth() + getIconTextGap();
+            }
+
+            g2.setFont(getFont());
+            java.awt.FontMetrics fm = g2.getFontMetrics();
+            int textY = yMid + (fm.getAscent() - fm.getDescent() - fm.getLeading()) / 2;
+            g2.drawString(getText(), x, textY);
+
+            g2.dispose();
         }
     }
 
@@ -925,9 +1161,12 @@ public class MainFrame extends JFrame {
         private JButton criarBotaoOpcao(String texto, boolean ehPrimeira) {
             JButton btn = new JButton(texto) {
                 private static final long serialVersionUID = 1L;
+
                 @Override
                 protected void paintComponent(Graphics g) {
                     boolean selecionado = (ehPrimeira && primeiraAtiva) || (!ehPrimeira && !primeiraAtiva);
+                    setFont(UiStyle.fonte(11, selecionado ? Font.BOLD : Font.PLAIN));
+                    setForeground(selecionado ? UiStyle.ACCENT_TEXT : UiStyle.TEXT);
                     if (selecionado) {
                         Graphics2D g2 = (Graphics2D) g.create();
                         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -964,8 +1203,10 @@ public class MainFrame extends JFrame {
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(UiStyle.SECONDARY_BG);
+            g2.setColor(UiStyle.TAB_BG);
             g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 8, 8));
+            g2.setColor(UiStyle.BORDER);
+            g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, getWidth() - 1f, getHeight() - 1f, 8, 8));
             g2.dispose();
             super.paintComponent(g);
         }

@@ -1,5 +1,6 @@
 package view;
 
+import controller.DashboardController;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -14,6 +15,7 @@ import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.geom.RoundRectangle2D;
 import java.util.List;
 import java.util.Map;
@@ -31,22 +33,22 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-import model.bo.RelatorioBO;
 import model.vo.Perfil;
 import model.vo.Utilizador;
+import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignA;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignC;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignP;
+import org.kordamp.ikonli.materialdesign2.MaterialDesignW;
 import util.AsyncTask;
 
-/**
- * Painel Início (Dashboard) em Java Swing fiel ao design HTML "Inicio.dc.html",
- * integrado assincronamente ao banco de dados com KPIs em tempo real e navegação rápida.
- */
 public class DashboardPanel extends JPanel implements PainelRecarregavel {
     private static final long serialVersionUID = 1L;
 
     private static final int RAIO_CARD = 14;
     private static final int RAIO_BOTAO = 8;
 
-    private final RelatorioBO relatorioBO;
+    private final DashboardController dashboardController;
     private Utilizador utilizadorLogado;
 
     private JLabel labelBoasVindas;
@@ -60,6 +62,7 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
     private JLabel labelKpiVendasPendentes;
     private JLabel labelKpiEstoqueBaixo;
     private JLabel labelKpiLotesExpirar;
+    private JLabel labelKpiLotesExpirados;
 
     private DefaultTableModel modeloEstoqueBaixo;
     private DefaultTableModel modeloMaisVendidos;
@@ -71,7 +74,7 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
     }
 
     public DashboardPanel(Utilizador utilizador) {
-        this.relatorioBO = new RelatorioBO();
+        this.dashboardController = new DashboardController();
         this.utilizadorLogado = utilizador;
 
         setLayout(new BorderLayout(0, 16));
@@ -104,11 +107,11 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
         acoes.setOpaque(false);
         acoes.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        btnNovaVenda = botaoAcao("+ Nova venda", true, () -> navegarParaPainel(MainFrame.PAINEL_VENDAS, VendasPanel.ModoPainelLateral.NOVA_VENDA));
-        btnEntradaEstoque = botaoAcao("Dar entrada no estoque", false, () -> navegarParaPainel(MainFrame.PAINEL_ESTOQUE, EstoquePanel.ModoPainelLateral.DAR_ENTRADA));
-        btnNovoProduto = botaoAcao("Novo produto", false, () -> navegarParaPainel(MainFrame.PAINEL_PRODUTOS, ProdutosPanel.ModoPainelLateral.NOVO_PRODUTO));
-        btnNovoCliente = botaoAcao("Novo cliente", false, () -> navegarParaPainel(MainFrame.PAINEL_CLIENTES, ClientesPanel.ModoPainelLateral.NOVO_CLIENTE));
-        btnVerRelatorios = botaoAcao("Ver relatórios", false, () -> navegarParaPainel(MainFrame.PAINEL_RELATORIOS, null));
+        btnNovaVenda = botaoAcao("Nova venda", MaterialDesignC.CART_PLUS, true, () -> navegarParaPainel(MainFrame.PAINEL_VENDAS, VendasPanel.ModoPainelLateral.NOVA_VENDA));
+        btnEntradaEstoque = botaoAcao("Dar entrada no estoque", MaterialDesignW.WAREHOUSE, false, () -> navegarParaPainel(MainFrame.PAINEL_ESTOQUE, EstoquePanel.ModoPainelLateral.DAR_ENTRADA));
+        btnNovoProduto = botaoAcao("Novo produto", MaterialDesignP.PACKAGE_VARIANT, false, () -> navegarParaPainel(MainFrame.PAINEL_PRODUTOS, ProdutosPanel.ModoPainelLateral.NOVO_PRODUTO));
+        btnNovoCliente = botaoAcao("Novo cliente", MaterialDesignA.ACCOUNT_PLUS, false, () -> navegarParaPainel(MainFrame.PAINEL_CLIENTES, ClientesPanel.ModoPainelLateral.NOVO_CLIENTE));
+        btnVerRelatorios = botaoAcao("Ver relatórios", MaterialDesignC.CHART_BOX, false, () -> navegarParaPainel(MainFrame.PAINEL_RELATORIOS, null));
 
         acoes.add(btnNovaVenda);
         acoes.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -145,12 +148,8 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
         }
     }
 
-    private JButton botaoAcao(String texto, boolean primario, Runnable acao) {
-        Color bg = primario ? UiStyle.ACCENT : UiStyle.SECONDARY_BG;
-        Color fg = primario ? UiStyle.ACCENT_TEXT : UiStyle.TEXT;
-        Color borda = primario ? null : UiStyle.INPUT_BORDER;
-
-        BotaoAcaoArredondado botao = new BotaoAcaoArredondado(texto, bg, fg, borda, RAIO_BOTAO);
+    private JButton botaoAcao(String texto, Ikon ikon, boolean primario, Runnable acao) {
+        BotaoAcaoArredondado botao = new BotaoAcaoArredondado(texto, ikon, primario, RAIO_BOTAO);
         botao.addActionListener(e -> {
             if (acao != null) acao.run();
         });
@@ -161,18 +160,20 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
         JPanel conteudo = new JPanel(new BorderLayout(0, 16));
         conteudo.setOpaque(false);
 
-        JPanel indicadores = new JPanel(new GridLayout(1, 4, 16, 0));
+        JPanel indicadores = new JPanel(new GridLayout(1, 5, 16, 0));
         indicadores.setOpaque(false);
 
         this.labelKpiVendasHoje = new JLabel("0");
         this.labelKpiVendasPendentes = new JLabel("0");
         this.labelKpiEstoqueBaixo = new JLabel("0");
         this.labelKpiLotesExpirar = new JLabel("0");
+        this.labelKpiLotesExpirados = new JLabel("0");
 
-        indicadores.add(cartaoKpi("Vendas de hoje", labelKpiVendasHoje));
-        indicadores.add(cartaoKpi("Vendas pendentes", labelKpiVendasPendentes));
-        indicadores.add(cartaoKpi("Produtos com estoque baixo", labelKpiEstoqueBaixo));
-        indicadores.add(cartaoKpi("Produtos a expirar (7 dias)", labelKpiLotesExpirar));
+        indicadores.add(cartaoKpi("Vendas de hoje", MaterialDesignC.CASH_REGISTER, labelKpiVendasHoje));
+        indicadores.add(cartaoKpi("Vendas pendentes", MaterialDesignC.CLIPBOARD_TEXT, labelKpiVendasPendentes));
+        indicadores.add(cartaoKpi("Produtos com estoque baixo", MaterialDesignA.ALERT_CIRCLE, labelKpiEstoqueBaixo));
+        indicadores.add(cartaoKpi("Produtos a expirar (7 dias)", MaterialDesignP.PACKAGE_DOWN, labelKpiLotesExpirar));
+        indicadores.add(cartaoKpi("Lotes expirados", MaterialDesignA.ALERT_CIRCLE, labelKpiLotesExpirados));
         conteudo.add(indicadores, BorderLayout.NORTH);
 
         JPanel tabelas = new JPanel(new GridLayout(1, 2, 16, 0));
@@ -184,7 +185,7 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
         return conteudo;
     }
 
-    private JPanel cartaoKpi(String rotulo, JLabel labelValor) {
+    private JPanel cartaoKpi(String rotulo, Ikon ikon, JLabel labelValor) {
         PainelCard card = new PainelCard();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(16, 18, 16, 18));
@@ -192,6 +193,10 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
         JLabel labelRotulo = new JLabel(rotulo);
         labelRotulo.setFont(UiStyle.fonte(12, Font.PLAIN));
         labelRotulo.setForeground(UiStyle.MUTED);
+        if (ikon != null) {
+            labelRotulo.setIcon(UiStyle.iconeDinamico(ikon, 15, () -> UiStyle.MUTED));
+            labelRotulo.setIconTextGap(6);
+        }
 
         labelValor.setFont(UiStyle.fonte(28, Font.BOLD));
         labelValor.setForeground(UiStyle.TEXT);
@@ -286,22 +291,22 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        // Carregamento de KPIs e tabelas assincronamente via SwingWorker
         AsyncTask.executar(() -> {
-            Map<String, Integer> kpis = relatorioBO.obterIndicadoresDashboard();
-            List<Map<String, Object>> estoque = relatorioBO.obterEstoqueBaixoDashboard();
-            List<Map<String, Object>> vendas = relatorioBO.obterProdutosMaisVendidosDashboard();
+            Map<String, Integer> kpis = dashboardController.obterIndicadoresDashboard();
+            List<Map<String, Object>> estoque = dashboardController.obterEstoqueBaixo();
+            List<Map<String, Object>> vendas = dashboardController.obterProdutosMaisVendidos();
             return new DadosDashboard(kpis, estoque, vendas);
         }, dados -> {
-            // Atualiza KPIs
             if (dados.kpis != null) {
                 labelKpiVendasHoje.setText(String.valueOf(dados.kpis.getOrDefault("vendasHoje", 0)));
                 labelKpiVendasPendentes.setText(String.valueOf(dados.kpis.getOrDefault("vendasPendentes", 0)));
                 labelKpiEstoqueBaixo.setText(String.valueOf(dados.kpis.getOrDefault("estoqueBaixo", 0)));
                 labelKpiLotesExpirar.setText(String.valueOf(dados.kpis.getOrDefault("lotesAExpirar", 0)));
+                if (labelKpiLotesExpirados != null) {
+                    labelKpiLotesExpirados.setText(String.valueOf(dados.kpis.getOrDefault("lotesExpirados", 0)));
+                }
             }
 
-            // Atualiza tabela Estoque Baixo
             modeloEstoqueBaixo.setRowCount(0);
             if (dados.estoqueBaixo != null && !dados.estoqueBaixo.isEmpty()) {
                 for (Map<String, Object> l : dados.estoqueBaixo) {
@@ -313,7 +318,6 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
                 }
             }
 
-            // Atualiza tabela Mais Vendidos
             modeloMaisVendidos.setRowCount(0);
             if (dados.maisVendidos != null && !dados.maisVendidos.isEmpty()) {
                 for (Map<String, Object> l : dados.maisVendidos) {
@@ -326,11 +330,13 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
                 }
             }
         }, err -> {
-            // Se falhar (ex: MySQL desconectado), zera sem quebrar
             labelKpiVendasHoje.setText("0");
             labelKpiVendasPendentes.setText("0");
             labelKpiEstoqueBaixo.setText("0");
             labelKpiLotesExpirar.setText("0");
+            if (labelKpiLotesExpirados != null) {
+                labelKpiLotesExpirados.setText("0");
+            }
         });
     }
 
@@ -347,10 +353,11 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
 
         Perfil perfil = (utilizador != null) ? utilizador.getPerfil() : Perfil.ADMIN;
         if (perfil == Perfil.VENDEDOR) {
-            // Vendedor não pode criar produto diretamente nem acessar relatórios
+            if (btnEntradaEstoque != null) btnEntradaEstoque.setVisible(false);
             if (btnNovoProduto != null) btnNovoProduto.setVisible(false);
             if (btnVerRelatorios != null) btnVerRelatorios.setVisible(false);
         } else {
+            if (btnEntradaEstoque != null) btnEntradaEstoque.setVisible(true);
             if (btnNovoProduto != null) btnNovoProduto.setVisible(true);
             if (btnVerRelatorios != null) btnVerRelatorios.setVisible(true);
         }
@@ -359,23 +366,7 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
     @Override
     public void aplicarTema() {
         setBackground(UiStyle.BACKGROUND);
-        if (labelBoasVindas != null) labelBoasVindas.setForeground(UiStyle.TEXT);
-
-        if (tabelaEstoqueBaixo != null) {
-            tabelaEstoqueBaixo.setBackground(UiStyle.SURFACE);
-            tabelaEstoqueBaixo.setForeground(UiStyle.TEXT);
-            tabelaEstoqueBaixo.setGridColor(UiStyle.TABLE_ROW_BORDER);
-            tabelaEstoqueBaixo.getTableHeader().setBackground(UiStyle.SURFACE);
-            tabelaEstoqueBaixo.getTableHeader().setForeground(UiStyle.MUTED);
-        }
-        if (tabelaMaisVendidos != null) {
-            tabelaMaisVendidos.setBackground(UiStyle.SURFACE);
-            tabelaMaisVendidos.setForeground(UiStyle.TEXT);
-            tabelaMaisVendidos.setGridColor(UiStyle.TABLE_ROW_BORDER);
-            tabelaMaisVendidos.getTableHeader().setBackground(UiStyle.SURFACE);
-            tabelaMaisVendidos.getTableHeader().setForeground(UiStyle.MUTED);
-        }
-        repaint();
+        UiStyle.atualizarComponentesTema(this);
     }
 
     private static final class DadosDashboard {
@@ -408,21 +399,35 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
             g2.dispose();
             super.paintComponent(g);
         }
+
+        @Override
+        protected void paintChildren(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                Shape clip = new RoundRectangle2D.Float(1, 1, Math.max(0, getWidth() - 2), Math.max(0, getHeight() - 2), RAIO_CARD, RAIO_CARD);
+                g2.clip(clip);
+                super.paintChildren(g2);
+            } finally {
+                g2.dispose();
+            }
+        }
     }
 
     private static final class BotaoAcaoArredondado extends JButton {
         private static final long serialVersionUID = 1L;
-        private final Color bg;
-        private final Color borda;
+        private final boolean primario;
         private final int raio;
 
-        public BotaoAcaoArredondado(String texto, Color bg, Color fg, Color borda, int raio) {
+        public BotaoAcaoArredondado(String texto, Ikon ikon, boolean primario, int raio) {
             super(texto);
-            this.bg = bg;
-            this.borda = borda;
+            this.primario = primario;
             this.raio = raio;
-            setFont(UiStyle.fonte(13, Font.PLAIN));
-            setForeground(fg);
+            setFont(UiStyle.fonteSemiBold(13));
+            setForeground(primario ? UiStyle.ACCENT_TEXT : UiStyle.TEXT);
+            if (ikon != null) {
+                setIcon(UiStyle.iconeDinamico(ikon, 16, () -> this.primario ? UiStyle.ACCENT_TEXT : UiStyle.TEXT));
+                setIconTextGap(6);
+            }
             setContentAreaFilled(false);
             setBorderPainted(false);
             setFocusPainted(false);
@@ -435,12 +440,17 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            Color bg = primario ? UiStyle.ACCENT : UiStyle.SECONDARY_BG;
+            Color fg = primario ? UiStyle.ACCENT_TEXT : UiStyle.TEXT;
+            Color borda = primario ? null : UiStyle.INPUT_BORDER;
+            setForeground(fg);
+            int arco = raio * 2;
             g2.setColor(bg);
-            g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), raio, raio));
+            g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), arco, arco));
 
             if (borda != null) {
                 g2.setColor(borda);
-                g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, getWidth() - 1, getHeight() - 1, raio, raio));
+                g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, getWidth() - 1, getHeight() - 1, arco, arco));
             }
             g2.dispose();
             super.paintComponent(g);
