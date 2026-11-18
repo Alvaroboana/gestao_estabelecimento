@@ -20,7 +20,7 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
 
     @Override
     public void salvar(Utilizador objecto) {
-        String sql = "INSERT INTO utilizador (username, password_hash, perfil, id_funcionario) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO utilizador (username, password_hash, perfil, id_funcionario, troca_senha_obrigatoria) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = ConexaoDB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, objecto.getUsername());
@@ -36,6 +36,7 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
                     objecto.getFuncionario() == null ? null : objecto.getFuncionario().getIdFuncionario(),
                     "funcionario.idFuncionario"));
 
+            stmt.setBoolean(5, objecto.isTrocaSenhaObrigatoria());
             stmt.executeUpdate();
             try (ResultSet rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
@@ -61,7 +62,7 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
 
     @Override
     public void atualizar(Utilizador objecto) {
-        String sql = "UPDATE utilizador SET username = ?, password_hash = ?, perfil = ?, id_funcionario = ? WHERE id_utilizador = ?";
+        String sql = "UPDATE utilizador SET username = ?, password_hash = ?, perfil = ?, id_funcionario = ?, troca_senha_obrigatoria = ? WHERE id_utilizador = ?";
         try (Connection conn = ConexaoDB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, objecto.getUsername());
@@ -76,7 +77,8 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
             stmt.setLong(4, JdbcValidation.requireId(
                     objecto.getFuncionario() == null ? null : objecto.getFuncionario().getIdFuncionario(),
                     "funcionario.idFuncionario"));
-            stmt.setLong(5, objecto.getIdUtilizador());
+            stmt.setBoolean(5, objecto.isTrocaSenhaObrigatoria());
+            stmt.setLong(6, objecto.getIdUtilizador());
 
             stmt.executeUpdate();
         } catch (SQLException e) {
@@ -86,7 +88,7 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
 
     @Override
     public List<Utilizador> listarTodos() {
-        String sql = "SELECT u.id_utilizador, u.username, u.password_hash, u.perfil, " +
+        String sql = "SELECT u.id_utilizador, u.username, u.password_hash, u.perfil, u.troca_senha_obrigatoria, " +
                      "f.id_funcionario, f.bi, f.estado, p.id_pessoa, p.nome " +
                      "FROM utilizador u " +
                      "INNER JOIN funcionario f ON u.id_funcionario = f.id_funcionario " +
@@ -107,7 +109,7 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
 
     @Override
     public Utilizador buscarPorId(Long id) {
-        String sql = "SELECT u.id_utilizador, u.username, u.password_hash, u.perfil, " +
+        String sql = "SELECT u.id_utilizador, u.username, u.password_hash, u.perfil, u.troca_senha_obrigatoria, " +
                      "f.id_funcionario, f.bi, f.estado, p.id_pessoa, p.nome " +
                      "FROM utilizador u " +
                      "INNER JOIN funcionario f ON u.id_funcionario = f.id_funcionario " +
@@ -129,7 +131,7 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
     }
 
     public Utilizador buscarPorUsername(String username) {
-        String sql = "SELECT u.id_utilizador, u.username, u.password_hash, u.perfil, " +
+        String sql = "SELECT u.id_utilizador, u.username, u.password_hash, u.perfil, u.troca_senha_obrigatoria, " +
                      "f.id_funcionario, f.bi, f.estado, p.id_pessoa, p.nome " +
                      "FROM utilizador u " +
                      "INNER JOIN funcionario f ON u.id_funcionario = f.id_funcionario " +
@@ -155,6 +157,7 @@ public class UtilizadorDAO implements GenericoDAO<Utilizador, Long> {
         u.setIdUtilizador(rs.getLong("id_utilizador"));
         u.setUsername(rs.getString("username"));
         u.setPasswordHash(rs.getString("password_hash"));
+        u.setTrocaSenhaObrigatoria(rs.getBoolean("troca_senha_obrigatoria"));
 
         String perf = rs.getString("perfil");
         if (perf != null) {

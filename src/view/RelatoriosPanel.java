@@ -106,11 +106,11 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
     };
 
     private static final String[] COLUNAS_MAIS_VENDIDOS = {
-        "#", "Produto", "Qtd vendida", "Receita"
+        "#", "Produto", "Qtd líquida", "Valor líquido", "Qtd bruta", "Qtd devolvida", "Valor bruto", "Reembolsos"
     };
 
     private static final String[] COLUNAS_MENOS_VENDIDOS = {
-        "#", "Produto", "Qtd vendida", "Receita"
+        "#", "Produto", "Qtd líquida", "Valor líquido", "Qtd bruta", "Qtd devolvida", "Valor bruto", "Reembolsos"
     };
 
     private static final String[] COLUNAS_ESTOQUE_BAIXO = {
@@ -126,7 +126,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
     };
 
     private static final String[] COLUNAS_VENDAS = {
-        "ID", "Data", "Cliente", "Funcionário", "Total", "Estado"
+        "ID", "Data", "Cliente", "Funcionário", "Valor original", "Estado", "Reembolsos", "Valor líquido"
     };
 
     private static final String[] COLUNAS_ITENS_VENDA_DETALHE = {
@@ -250,7 +250,6 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         mostrarDetalheVenda(true);
         AbaRelatorio inicial = abaInicial != null ? abaInicial : AbaRelatorio.COMPLETO;
         selecionarAba(inicial.getRotulo());
-        carregarRelatorioAtual();
     }
 
     public String getAbaAtiva() {
@@ -377,38 +376,15 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
             return;
         }
 
-        try {
-            boolean impresso = relatorioController.imprimirTabela(tabela, obterTituloRelatorioAtivo());
-            if (impresso) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Relatório \"" + obterTituloRelatorioAtivo() + "\" enviado para impressão com sucesso.",
-                        "Impressão",
-                        JOptionPane.INFORMATION_MESSAGE
-                );
-            }
-        } catch (java.awt.print.PrinterException ex) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Não foi possível imprimir o relatório: " + ex.getMessage(),
-                    "Erro de Impressão",
-                    JOptionPane.ERROR_MESSAGE
-            );
-        } catch (SecurityException ex) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Acesso ao serviço de impressão bloqueado pelo sistema de segurança.",
-                    "Permissão Negada",
-                    JOptionPane.ERROR_MESSAGE
-            );
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Falha durante a impressão: " + ex.getMessage(),
-                    "Erro",
-                    JOptionPane.ERROR_MESSAGE
-            );
-        }
+        String titulo = obterTituloRelatorioAtivo();
+        Object[] colunas = new Object[tabela.getColumnCount()];
+        Object[][] linhas = new Object[tabela.getRowCount()][colunas.length];
+        for (int c=0;c<colunas.length;c++) colunas[c] = tabela.getColumnName(c);
+        for (int r=0;r<linhas.length;r++) for (int c=0;c<colunas.length;c++) linhas[r][c]=tabela.getValueAt(r,c);
+        JTable copia = new JTable(linhas, colunas);
+        AsyncTask.executar(() -> relatorioController.imprimirTabela(copia, titulo),
+                impresso -> { if (impresso) JOptionPane.showMessageDialog(this, "Relatório enviado para impressão."); },
+                erro -> util.AvisoCarregamento.mostrar(this, erro));
     }
 
     public void exportarCsvRelatorioAtivo() {
@@ -450,29 +426,20 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                 }
             }
 
-            try {
-                relatorioController.exportarCSV(tabela, destino);
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Relatório exportado com sucesso em:\n" + destino.getAbsolutePath(),
-                        "Exportação Concluída",
-                        JOptionPane.INFORMATION_MESSAGE
-                );
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Erro ao gravar o ficheiro CSV: " + ex.getMessage(),
-                        "Erro de Gravação",
-                        JOptionPane.ERROR_MESSAGE
-                );
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Falha inesperada ao exportar: " + ex.getMessage(),
-                        "Erro",
-                        JOptionPane.ERROR_MESSAGE
-                );
+            final File ficheiro = destino;
+            List<String> colunas = new ArrayList<>();
+            List<List<Object>> linhas = new ArrayList<>();
+            for (int c = 0; c < tabela.getColumnCount(); c++) colunas.add(tabela.getColumnName(c));
+            for (int r = 0; r < tabela.getRowCount(); r++) {
+                List<Object> linha = new ArrayList<>();
+                for (int c = 0; c < tabela.getColumnCount(); c++) linha.add(tabela.getValueAt(r,c));
+                linhas.add(linha);
             }
+            AsyncTask.executar(() -> {
+                relatorioController.exportarCSV(colunas, linhas, ficheiro);
+                return ficheiro;
+            }, f -> JOptionPane.showMessageDialog(this, "Relatório exportado em: " + f.getAbsolutePath()),
+               erro -> util.AvisoCarregamento.mostrar(this, erro));
         }
     }
 
@@ -797,6 +764,10 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         };
 
         JTable t = new JTable(modelo);
+        if (t.getColumnCount() >= 8) {
+            t.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+            for (int c = 0; c < t.getColumnCount(); c++) t.getColumnModel().getColumn(c).setPreferredWidth(c == 1 ? 180 : 130);
+        }
         t.setRowHeight(42);
         t.setFont(UiStyle.fonte(13, Font.PLAIN));
         t.setBackground(UiStyle.SURFACE);
@@ -1004,6 +975,10 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         };
 
         JTable t = new JTable(modelo);
+        if (t.getColumnCount() >= 8) {
+            t.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+            for (int c = 0; c < t.getColumnCount(); c++) t.getColumnModel().getColumn(c).setPreferredWidth(c == 1 ? 180 : 130);
+        }
         t.setRowHeight(42);
         t.setFont(UiStyle.fonte(13, Font.PLAIN));
         t.setBackground(UiStyle.SURFACE);
@@ -1045,8 +1020,8 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         labelKpiLotesExpirados = new JLabel("0");
 
         linha.add(criarCardKpi("Vendas no período", labelKpiVendasPeriodo));
-        linha.add(criarCardKpi("Total concluído", labelKpiTotalConcluido));
-        linha.add(criarCardKpi("Total reembolsado", labelKpiTotalReembolsado));
+        linha.add(criarCardKpi("Vendas líquidas", labelKpiTotalConcluido));
+        linha.add(criarCardKpi("Reembolsos no período", labelKpiTotalReembolsado));
         linha.add(criarCardKpi("Produtos com estoque baixo", labelKpiEstoqueBaixo));
         linha.add(criarCardKpi("Produtos a expirar", labelKpiProdutosExpirar));
         linha.add(criarCardKpi("Lotes expirados", labelKpiLotesExpirados));
@@ -1079,8 +1054,8 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         grade.setOpaque(false);
 
         modeloMiniVendasEstado = criarModeloNaoEditavel(new String[] {"Estado", "Qtd", "Total"});
-        modeloMiniMaisVendidos = criarModeloNaoEditavel(new String[] {"Produto", "Qtd"});
-        modeloMiniMenosVendidos = criarModeloNaoEditavel(new String[] {"Produto", "Qtd"});
+        modeloMiniMaisVendidos = criarModeloNaoEditavel(new String[] {"Produto", "Qtd líquida"});
+        modeloMiniMenosVendidos = criarModeloNaoEditavel(new String[] {"Produto", "Qtd líquida"});
         modeloMiniEstoqueBaixo = criarModeloNaoEditavel(new String[] {"Produto", "Actual", "Mín."});
         modeloMiniReembolsos = criarModeloNaoEditavel(new String[] {"Item", "Qtd", "Valor"});
         modeloMiniAuditoria = criarModeloNaoEditavel(new String[] {"Tabela", "Operação", "Registos"});
@@ -1693,7 +1668,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
         try {
             final Long idVenda = Long.parseLong(idStr);
             final Utilizador user = obterUtilizadorAutenticadoOuPadrao();
-            AsyncTask.executar(
+            AsyncTask.executarUltima(this, "relatorio1",
                 () -> relatorioController.itensPorVenda(user, idVenda),
                 itens -> {
                     mItens.setRowCount(0);
@@ -1714,7 +1689,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                         }
                     }
                 },
-                err -> mItens.setRowCount(0)
+                err -> util.AvisoCarregamento.mostrar(this, err)
             );
         } catch (Exception ex) {
             mItens.setRowCount(0);
@@ -1722,12 +1697,15 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
     }
 
     public void carregarRelatorioAtual() {
+        if (model.vo.SessaoUtilizador.getUtilizador() == null || model.vo.SessaoUtilizador.getUtilizador().isTrocaSenhaObrigatoria()) {
+            return;
+        }
         Utilizador user = obterUtilizadorAutenticadoOuPadrao();
         LocalDateTime inicio = extrairDataInicio();
         LocalDateTime fim = extrairDataFim();
 
         if ("Estoque baixo".equalsIgnoreCase(abaAtiva)) {
-            AsyncTask.executar(
+            AsyncTask.executarUltima(this, "relatorio",
                 () -> relatorioController.estoqueBaixo(user),
                 lista -> {
                     DefaultTableModel m = (DefaultTableModel) tabelaEstoqueBaixo.getModel();
@@ -1745,10 +1723,10 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                         }
                     }
                 },
-                erro -> ((DefaultTableModel) tabelaEstoqueBaixo.getModel()).setRowCount(0)
+                erro -> util.AvisoCarregamento.mostrar(this, erro)
             );
         } else if ("Mais vendidos".equalsIgnoreCase(abaAtiva)) {
-            AsyncTask.executar(
+            AsyncTask.executarUltima(this, "relatorio",
                 () -> relatorioController.produtosMaisVendidos(user),
                 lista -> {
                     DefaultTableModel m = (DefaultTableModel) tabelaMaisVendidos.getModel();
@@ -1763,14 +1741,14 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                                 rec = Double.parseDouble(String.valueOf(map.getOrDefault("valor_vendido", 0.0)));
                             } catch (Exception ignored) {}
                             String recStr = String.format(Locale.GERMANY, "%,.2f MT", rec);
-                            m.addRow(new Object[] {String.valueOf(pos++), prod, qtd, recStr});
+                            m.addRow(new Object[] {String.valueOf(pos++), prod, qtd, recStr, map.get("quantidade_bruta"), map.get("quantidade_devolvida"), map.get("valor_bruto"), map.get("valor_reembolsado")});
                         }
                     }
                 },
-                erro -> ((DefaultTableModel) tabelaMaisVendidos.getModel()).setRowCount(0)
+                erro -> util.AvisoCarregamento.mostrar(this, erro)
             );
         } else if ("Menos vendidos".equalsIgnoreCase(abaAtiva)) {
-            AsyncTask.executar(
+            AsyncTask.executarUltima(this, "relatorio",
                 () -> {
                     List<Map<String, Object>> lista = relatorioController.produtosMaisVendidos(user);
                     if (lista != null) {
@@ -1798,14 +1776,14 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                                 rec = Double.parseDouble(String.valueOf(map.getOrDefault("valor_vendido", 0.0)));
                             } catch (Exception ignored) {}
                             String recStr = String.format(Locale.GERMANY, "%,.2f MT", rec);
-                            m.addRow(new Object[] {String.valueOf(pos++), prod, qtd, recStr});
+                            m.addRow(new Object[] {String.valueOf(pos++), prod, qtd, recStr, map.get("quantidade_bruta"), map.get("quantidade_devolvida"), map.get("valor_bruto"), map.get("valor_reembolsado")});
                         }
                     }
                 },
-                erro -> ((DefaultTableModel) tabelaMenosVendidos.getModel()).setRowCount(0)
+                erro -> util.AvisoCarregamento.mostrar(this, erro)
             );
         } else if ("Reembolsos".equalsIgnoreCase(abaAtiva)) {
-            AsyncTask.executar(
+            AsyncTask.executarUltima(this, "relatorio",
                 () -> relatorioController.reembolsosPeriodo(user, inicio, fim),
                 lista -> {
                     DefaultTableModel m = (DefaultTableModel) tabelaReembolsos.getModel();
@@ -1828,10 +1806,10 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                         }
                     }
                 },
-                erro -> ((DefaultTableModel) tabelaReembolsos.getModel()).setRowCount(0)
+                erro -> util.AvisoCarregamento.mostrar(this, erro)
             );
         } else if ("Auditoria".equalsIgnoreCase(abaAtiva)) {
-            AsyncTask.executar(
+            AsyncTask.executarUltima(this, "relatorio",
                 () -> relatorioController.resumoAuditoria(user, inicio, fim),
                 lista -> {
                     DefaultTableModel m = (DefaultTableModel) tabelaAuditoria.getModel();
@@ -1846,10 +1824,10 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                         }
                     }
                 },
-                erro -> ((DefaultTableModel) tabelaAuditoria.getModel()).setRowCount(0)
+                erro -> util.AvisoCarregamento.mostrar(this, erro)
             );
         } else if ("Vendas".equalsIgnoreCase(abaAtiva)) {
-            AsyncTask.executar(
+            AsyncTask.executarUltima(this, "relatorio",
                 () -> relatorioController.vendasPeriodo(user, inicio, fim),
                 lista -> {
                     DefaultTableModel m = (DefaultTableModel) tabelaVendas.getModel();
@@ -1867,7 +1845,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                             } catch (Exception ignored) {}
                             String totStr = String.format(Locale.GERMANY, "%,.2f MT", tot);
                             String est = String.valueOf(map.getOrDefault("estado", ""));
-                            m.addRow(new Object[] {id, data, cli, func, totStr, est});
+                            m.addRow(new Object[] {id, data, cli, func, totStr, est, map.get("valor_reembolsado"), map.get("valor_liquido")});
                         }
                     }
                     if (tabelaVendas.getRowCount() > 0) {
@@ -1876,12 +1854,11 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                     sincronizarDetalheVendaSelecionada();
                 },
                 erro -> {
-                    ((DefaultTableModel) tabelaVendas.getModel()).setRowCount(0);
-                    sincronizarDetalheVendaSelecionada();
+                    util.AvisoCarregamento.mostrar(this, erro);
                 }
             );
         } else if ("Completo".equalsIgnoreCase(abaAtiva)) {
-            AsyncTask.executar(
+            AsyncTask.executarUltima(this, "relatorio",
                 () -> {
                     Map<String, Integer> kpisDash = relatorioController.obterIndicadoresDashboard();
                     List<Map<String, Object>> vendas = relatorioController.vendasPeriodo(user, inicio, fim);
@@ -1922,10 +1899,10 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                             double tot = 0.0;
                             try { tot = Double.parseDouble(String.valueOf(map.getOrDefault("total", 0.0))); } catch (Exception ignored) {}
                             String est = String.valueOf(map.getOrDefault("estado", ""));
-                            if ("CONCLUIDA".equalsIgnoreCase(est)) {
-                                totalConcluido += tot;
+                            if ("CONCLUIDA".equalsIgnoreCase(est) || "REEMBOLSADA".equalsIgnoreCase(est)) {
+                                totalConcluido += ((Number) map.get("valor_liquido")).doubleValue();
                             }
-                            mVendas.addRow(new Object[] {id, data, cli, func, String.format(Locale.GERMANY, "%,.2f MT", tot), est});
+                            mVendas.addRow(new Object[] {id, data, cli, func, String.format(Locale.GERMANY, "%,.2f MT", tot), est, map.get("valor_reembolsado"), map.get("valor_liquido")});
                         }
                     }
 
@@ -2037,7 +2014,7 @@ public class RelatoriosPanel extends JPanel implements PainelRecarregavel {
                         }
                     }
                 },
-                erro -> {}
+                erro -> util.AvisoCarregamento.mostrar(this, erro)
             );
         }
     }

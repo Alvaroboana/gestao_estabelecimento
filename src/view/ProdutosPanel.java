@@ -9,7 +9,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
+import java.awt.Graphics2D;  
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.RenderingHints;
@@ -204,7 +204,6 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
         atualizarTabelaFiltrada();
         definirModoPainelLateral(this.modoLateral);
-        recarregarDados();
     }
 
     public JTable getTabela() {
@@ -754,26 +753,19 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                                     "Sessão sem funcionário associado: não é possível registar o stock inicial.");
                         }
 
-                        produtoController.salvar(p);
-
-                        if (p.getIdProduto() != null && !fornNome.isEmpty() && !"Nenhum".equalsIgnoreCase(fornNome)
-                                && listaTodosFornecedores != null) {
+                        Long idFornecedor = null;
+                        if (!fornNome.isEmpty() && !"Nenhum".equalsIgnoreCase(fornNome) && listaTodosFornecedores != null) {
                             for (Fornecedor f : listaTodosFornecedores) {
-                                if (f.getNome() != null && f.getNome().equalsIgnoreCase(fornNome)) {
-                                    produtoController.associarFornecedor(p.getIdProduto(), f.getIdFornecedor());
-                                    break;
-                                }
+                                if (f.getNome() != null && f.getNome().equalsIgnoreCase(fornNome)) { idFornecedor = f.getIdFornecedor(); break; }
                             }
+                            if (idFornecedor == null) throw new IllegalArgumentException("Seleccione um fornecedor válido.");
                         }
-                        if (p.getIdProduto() != null && qtdInicial > 0) {
-                            Estoque lote = new Estoque();
-                            lote.setProduto(p);
-                            lote.setFuncionario(user.getFuncionario());
-                            lote.setQuantidade(qtdInicial);
-                            lote.setDataEntrada(java.time.LocalDate.now());
-                            lote.setDataValidade(validadeInicial);
-                            produtoController.salvarLoteInicial(lote);
+                        Estoque lote = null;
+                        if (qtdInicial > 0) {
+                            lote = new Estoque(); lote.setProduto(p); lote.setFuncionario(user.getFuncionario());
+                            lote.setQuantidade(qtdInicial); lote.setDataEntrada(java.time.LocalDate.now()); lote.setDataValidade(validadeInicial);
                         }
+                        produtoController.salvarCompleto(p, idFornecedor, lote);
                         return null;
                     },
                     sucesso -> {
@@ -2440,8 +2432,11 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
+        if (model.vo.SessaoUtilizador.getUtilizador() == null || model.vo.SessaoUtilizador.getUtilizador().isTrocaSenhaObrigatoria()) {
+            return;
+        }
         final DateTimeFormatter dtfVal = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        AsyncTask.executar(
+        AsyncTask.executarUltima(this, "recarregar1",
                 () -> produtoController.listarTodos(),
                 produtos -> {
                     this.listaProdutosEntidades = produtos != null ? produtos : new ArrayList<>();
@@ -2475,12 +2470,8 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                     this.dadosProdutosCarregados = linhas;
                     atualizarTabelaFiltrada();
                 },
-                erro -> {
-                    this.listaProdutosEntidades = new ArrayList<>();
-                    this.dadosProdutosCarregados = new ArrayList<>();
-                    atualizarTabelaFiltrada();
-                });
-        AsyncTask.executar(
+                erro -> { util.AvisoCarregamento.mostrar(this, erro); });
+        AsyncTask.executarUltima(this, "recarregar2",
                 () -> produtoController.listarCategorias(),
                 categorias -> {
                     this.listaCategoriasReais = categorias != null ? categorias : new ArrayList<>();
@@ -2495,9 +2486,8 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                         seletorCategoriaEditar.setOpcoes(nomesCat);
                     }
                 },
-                erro -> {
-                });
-        AsyncTask.executar(
+                erro -> { util.AvisoCarregamento.mostrar(this, erro); });
+        AsyncTask.executarUltima(this, "recarregar3",
                 () -> fornecedorController.listarTodos(),
                 fornecedores -> {
                     this.listaTodosFornecedores = fornecedores != null ? fornecedores : new ArrayList<>();
@@ -2517,13 +2507,12 @@ public class ProdutosPanel extends JPanel implements PainelRecarregavel {
                         seletorFornecedorEditar.setOpcoes(nomesForn);
                     }
                 },
-                erro -> {
-                });
+                erro -> { util.AvisoCarregamento.mostrar(this, erro); });
     }
 
     @Override
     public void aplicarPermissoes(Utilizador utilizador) {
-        Perfil perfil = (utilizador != null) ? utilizador.getPerfil() : Perfil.ADMIN;
+        Perfil perfil = (utilizador != null && utilizador.podeEntrar()) ? utilizador.getPerfil() : Perfil.VENDEDOR;
         if (perfil == Perfil.VENDEDOR) {
             if (botaoNovoProduto != null)
                 botaoNovoProduto.setVisible(false);

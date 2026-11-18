@@ -38,19 +38,23 @@ public class VendaBO {
     }
 
     public void salvar(Venda venda) {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         validar(venda);
         dao.salvar(venda);
     }
 
     public void salvar(Venda venda, Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         validarOperador(venda, utilizador);
         salvar(venda);
     }
 
     public void concluirEGuardar(Venda venda) {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         validar(venda);
         EstadoVenda estadoAnterior = venda.getEstado();
         Double totalAnterior = venda.getTotal();
+        venda.validarPagamento();
         venda.concluir();
         try {
             dao.concluirVendaAtomicamente(venda, estoqueDAO);
@@ -62,13 +66,15 @@ public class VendaBO {
     }
 
     public void concluirEGuardar(Venda venda, Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         validarOperador(venda, utilizador);
         concluirEGuardar(venda);
     }
 
     public void atualizar(Venda venda) {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         validarId(venda == null ? null : venda.getIdVenda(), "idVenda");
-        validarRelacionamentos(venda);
+        validar(venda);
         if (venda.getEstado() == EstadoVenda.CONCLUIDA) {
             venda.setTotal(venda.calcularTotal());
         }
@@ -76,11 +82,13 @@ public class VendaBO {
     }
 
     public void atualizar(Venda venda, Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         validarOperador(venda, utilizador);
         atualizar(venda);
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarId(id, "idVenda");
         dao.eliminar(id);
     }
@@ -108,6 +116,7 @@ public class VendaBO {
     }
 
     public void anular(Venda venda, Utilizador utilizador) {
+        infra.Autorizacao.conferirOperador(utilizador, model.vo.Perfil.GERENTE);
         ValidadorObjeto.validarNaoNulo(utilizador, "Utilizador");
         if (!utilizador.podeAnularVendas()) {
             throw new AcessoNegadoException("O utilizador nao pode anular vendas.");
@@ -155,6 +164,7 @@ public class VendaBO {
         if (item.getDesconto() != null) {
             ValidadorNumero.validarNaoNegativo(item.getDesconto(), "Desconto do item");
         }
+        item.calcularSubtotal();
         validarProdutoParaVenda(item.getProduto(), item.getQuantidade());
     }
 
@@ -170,7 +180,7 @@ public class VendaBO {
     }
 
     private void validarOperador(Venda venda, Utilizador utilizador) {
-        ValidadorObjeto.validarNaoNulo(utilizador, "Utilizador");
+        infra.Autorizacao.conferirOperador(utilizador, model.vo.Perfil.VENDEDOR);
         if (!utilizador.podeEntrar()) {
             throw new AcessoNegadoException("O utilizador nao esta autorizado a operar.");
         }

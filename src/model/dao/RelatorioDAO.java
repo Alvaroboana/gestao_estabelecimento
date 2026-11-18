@@ -70,9 +70,8 @@ public class RelatorioDAO {
     }
 
     public List<Map<String, Object>> vendasPeriodo(LocalDateTime inicio, LocalDateTime fim) {
-        String sql = "SELECT id_venda, data_venda, total, estado, id_cliente, nome_cliente, "
-                + "id_funcionario, nome_funcionario "
-                + "FROM vw_vendas_detalhadas "
+        String sql = "SELECT d.*, COALESCE(s.valor_bruto,0) valor_bruto, COALESCE(s.valor_reembolsado,0) valor_reembolsado, COALESCE(s.valor_liquido,0) valor_liquido "
+                + "FROM vw_vendas_detalhadas d LEFT JOIN vw_saldo_vendas s ON s.id_venda=d.id_venda "
                 + "WHERE data_venda >= ? AND data_venda < ? "
                 + "ORDER BY data_venda DESC";
         return consultarIntervalo(sql, inicio, fim, "vendas");
@@ -88,7 +87,7 @@ public class RelatorioDAO {
     public List<Map<String, Object>> produtosMaisVendidos() {
         return consultarSemParametros(
                 "SELECT id_produto, nome_produto, id_categoria, nome_categoria, "
-                        + "quantidade_vendida, valor_vendido "
+                        + "quantidade_vendida, valor_vendido, quantidade_bruta, quantidade_devolvida, valor_bruto, valor_reembolsado "
                         + "FROM vw_produtos_mais_vendidos "
                         + "ORDER BY quantidade_vendida DESC, nome_produto",
                 "produtos mais vendidos");
@@ -138,13 +137,14 @@ public class RelatorioDAO {
                 }
             }
         } catch (SQLException e) {
+            throw new DBException("Erro ao consultar indicadores de vendas.", e);
         }
         return indicadores;
     }
 
     public List<Map<String, Object>> vendasPorFuncionario() {
         return consultarSemParametros(
-                "SELECT id_funcionario, nome_funcionario, quantidade_vendas, total_vendido "
+                "SELECT id_funcionario, nome_funcionario, quantidade_vendas, total_vendido, valor_bruto, valor_reembolsado, valor_liquido "
                         + "FROM vw_vendas_por_funcionario "
                         + "ORDER BY total_vendido DESC, nome_funcionario ASC",
                 "vendas por funcionario");
@@ -152,7 +152,7 @@ public class RelatorioDAO {
 
     public List<Map<String, Object>> resumoVendasDiario() {
         return consultarSemParametros(
-                "SELECT dia, quantidade_vendas, total_vendido, quantidade_itens "
+                "SELECT dia, quantidade_vendas, total_vendido, quantidade_itens, valor_bruto, valor_reembolsado, valor_liquido, quantidade_bruta, quantidade_devolvida "
                         + "FROM vw_resumo_vendas_diario "
                         + "ORDER BY dia DESC",
                 "resumo diario de vendas");
@@ -225,8 +225,8 @@ public class RelatorioDAO {
         }
 
         LocalDate hoje = LocalDate.now();
-        String sql = "SELECT COALESCE(SUM(total), 0.0) FROM venda "
-                + "WHERE id_funcionario = ? AND estado = 'CONCLUIDA' "
+        String sql = "SELECT COALESCE(SUM(valor_liquido), 0.0) FROM vw_saldo_vendas "
+                + "WHERE id_funcionario = ? "
                 + "AND YEAR(data) = ? AND MONTH(data) = ?";
 
         try (Connection conn = ConexaoDB.getConnection();
@@ -240,6 +240,7 @@ public class RelatorioDAO {
                 }
             }
         } catch (SQLException e) {
+            throw new DBException("Erro ao consultar indicadores de vendas.", e);
         }
         return 0.0;
     }

@@ -180,7 +180,6 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
 
         atualizarTabelaFiltrada();
         definirModoPainelLateral(this.modoLateral);
-        recarregarDados();
     }
 
     public JTable getTabela() {
@@ -660,6 +659,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         botaoGuardarNovo.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
         botaoGuardarNovo.setIconTextGap(6);
         botaoGuardarNovo.addActionListener(e -> {
+            if (!botaoGuardarNovo.isEnabled()) return;
             String nome = (campoNomeNovo != null) ? campoNomeNovo.getText().trim() : "";
             if (nome.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Informe o nome do cliente.", "Aviso", JOptionPane.WARNING_MESSAGE);
@@ -685,12 +685,14 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
             }
             c.setContacto(listaCont);
 
+            botaoGuardarNovo.setEnabled(false);
             AsyncTask.executar(
                 () -> {
                     clienteController.salvar(c);
                     return null;
                 },
                 sucesso -> {
+                    botaoGuardarNovo.setEnabled(true);
                     JOptionPane.showMessageDialog(this, "Cliente cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
                     definirModoPainelLateral(ModoPainelLateral.NENHUM);
                     if (campoNomeNovo != null) campoNomeNovo.setText("");
@@ -701,6 +703,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
                     recarregarDados();
                 },
                 erro -> {
+                    botaoGuardarNovo.setEnabled(true);
                     JOptionPane.showMessageDialog(this, "Erro ao salvar cliente: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
                 }
             );
@@ -792,9 +795,9 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
                         .filter(item -> item.getIdCliente() != null && item.getIdCliente().equals(idCliente))
                         .findFirst().orElse(null) : null;
                     Long idPessoa = (c != null && c.getIdPessoa() != null) ? c.getIdPessoa() : idCliente;
-                    String novoContacto = JOptionPane.showInputDialog(ClientesPanel.this, 
-                        "Informe o novo contacto (telefone ou email):", 
-                        "Adicionar Contacto Extra", 
+                    String novoContacto = JOptionPane.showInputDialog(ClientesPanel.this,
+                        "Informe o novo contacto (telefone ou email):",
+                        "Adicionar Contacto Extra",
                         JOptionPane.PLAIN_MESSAGE);
                     if (novoContacto != null && !novoContacto.trim().isEmpty()) {
                         AsyncTask.executar(
@@ -1622,13 +1625,14 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        AsyncTask.executar(
+        if (model.vo.SessaoUtilizador.getUtilizador() == null || model.vo.SessaoUtilizador.getUtilizador().isTrocaSenhaObrigatoria()) {
+            return;
+        }
+        AsyncTask.executarUltima(this, "recarregar1",
             () -> {
                 List<Cliente> clientes = clienteController.listarTodos();
                 List<Venda> vendas = new ArrayList<>();
-                try {
-                    vendas = clienteController.listarVendas();
-                } catch (Exception ignored) {}
+                vendas = clienteController.listarVendas();
                 return new Object[] { clientes, vendas };
             },
             resultado -> {
@@ -1677,12 +1681,7 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
                 this.dadosClientesCarregados = linhas;
                 atualizarTabelaFiltrada();
             },
-            erro -> {
-                this.listaClientesEntidades = new ArrayList<>();
-                this.listaVendasReais = new ArrayList<>();
-                this.dadosClientesCarregados = new ArrayList<>();
-                atualizarTabelaFiltrada();
-            }
+            erro -> { util.AvisoCarregamento.mostrar(this, erro); }
         );
     }
 

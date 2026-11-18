@@ -26,6 +26,7 @@ public class ClienteDAO implements GenericoDAO<Cliente, Long> {
         try (Connection resource = ConexaoDB.getConnection()) {
             conn = resource;
             conn.setAutoCommit(false);
+            try {
 
             Long idPessoa = null;
             try (PreparedStatement stmtPessoa = conn.prepareStatement(sqlPessoa, Statement.RETURN_GENERATED_KEYS)) {
@@ -68,9 +69,12 @@ public class ClienteDAO implements GenericoDAO<Cliente, Long> {
             }
 
             conn.commit();
+            } catch (SQLException | RuntimeException failure) {
+                try { conn.rollback(); } catch (SQLException rollback) { failure.addSuppressed(rollback); }
+                throw failure;
+            }
         } catch (SQLException e) {
             DBException failure = new DBException("Erro ao salvar cliente.", e);
-            ConexaoDB.rollback(conn, failure);
             throw failure;
         }
     }
@@ -94,6 +98,7 @@ public class ClienteDAO implements GenericoDAO<Cliente, Long> {
         try (Connection resource = ConexaoDB.getConnection()) {
             conn = resource;
             conn.setAutoCommit(false);
+            try {
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, objecto.getNome());
                 stmt.setLong(2, objecto.getIdCliente());
@@ -127,10 +132,13 @@ public class ClienteDAO implements GenericoDAO<Cliente, Long> {
                 }
             }
             conn.commit();
+            } catch (SQLException | RuntimeException failure) {
+                try { conn.rollback(); } catch (SQLException rollback) { failure.addSuppressed(rollback); }
+                throw failure;
+            }
         } catch (SQLException e) {
             DBException failure = new DBException("Erro ao atualizar cliente: " + e.getMessage(), e);
-            ConexaoDB.rollback(conn, failure);
-            throw new DBException("Erro ao atualizar cliente: " + e.getMessage(), e);
+            throw failure;
         }
     }
 

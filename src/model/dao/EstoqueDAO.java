@@ -22,10 +22,14 @@ public class EstoqueDAO implements GenericoDAO<Estoque, Long> {
 
     @Override
     public void salvar(Estoque objecto) {
+        try (Connection conn = ConexaoDB.getConnection()) { salvar(conn, objecto); }
+        catch (SQLException e) { throw new DBException("Erro ao salvar estoque.", e); }
+    }
+
+    public void salvar(Connection conn, Estoque objecto) throws SQLException {
         String sql = "INSERT INTO estoque (quantidade, data_entrada, data_validade, id_produto, id_funcionario) " +
                      "VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = ConexaoDB.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             int qtd = 0;
             if (objecto.getQuantidade() != null) {
                 qtd = objecto.getQuantidade();
@@ -57,8 +61,6 @@ public class EstoqueDAO implements GenericoDAO<Estoque, Long> {
                     objecto.setIdEstoque(rs.getLong(1));
                 }
             }
-        } catch (SQLException e) {
-            throw new DBException("Erro ao salvar estoque: " + e.getMessage(), e);
         }
     }
 
@@ -186,10 +188,29 @@ public class EstoqueDAO implements GenericoDAO<Estoque, Long> {
     }
 
     public void baixarEstoqueFEFO(Connection conn, Long idProduto, int quantidadeDesejada) throws SQLException {
+        baixarEstoqueFEFO(conn, idProduto, quantidadeDesejada, null);
+    }
+
+    public void baixarEstoqueFEFO(Connection conn, Long idProduto, int quantidadeDesejada, Long idItem) throws SQLException {
         if (quantidadeDesejada <= 0) {
             return;
         }
-        List<Estoque> lotesValidos = buscarPorProduto(conn, idProduto);
+        try (PreparedStatement lock = conn.prepareStatement("SELECT estado FROM produto WHERE id_produto = ? FOR UPDATE")) {
+            lock.setLong(1, idProduto);
+            try (ResultSet rs = lock.executeQuery()) {
+                if (!rs.next() || !"ATIVO".equals(rs.getString(1))) throw new model.exception.VendaInvalidaException("Produto indisponível.");
+            }
+        }
+        List<Estoque> lotesValidos = new ArrayList<>();
+        try (PreparedStatement lock = conn.prepareStatement(
+                "SELECT id_estoque, quantidade FROM estoque WHERE id_produto = ? AND quantidade > 0 "
+                + "AND (data_validade IS NULL OR data_validade >= CURRENT_DATE) "
+                + "ORDER BY data_validade IS NULL, data_validade, id_estoque FOR UPDATE")) {
+            lock.setLong(1, idProduto);
+            try (ResultSet rs = lock.executeQuery()) {
+                while (rs.next()) { Estoque e = new Estoque(); e.setIdEstoque(rs.getLong(1)); e.setQuantidade(rs.getInt(2)); lotesValidos.add(e); }
+            }
+        }
         int totalDisponivel = 0;
         for (Estoque l : lotesValidos) {
             totalDisponivel += (l.getQuantidade() != null ? l.getQuantidade() : 0);
@@ -205,60 +226,21 @@ public class EstoqueDAO implements GenericoDAO<Estoque, Long> {
                 break;
             }
             int qtdLote = lote.getQuantidade() != null ? lote.getQuantidade() : 0;
-            if (qtdLote <= restante) {
-                restante -= qtdLote;
-                lote.setQuantidade(0);
-                atualizar(conn, lote);
-            } else {
-                lote.setQuantidade(qtdLote - restante);
-                restante = 0;
-                atualizar(conn, lote);
+            int retirada = Math.min(qtdLote, restante);
+            try (PreparedStatement st = conn.prepareStatement("UPDATE estoque SET quantidade = quantidade - ? WHERE id_estoque = ? AND quantidade >= ?")) {
+                st.setInt(1, retirada); st.setLong(2, lote.getIdEstoque()); st.setInt(3, retirada);
+                if (st.executeUpdate() != 1) throw new model.exception.EstoqueInsuficienteException("O stock foi alterado por outra operação.");
             }
+            if (idItem != null) try (PreparedStatement st = conn.prepareStatement(
+                    "INSERT INTO item_lote (id_item, id_estoque, quantidade) VALUES (?, ?, ?)")) {
+                st.setLong(1, idItem); st.setLong(2, lote.getIdEstoque()); st.setInt(3, retirada); st.executeUpdate();
+            }
+            restante -= retirada;
         }
     }
 
     public void reporEstoque(Connection conn, Long idProduto, int quantidade, Long idFuncionario) throws SQLException {
-        if (quantidade <= 0) {
-            return;
-        }
-        List<Estoque> lotes = buscarPorProduto(conn, idProduto);
-        if (!lotes.isEmpty()) {
-            Estoque lote = lotes.get(0);
-            int qtdAtual = lote.getQuantidade() != null ? lote.getQuantidade() : 0;
-            lote.setQuantidade(qtdAtual + quantidade);
-            atualizar(conn, lote);
-            return;
-        }
-
-        String sqlUltimo = "SELECT id_estoque, quantidade, data_validade FROM estoque "
-                + "WHERE id_produto = ? AND (data_validade IS NULL OR data_validade >= CURRENT_DATE) "
-                + "ORDER BY data_validade DESC, id_estoque DESC LIMIT 1";
-        try (PreparedStatement stmt = conn.prepareStatement(sqlUltimo)) {
-            stmt.setLong(1, idProduto);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Estoque lote = new Estoque();
-                    lote.setIdEstoque(rs.getLong("id_estoque"));
-                    lote.setQuantidade(rs.getInt("quantidade") + quantidade);
-                    Date val = rs.getDate("data_validade");
-                    if (val != null) {
-                        lote.setDataValidade(val.toLocalDate());
-                    }
-                    atualizar(conn, lote);
-                    return;
-                }
-            }
-        }
-
-        if (idFuncionario != null && idFuncionario > 0) {
-            String sqlInsert = "INSERT INTO estoque (quantidade, data_entrada, data_validade, id_produto, id_funcionario) VALUES (?, CURRENT_TIMESTAMP, NULL, ?, ?)";
-            try (PreparedStatement stmt = conn.prepareStatement(sqlInsert)) {
-                stmt.setInt(1, quantidade);
-                stmt.setLong(2, idProduto);
-                stmt.setLong(3, idFuncionario);
-                stmt.executeUpdate();
-            }
-        }
+        throw new model.exception.DadoInvalidoException("A reposição exige a identificação do lote original.");
     }
 
     private Estoque extrairEstoque(ResultSet rs) throws SQLException {

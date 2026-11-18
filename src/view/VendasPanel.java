@@ -215,7 +215,6 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         add(criarCorpoPrincipal(), BorderLayout.CENTER);
 
         definirModoPainelLateral(this.modoLateral);
-        recarregarDados();
     }
 
     public JTable getTabela() {
@@ -578,6 +577,10 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             if (conf != JOptionPane.YES_OPTION) {
                 return;
             }
+            String recebido = JOptionPane.showInputDialog(this, "Valor recebido (MT):");
+            if (recebido == null) return;
+            vendaAlvo.setValorRecebido(Double.parseDouble(recebido.trim().replace(",", ".")));
+            vendaAlvo.validarPagamento();
             final Venda fVenda = vendaAlvo;
             Utilizador operador = SessaoUtilizador.getUtilizador();
             botaoConcluirPendente.setEnabled(false);
@@ -588,7 +591,7 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                     },
                     sucesso -> {
                         botaoConcluirPendente.setEnabled(true);
-                        exibirDialogoRecibo(fVenda, fVenda.getTotal() != null ? fVenda.getTotal() : 0.0, 0.0);
+                        exibirDialogoRecibo(fVenda, fVenda.getValorRecebido(), fVenda.getTroco());
                         definirModoPainelLateral(ModoPainelLateral.NENHUM);
                         recarregarDados();
                     },
@@ -998,7 +1001,7 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                         "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            if (desconto < 0 || desconto > bruto) {
+            if (!Double.isFinite(desconto) || !Double.isFinite(bruto) || desconto < 0 || desconto > bruto) {
                 JOptionPane.showMessageDialog(this,
                         "O desconto não pode ser negativo nem superior ao subtotal do item.", "Aviso",
                         JOptionPane.WARNING_MESSAGE);
@@ -1079,16 +1082,17 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         venda.setItemVendido(itensParaPersistir);
         venda.setTotal(venda.calcularTotal());
 
-        double valorRecebido = venda.getTotal() != null ? venda.getTotal() : 0.0;
-        try {
-            double dig = Double.parseDouble(campoValorRecebidoNV.getText().trim().replace(",", "."));
-            if (dig > 0) {
-                valorRecebido = dig;
+        if (concluirImediatamente) {
+            try {
+                venda.setValorRecebido(Double.parseDouble(campoValorRecebidoNV.getText().trim().replace(",", ".")));
+                venda.validarPagamento();
+            } catch (RuntimeException erro) {
+                JOptionPane.showMessageDialog(this, "Informe um valor recebido válido e igual ou superior ao total.", "Pagamento", JOptionPane.WARNING_MESSAGE);
+                return;
             }
-        } catch (Exception ignored) {
         }
-        final double finalRecebido = valorRecebido;
-        final double finalTroco = Math.max(0.0, finalRecebido - (venda.getTotal() != null ? venda.getTotal() : 0.0));
+        final double finalRecebido = venda.getValorRecebido() == null ? 0 : venda.getValorRecebido();
+        final double finalTroco = venda.getTroco() == null ? 0 : venda.getTroco();
 
         botaoFinalizar.setEnabled(false);
         botaoGuardarPendente.setEnabled(false);
@@ -1098,7 +1102,7 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                             ? clientePreSelecionado
                             : vendaController.obterOuCriarConsumidorFinal();
                     venda.setCliente(cliEfetivo);
-                    if (venda.getIdVenda() != null && venda.getIdVenda() > 0) {
+                    if (!concluirImediatamente && venda.getIdVenda() != null && venda.getIdVenda() > 0) {
                         vendaController.atualizarRascunho(venda, user);
                     }
                     if (concluirImediatamente) {
@@ -1201,22 +1205,12 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         if (codigo == null || codigo.trim().isEmpty())
             return;
         String cod = codigo.trim();
-        Produto encontrado = null;
-        for (Produto p : listaProdutosNV) {
-            if (p == null)
-                continue;
-            if ((p.getCodigoBarras() != null && p.getCodigoBarras().equalsIgnoreCase(cod))
-                    || (p.getIdProduto() != null && String.valueOf(p.getIdProduto()).equals(cod))) {
-                encontrado = p;
-                break;
-            }
-        }
-        if (encontrado == null) {
-            try {
-                encontrado = vendaController.buscarProdutoPorCodigoBarras(cod);
-            } catch (Exception ignored) {
-            }
-        }
+        AsyncTask.executar(() -> vendaController.buscarProdutoPorCodigoBarras(cod),
+                encontrado -> adicionarProdutoLido(encontrado, cod),
+                erro -> util.AvisoCarregamento.mostrar(this, erro));
+    }
+
+    private void adicionarProdutoLido(Produto encontrado, String cod) {
         if (encontrado == null) {
             JOptionPane.showMessageDialog(this, "Nenhum produto encontrado para o código: " + cod,
                     "Leitor de Código de Barras", JOptionPane.WARNING_MESSAGE);
@@ -1358,16 +1352,14 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         }
         try {
             Long idVenda = Long.parseLong(String.valueOf(tabela.getValueAt(row, 0)));
-            Venda vendaAlvo = (listaVendasEntidades != null) ? listaVendasEntidades.stream()
-                    .filter(v -> idVenda.equals(v.getIdVenda()))
-                    .findFirst().orElse(null) : null;
-            if (vendaAlvo == null) {
-                vendaAlvo = vendaController.buscarPorId(idVenda);
-            }
-            if (vendaAlvo != null) {
-                double tot = vendaAlvo.getTotal() != null ? vendaAlvo.getTotal() : 0.0;
-                exibirDialogoRecibo(vendaAlvo, tot, 0.0);
-            }
+            AsyncTask.executarUltima(this, "recibo", () -> vendaController.buscarPorId(idVenda), vendaAlvo -> {
+                if (vendaAlvo == null) {
+                    JOptionPane.showMessageDialog(this, "A venda já não está disponível.");
+                    return;
+                }
+                exibirDialogoRecibo(vendaAlvo, vendaAlvo.getValorRecebido() == null ? 0 : vendaAlvo.getValorRecebido(),
+                        vendaAlvo.getTroco() == null ? 0 : vendaAlvo.getTroco());
+            }, erro -> util.AvisoCarregamento.mostrar(this, erro));
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Erro ao gerar recibo: " + ex.getMessage(), "Erro",
                     JOptionPane.ERROR_MESSAGE);
@@ -1428,8 +1420,11 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
         }
         double total = venda.getTotal() != null ? venda.getTotal() : 0.0;
         sb.append(String.format("TOTAL A PAGAR   : %21s MT\n", String.format(Locale.GERMANY, "%,.2f", total)));
+        if (venda.getValorRecebido() == null) sb.append("Pagamento: não registado nesta venda antiga.\n");
+        else {
         sb.append(String.format("Valor Recebido  : %21s MT\n", String.format(Locale.GERMANY, "%,.2f", valorRecebido)));
         sb.append(String.format("Troco           : %21s MT\n", String.format(Locale.GERMANY, "%,.2f", troco)));
+        }
         sb.append("==========================================\n");
         sb.append("       Obrigado pela sua preferência!     \n");
         sb.append("==========================================\n");
@@ -1462,22 +1457,16 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                 if (!dest.getName().toLowerCase().endsWith(".pdf")) {
                     dest = new File(dest.getParentFile(), dest.getName() + ".pdf");
                 }
-                try {
-                    GeradorFaturaPDF.gerar(venda, valorRecebido, troco, dest);
-                    JOptionPane.showMessageDialog(this, "Fatura PDF gerada com sucesso em:\n" + dest.getAbsolutePath(),
-                            "Fatura PDF", JOptionPane.INFORMATION_MESSAGE);
-                } catch (Exception exPdf) {
-                    JOptionPane.showMessageDialog(this, "Erro ao gerar Fatura PDF: " + exPdf.getMessage(), "Erro",
-                            JOptionPane.ERROR_MESSAGE);
-                }
+                final File destinoPdf = dest;
+                AsyncTask.executar(() -> {
+                    GeradorFaturaPDF.gerar(venda, valorRecebido, troco, destinoPdf);
+                    return destinoPdf;
+                }, ficheiro -> JOptionPane.showMessageDialog(this, "Fatura PDF gerada em: " + ficheiro.getAbsolutePath()),
+                   erro -> util.AvisoCarregamento.mostrar(this, erro));
             }
         } else if (esc == JOptionPane.NO_OPTION) {
-            try {
-                area.print();
-            } catch (Exception exPrint) {
-                JOptionPane.showMessageDialog(this, "Não foi possível imprimir: " + exPrint.getMessage(), "Impressão",
-                        JOptionPane.WARNING_MESSAGE);
-            }
+            AsyncTask.executar(() -> area.print(),
+                    impresso -> {}, erro -> util.AvisoCarregamento.mostrar(this, erro));
         }
     }
 
@@ -1780,6 +1769,9 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                 recalcularValorReembolso();
         });
 
+        javax.swing.JCheckBox reporProdutos = new javax.swing.JCheckBox("Repor produtos em condições de venda", false);
+        reporProdutos.setOpaque(false);
+        card.add(reporProdutos);
         botaoConfirmar.addActionListener(e -> {
             int itemIdx = comboItemReembolso.getSelectedIndex();
             if (itemIdx < 0 || itemIdx >= itensVendaSelecionada.size()) {
@@ -1809,11 +1801,12 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
             }
             ItemVendido itemAlvo = itensVendaSelecionada.get(itemIdx);
             Funcionario func = user.getFuncionario();
+            final boolean repor = reporProdutos.isSelected();
             botaoConfirmar.setEnabled(false);
             final int qtdFinal = qtd;
             AsyncTask.executar(
                     () -> {
-                        return vendaController.processarReembolso(itemAlvo, qtdFinal, motivo, func);
+                        return vendaController.processarReembolso(itemAlvo, qtdFinal, motivo, func, repor);
                     },
                     res -> {
                         JOptionPane.showMessageDialog(this, "Reembolso processado com sucesso!", "Sucesso",
@@ -2575,7 +2568,10 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        AsyncTask.executar(
+        if (model.vo.SessaoUtilizador.getUtilizador() == null || model.vo.SessaoUtilizador.getUtilizador().isTrocaSenhaObrigatoria()) {
+            return;
+        }
+        AsyncTask.executarUltima(this, "recarregar1",
                 () -> vendaController.listarTodos(),
                 vendas -> {
                     this.listaVendasEntidades = vendas != null ? vendas : new ArrayList<>();
@@ -2601,12 +2597,8 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                     this.dadosVendasCarregados = linhas;
                     atualizarTabelaFiltrada();
                 },
-                erro -> {
-                    this.listaVendasEntidades = new ArrayList<>();
-                    this.dadosVendasCarregados = new ArrayList<>();
-                    atualizarTabelaFiltrada();
-                });
-        AsyncTask.executar(
+                erro -> { util.AvisoCarregamento.mostrar(this, erro); });
+        AsyncTask.executarUltima(this, "recarregar2",
                 () -> vendaController.listarClientes(),
                 clientes -> {
                     this.listaClientesNV = clientes != null ? clientes : new ArrayList<>();
@@ -2619,21 +2611,20 @@ public class VendasPanel extends JPanel implements PainelRecarregavel {
                         comboClienteNV.setSelectedIndex(0);
                     }
                 },
-                erro -> {
-                });
-        AsyncTask.executar(
+                erro -> { util.AvisoCarregamento.mostrar(this, erro); });
+        AsyncTask.executarUltima(this, "recarregar3",
                 () -> vendaController.listarProdutos(),
                 produtos -> {
                     this.listaProdutosNV = produtos != null ? produtos : new ArrayList<>();
                     filtrarComboProdutosNV();
                 },
-                erro -> {
-                });
+                erro -> { util.AvisoCarregamento.mostrar(this, erro); });
     }
 
     @Override
     public void aplicarPermissoes(Utilizador utilizador) {
-        Perfil perfil = (utilizador != null) ? utilizador.getPerfil() : Perfil.ADMIN;
+        Perfil perfil = (utilizador != null && utilizador.podeEntrar()) ? utilizador.getPerfil() : Perfil.VENDEDOR;
+        botaoReembolsar.setVisible(perfil == Perfil.ADMIN || perfil == Perfil.GERENTE);
         if (perfil == Perfil.VENDEDOR) {
             if (botaoAnular != null) {
                 botaoAnular.setVisible(false);

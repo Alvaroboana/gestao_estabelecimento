@@ -6,6 +6,13 @@ import model.exception.DadoInvalidoException;
 
 public class Utilizador implements Serializable {
     private Long idUtilizador;
+    private boolean trocaSenhaObrigatoria;
+    public boolean isTrocaSenhaObrigatoria() { return trocaSenhaObrigatoria; }
+    public void setTrocaSenhaObrigatoria(boolean valor) { trocaSenhaObrigatoria = valor; }
+    public static void validarNovaSenha(String senha) {
+        if (senha == null || senha.length() < 8 || senha.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72)
+            throw new DadoInvalidoException("A palavra-passe deve ter pelo menos 8 caracteres e no máximo 72 bytes.");
+    }
     private String username;
     private String passwordHash;
     private Perfil perfil;
@@ -59,7 +66,8 @@ public class Utilizador implements Serializable {
     }
 
     public void setPassword(String password) {
-        this.passwordHash = password;
+        validarNovaSenha(password);
+        this.passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
     }
 
     public Perfil getPerfil() {
@@ -89,10 +97,12 @@ public class Utilizador implements Serializable {
         } catch (IllegalArgumentException e) {
             return false;
         }
-        return this.passwordHash.equals(senha);
+        return false;
     }
 
     public String alterarSenha(String senhaAtual, String senhaNova) {
+        validarNovaSenha(senhaNova);
+        if (senhaNova.equals(senhaAtual)) throw new DadoInvalidoException("Escolha uma palavra-passe diferente da actual.");
         if (autenticar(senhaAtual)) {
             if (senhaNova != null && !senhaNova.trim().isEmpty()) {
                 String novoHash;
