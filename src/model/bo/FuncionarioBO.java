@@ -29,26 +29,31 @@ public class FuncionarioBO {
     }
 
     public void salvar(Funcionario funcionario) {
+        infra.Autorizacao.exigir(model.vo.Perfil.ADMIN);
         validar(funcionario, false);
         dao.salvar(funcionario);
     }
 
     public void salvar(Funcionario funcionario, Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.ADMIN);
         exigirGestao(utilizador);
         salvar(funcionario);
     }
 
     public void atualizar(Funcionario funcionario) {
+        infra.Autorizacao.exigir(model.vo.Perfil.ADMIN);
         validar(funcionario, true);
         dao.atualizar(funcionario);
     }
 
     public void atualizar(Funcionario funcionario, Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.ADMIN);
         exigirGestao(utilizador);
         atualizar(funcionario);
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.ADMIN);
         validarId(id, "idFuncionario");
         dao.eliminar(id);
     }

@@ -30,26 +30,48 @@ public class ProdutoBO {
     }
 
     public void salvar(Produto produto) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(produto, false);
         dao.salvar(produto);
     }
 
     public void salvar(Produto produto, Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirGestao(utilizador);
         salvar(produto);
     }
 
+    public void salvarCompleto(Produto produto, Long fornecedor, model.vo.Estoque lote) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
+        validar(produto, false);
+        if (fornecedor != null) validarId(fornecedor, "idFornecedor");
+        if (lote != null) {
+            ValidadorNumero.validarPositivo(lote.getQuantidade(), "Quantidade inicial");
+            ValidadorObjeto.validarNaoNulo(lote.getFuncionario(), "Funcionário");
+            validarId(lote.getFuncionario().getIdFuncionario(), "idFuncionario");
+            if (lote.getFuncionario().getEstado() != model.vo.EstadoFuncionario.ATIVO)
+                throw new DadoInvalidoException("O funcionário deve estar activo.");
+            if (lote.getDataValidade() != null && lote.getDataEntrada() != null && lote.getDataValidade().isBefore(lote.getDataEntrada()))
+                throw new DadoInvalidoException("A validade não pode anteceder a entrada.");
+        }
+        dao.salvarCompleto(produto, fornecedor, lote);
+    }
+
     public void atualizar(Produto produto) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(produto, true);
         dao.atualizar(produto);
     }
 
     public void atualizar(Produto produto, Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirGestao(utilizador);
         atualizar(produto);
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarId(id, "idProduto");
         dao.eliminar(id);
     }
@@ -81,18 +103,21 @@ public class ProdutoBO {
     }
 
     public void associarFornecedor(Long idProduto, Long idFornecedor) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarId(idProduto, "idProduto");
         validarId(idFornecedor, "idFornecedor");
         dao.associarFornecedor(idProduto, idFornecedor);
     }
 
     public void desassociarFornecedor(Long idProduto, Long idFornecedor) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarId(idProduto, "idProduto");
         validarId(idFornecedor, "idFornecedor");
         dao.desassociarFornecedor(idProduto, idFornecedor);
     }
 
     public void descontinuar(Produto produto, Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirGestao(utilizador);
         validar(produto, true);
         produto.setEstado(EstadoProduto.DESCONTINUADO);

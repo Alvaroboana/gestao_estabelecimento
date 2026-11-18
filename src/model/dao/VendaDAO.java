@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import infra.ConexaoDB;
+import infra.Transacao;
+import model.exception.VendaInvalidaException;
 import infra.DBException;
 import infra.JdbcValidation;
 import model.vo.Cliente;
@@ -26,17 +28,12 @@ public class VendaDAO implements GenericoDAO<Venda, Long> {
 
     @Override
     public void salvar(Venda objecto) {
-        Connection conn = null;
-        try (Connection resource = ConexaoDB.getConnection()) {
-            conn = resource;
-            conn.setAutoCommit(false);
-            salvar(conn, objecto);
-            conn.commit();
-        } catch (SQLException e) {
-            DBException failure = new DBException("Erro ao salvar venda.", e);
-            ConexaoDB.rollback(conn, failure);
-            throw failure;
-        }
+        if (objecto.getEstado() != null && objecto.getEstado() != EstadoVenda.PENDENTE)
+            throw new VendaInvalidaException("Use a operação de conclusão para finalizar a venda.");
+        Long anterior = objecto.getIdVenda();
+        try {
+            Transacao.executar("Erro ao salvar venda.", conn -> { salvar(conn, objecto); return null; });
+        } catch (RuntimeException e) { objecto.setIdVenda(anterior); limparIdsItens(objecto); throw e; }
     }
 
     public void salvar(Connection conn, Venda objecto) throws SQLException {
@@ -99,89 +96,107 @@ public class VendaDAO implements GenericoDAO<Venda, Long> {
     }
 
     public void concluirVendaAtomicamente(Venda venda, EstoqueDAO estoqueDAO) {
-        Connection conn = null;
-        try (Connection resource = ConexaoDB.getConnection()) {
-            conn = resource;
-            conn.setAutoCommit(false);
-
-            if (venda.getIdVenda() == null || venda.getIdVenda() <= 0) {
-                salvar(conn, venda);
-            } else {
-                atualizar(conn, venda);
-                if (venda.getItemVendido() == null || venda.getItemVendido().isEmpty()) {
-                    carregarItens(conn, venda);
-                }
-            }
-
-            if (venda.getItemVendido() != null) {
-                for (ItemVendido item : venda.getItemVendido()) {
-                    if (item != null && item.getProduto() != null && item.getProduto().getIdProduto() != null) {
-                        int qtd = item.getQuantidade() != null ? item.getQuantidade() : 0;
-                        if (qtd > 0) {
-                            estoqueDAO.baixarEstoqueFEFO(conn, item.getProduto().getIdProduto(), qtd);
+        if (venda.getEstado() != EstadoVenda.CONCLUIDA)
+            throw new VendaInvalidaException("A conclusão deve passar pela camada de negócio.");
+        Long anterior = venda.getIdVenda();
+        try {
+            Transacao.executar("Erro ao concluir venda.", conn -> {
+                venda.validarPagamento();
+                if (venda.getIdVenda() != null) exigirPendente(conn, venda.getIdVenda());
+                java.util.List<ItemVendido> itens = new ArrayList<>(venda.getItemVendido());
+                itens.sort(java.util.Comparator.comparing(i -> i.getProduto().getIdProduto()));
+                // Bloquear antes de inserir os itens evita promover simultaneamente
+                // os bloqueios partilhados das chaves estrangeiras dos produtos.
+                for (ItemVendido item : itens) {
+                    try (PreparedStatement st = conn.prepareStatement("SELECT estado FROM produto WHERE id_produto = ? FOR UPDATE")) {
+                        st.setLong(1, item.getProduto().getIdProduto());
+                        try (ResultSet rs = st.executeQuery()) {
+                            if (!rs.next() || !"ATIVO".equals(rs.getString(1)))
+                                throw new VendaInvalidaException("O produto deixou de estar disponível.");
                         }
                     }
                 }
-            }
-
-            conn.commit();
-        } catch (SQLException e) {
-            DBException failure = new DBException("Erro ao concluir venda: " + e.getMessage(), e);
-            ConexaoDB.rollback(conn, failure);
-            throw failure;
-        } catch (RuntimeException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException rollbackEx) {
-                    e.addSuppressed(rollbackEx);
+                if (venda.getIdVenda() == null) salvar(conn, venda);
+                else atualizar(conn, venda);
+                for (ItemVendido item : itens)
+                    estoqueDAO.baixarEstoqueFEFO(conn, item.getProduto().getIdProduto(), item.getQuantidade(), item.getIdItem());
+                try (PreparedStatement st = conn.prepareStatement(
+                        "INSERT INTO pagamento_venda (id_venda, valor_recebido, troco) VALUES (?, ?, ?)")) {
+                    st.setLong(1, venda.getIdVenda());
+                    st.setDouble(2, venda.getValorRecebido()); st.setDouble(3, venda.getTroco()); st.executeUpdate();
                 }
+                return null;
+            });
+        } catch (RuntimeException e) { venda.setIdVenda(anterior); limparIdsItens(venda); throw e; }
+    }
+
+    private void limparIdsItens(Venda venda) {
+        if (venda.getItemVendido() != null) for (ItemVendido item : venda.getItemVendido()) item.setIdItem(null);
+    }
+
+    private void exigirPendente(Connection conn, Long id) throws SQLException {
+        try (PreparedStatement st = conn.prepareStatement("SELECT estado FROM venda WHERE id_venda = ? FOR UPDATE")) {
+            st.setLong(1, id);
+            try (ResultSet rs = st.executeQuery()) {
+                if (!rs.next() || !"PENDENTE".equals(rs.getString(1)))
+                    throw new VendaInvalidaException("A venda já foi concluída, anulada ou deixou de existir. Actualize a lista.");
             }
-            throw e;
         }
     }
 
     @Override
     public void eliminar(Long id) {
-        String sql = "DELETE FROM venda WHERE id_venda = ?";
-        try (Connection conn = ConexaoDB.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, id);
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new DBException("Erro ao eliminar venda: " + e.getMessage(), e);
-        }
+        Transacao.executar("Erro ao eliminar rascunho.", conn -> {
+            exigirPendente(conn, id);
+            try (PreparedStatement st = conn.prepareStatement("DELETE FROM venda WHERE id_venda = ?")) {
+                st.setLong(1, id); st.executeUpdate();
+            }
+            return null;
+        });
     }
 
     @Override
     public void atualizar(Venda objecto) {
-        try (Connection conn = ConexaoDB.getConnection()) {
-            atualizar(conn, objecto);
-        } catch (SQLException e) {
-            throw new DBException("Erro ao atualizar venda: " + e.getMessage(), e);
-        }
+        if (objecto.getEstado() != EstadoVenda.PENDENTE && objecto.getEstado() != EstadoVenda.ANULADA)
+            throw new VendaInvalidaException("Uma venda concluída não pode ser editada.");
+        Transacao.executar("Erro ao actualizar venda.", conn -> { atualizar(conn, objecto); return null; });
     }
 
     public void atualizar(Connection conn, Venda objecto) throws SQLException {
-        String sql = "UPDATE venda SET total = ?, estado = ? WHERE id_venda = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            double tot = objecto.getTotal() != null ? objecto.getTotal() : 0.0;
-            stmt.setDouble(1, tot);
-
-            String estNome = objecto.getEstado() != null ? objecto.getEstado().name() : "PENDENTE";
-            stmt.setString(2, estNome);
-            stmt.setLong(3, objecto.getIdVenda());
-
-            stmt.executeUpdate();
+        exigirPendente(conn, objecto.getIdVenda());
+        if (objecto.getEstado() == EstadoVenda.ANULADA) {
+            try (PreparedStatement st = conn.prepareStatement("UPDATE venda SET estado = 'ANULADA' WHERE id_venda = ?")) {
+                st.setLong(1, objecto.getIdVenda()); st.executeUpdate();
+            }
+            return;
+        }
+        try (PreparedStatement st = conn.prepareStatement(
+                "UPDATE venda SET total = ?, estado = ?, id_cliente = ?, id_funcionario = ? WHERE id_venda = ?")) {
+            st.setDouble(1, objecto.calcularTotal()); st.setString(2, objecto.getEstado().name());
+            st.setLong(3, objecto.getCliente().getIdCliente()); st.setLong(4, objecto.getFuncionario().getIdFuncionario());
+            st.setLong(5, objecto.getIdVenda()); st.executeUpdate();
+        }
+        try (PreparedStatement st = conn.prepareStatement("DELETE FROM item_vendido WHERE id_venda = ?")) {
+            st.setLong(1, objecto.getIdVenda()); st.executeUpdate();
+        }
+        try (PreparedStatement st = conn.prepareStatement(
+                "INSERT INTO item_vendido (quantidade, preco, desconto, id_venda, id_produto) VALUES (?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+            for (ItemVendido item : objecto.getItemVendido()) {
+                st.setInt(1, item.getQuantidade()); st.setDouble(2, item.getPreco());
+                st.setDouble(3, item.getDesconto() == null ? 0 : item.getDesconto());
+                st.setLong(4, objecto.getIdVenda()); st.setLong(5, item.getProduto().getIdProduto()); st.executeUpdate();
+                try (ResultSet keys = st.getGeneratedKeys()) { if (keys.next()) item.setIdItem(keys.getLong(1)); }
+                item.setVenda(objecto);
+            }
         }
     }
 
     @Override
     public List<Venda> listarTodos() {
-        String sql = "SELECT v.id_venda, v.data, v.total, v.estado, " +
+        String sql = "SELECT v.id_venda, v.data, v.total, v.estado, pag.valor_recebido, pag.troco, " +
                      "c.id_cliente, pc.nome AS nome_cliente, " +
                      "f.id_funcionario, pf.nome AS nome_funcionario, f.estado AS estado_funcionario " +
-                     "FROM venda v " +
+                     "FROM venda v LEFT JOIN pagamento_venda pag ON pag.id_venda = v.id_venda " +
                      "INNER JOIN cliente c ON v.id_cliente = c.id_cliente " +
                      "INNER JOIN pessoa pc ON c.id_pessoa = pc.id_pessoa " +
                      "INNER JOIN funcionario f ON v.id_funcionario = f.id_funcionario " +
@@ -204,10 +219,10 @@ public class VendaDAO implements GenericoDAO<Venda, Long> {
 
     @Override
     public Venda buscarPorId(Long id) {
-        String sql = "SELECT v.id_venda, v.data, v.total, v.estado, " +
+        String sql = "SELECT v.id_venda, v.data, v.total, v.estado, pag.valor_recebido, pag.troco, " +
                      "c.id_cliente, pc.nome AS nome_cliente, " +
                      "f.id_funcionario, pf.nome AS nome_funcionario, f.estado AS estado_funcionario " +
-                     "FROM venda v " +
+                     "FROM venda v LEFT JOIN pagamento_venda pag ON pag.id_venda = v.id_venda " +
                      "INNER JOIN cliente c ON v.id_cliente = c.id_cliente " +
                      "INNER JOIN pessoa pc ON c.id_pessoa = pc.id_pessoa " +
                      "INNER JOIN funcionario f ON v.id_funcionario = f.id_funcionario " +
@@ -238,6 +253,8 @@ public class VendaDAO implements GenericoDAO<Venda, Long> {
             v.setData(ts.toLocalDateTime());
         }
         v.setTotal(rs.getDouble("total"));
+        v.setValorRecebido((Double) rs.getObject("valor_recebido", Double.class));
+        v.setTroco((Double) rs.getObject("troco", Double.class));
 
         String est = rs.getString("estado");
         if (est != null) {

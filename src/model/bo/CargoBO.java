@@ -25,16 +25,19 @@ public class CargoBO {
     }
 
     public void salvar(Cargo cargo) {
+        infra.Autorizacao.exigir(model.vo.Perfil.ADMIN);
         validar(cargo, false);
         dao.salvar(cargo);
     }
 
     public void atualizar(Cargo cargo) {
+        infra.Autorizacao.exigir(model.vo.Perfil.ADMIN);
         validar(cargo, true);
         dao.atualizar(cargo);
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.ADMIN);
         validarId(id, "idCargo");
         dao.eliminar(id);
     }

@@ -13,7 +13,7 @@ public class App {
             return;
         }
         UiStyle.instalarTemaEscuro();
-        abrir();
+        LoginFrame.abrir();
 
     }
 

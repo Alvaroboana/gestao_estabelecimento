@@ -8,8 +8,8 @@ public class ValidadorNumero {
     }
 
     public static void validarNaoNulo(Double valor, String nomeCampo) {
-        if (valor == null) {
-            throw new DadoInvalidoException(nomeCampo + " é obrigatório(a).");
+        if (valor == null || !Double.isFinite(valor)) {
+            throw new DadoInvalidoException(nomeCampo + " deve ser um número finito.");
         }
     }
 

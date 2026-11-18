@@ -25,16 +25,19 @@ public class BairroBO {
     }
 
     public void salvar(Bairro bairro) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(bairro, false);
         dao.salvar(bairro);
     }
 
     public void atualizar(Bairro bairro) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(bairro, true);
         dao.atualizar(bairro);
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarId(id, "idBairro");
         dao.eliminar(id);
     }

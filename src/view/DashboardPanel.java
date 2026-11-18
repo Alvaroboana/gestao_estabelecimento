@@ -85,7 +85,9 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
         add(criarConteudo(), BorderLayout.CENTER);
 
         aplicarPermissoes(utilizador);
-        recarregarDados();
+        if (utilizador != null && !utilizador.isTrocaSenhaObrigatoria()) {
+            recarregarDados();
+        }
     }
 
     private JPanel criarCabecalho() {
@@ -163,11 +165,11 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
         JPanel indicadores = new JPanel(new GridLayout(1, 5, 16, 0));
         indicadores.setOpaque(false);
 
-        this.labelKpiVendasHoje = new JLabel("0");
-        this.labelKpiVendasPendentes = new JLabel("0");
-        this.labelKpiEstoqueBaixo = new JLabel("0");
-        this.labelKpiLotesExpirar = new JLabel("0");
-        this.labelKpiLotesExpirados = new JLabel("0");
+        this.labelKpiVendasHoje = new JLabel("—");
+        this.labelKpiVendasPendentes = new JLabel("—");
+        this.labelKpiEstoqueBaixo = new JLabel("—");
+        this.labelKpiLotesExpirar = new JLabel("—");
+        this.labelKpiLotesExpirados = new JLabel("—");
 
         indicadores.add(cartaoKpi("Vendas de hoje", MaterialDesignC.CASH_REGISTER, labelKpiVendasHoje));
         indicadores.add(cartaoKpi("Vendas pendentes", MaterialDesignC.CLIPBOARD_TEXT, labelKpiVendasPendentes));
@@ -291,7 +293,10 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        AsyncTask.executar(() -> {
+        if (model.vo.SessaoUtilizador.getUtilizador() == null || model.vo.SessaoUtilizador.getUtilizador().isTrocaSenhaObrigatoria()) {
+            return;
+        }
+        AsyncTask.executarUltima(this, "recarregar1", () -> {
             Map<String, Integer> kpis = dashboardController.obterIndicadoresDashboard();
             List<Map<String, Object>> estoque = dashboardController.obterEstoqueBaixo();
             List<Map<String, Object>> vendas = dashboardController.obterProdutosMaisVendidos();
@@ -329,15 +334,7 @@ public class DashboardPanel extends JPanel implements PainelRecarregavel {
                     });
                 }
             }
-        }, err -> {
-            labelKpiVendasHoje.setText("0");
-            labelKpiVendasPendentes.setText("0");
-            labelKpiEstoqueBaixo.setText("0");
-            labelKpiLotesExpirar.setText("0");
-            if (labelKpiLotesExpirados != null) {
-                labelKpiLotesExpirados.setText("0");
-            }
-        });
+        }, err -> { util.AvisoCarregamento.mostrar(this, err); });
     }
 
     @Override

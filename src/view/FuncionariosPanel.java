@@ -217,7 +217,6 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
         add(criarCorpoPrincipal(), BorderLayout.CENTER);
 
         definirModoPainelLateral(this.modoLateral);
-        recarregarDados();
     }
 
     public JTable getTabela() {
@@ -1586,7 +1585,7 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
                     AsyncTask.executar(
                         () -> funcionarioController.obterTotalVendasFuncionarioMes(idFunc),
                         tot -> campoVendasMesEstadoCargo.setText(String.format(Locale.GERMANY, "%,.2f MT", tot != null ? tot : 0.0)),
-                        err -> campoVendasMesEstadoCargo.setText("0,00 MT")
+                        err -> campoVendasMesEstadoCargo.setText("Indisponível")
                     );
                 } catch (Exception ignored) {}
                 if ("Vendedor".equalsIgnoreCase(cargo)) {
@@ -2448,13 +2447,14 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        AsyncTask.executar(
+        if (model.vo.SessaoUtilizador.getUtilizador() == null || model.vo.SessaoUtilizador.getUtilizador().isTrocaSenhaObrigatoria()) {
+            return;
+        }
+        AsyncTask.executarUltima(this, "recarregar1",
             () -> {
                 List<Funcionario> funcs = funcionarioController.listarTodos();
                 List<Utilizador> users = new ArrayList<>();
-                try {
-                    users = funcionarioController.listarUtilizadores();
-                } catch (Exception ignored) {}
+                users = funcionarioController.listarUtilizadores();
                 return new Object[] { funcs, users };
             },
             resultado -> {
@@ -2507,14 +2507,9 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
                 this.dadosFuncionariosCarregados = linhas;
                 atualizarTabelaFiltrada();
             },
-            erro -> {
-                this.listaFuncionariosEntidades = new ArrayList<>();
-                this.listaUtilizadoresEntidades = new ArrayList<>();
-                this.dadosFuncionariosCarregados = new ArrayList<>();
-                atualizarTabelaFiltrada();
-            }
+            erro -> { util.AvisoCarregamento.mostrar(this, erro); }
         );
-        AsyncTask.executar(
+        AsyncTask.executarUltima(this, "recarregar2",
             () -> {
                 List<Cargo> cargos = funcionarioController.listarCargos();
                 List<Cidade> cidades = funcionarioController.listarCidades();
@@ -2553,7 +2548,7 @@ public class FuncionariosPanel extends JPanel implements PainelRecarregavel {
                 atualizarBairrosPorCidade(seletorCidadeEditar, seletorBairroEditar,
                         seletorBairroEditar != null ? seletorBairroEditar.getText() : null);
             },
-            erro -> {}
+            erro -> { util.AvisoCarregamento.mostrar(this, erro); }
         );
     }
 

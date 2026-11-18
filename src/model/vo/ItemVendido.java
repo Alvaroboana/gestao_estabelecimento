@@ -113,9 +113,9 @@ public class ItemVendido implements Serializable {
     }
 
     public void aplicarDesconto(Double desconto) {
-        if (desconto != null && desconto >= 0) {
-            this.desconto = desconto;
-        }
+        util.ValidadorNumero.validarNaoNegativo(desconto, "Desconto");
+        new ItemVendido(quantidade, preco, desconto, venda, produto).calcularSubtotal();
+        this.desconto = desconto;
     }
 
     public void trocarProduto(Produto produto) {
@@ -150,16 +150,14 @@ public class ItemVendido implements Serializable {
     }
 
     public Double calcularSubtotal() {
-        double total = 0.0;
-        if (this.quantidade != null && this.preco != null) {
-            total = this.quantidade * this.preco;
-        }
-        double desc = calcularValorDesconto();
-        total = total - desc;
-        if (total < 0) {
-            total = 0.0;
-        }
-        return total;
+        util.ValidadorNumero.validarPositivo(quantidade, "Quantidade");
+        util.ValidadorNumero.validarNaoNegativo(preco, "Preço");
+        double desc = desconto == null ? 0.0 : desconto;
+        util.ValidadorNumero.validarNaoNegativo(desc, "Desconto");
+        double bruto = quantidade * preco;
+        util.ValidadorNumero.validarNaoNegativo(bruto, "Subtotal");
+        if (desc > bruto) throw new model.exception.DadoInvalidoException("O desconto não pode exceder o valor dos produtos.");
+        return bruto - desc;
     }
 
     public Double calcularValorDesconto() {

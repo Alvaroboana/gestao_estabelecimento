@@ -124,6 +124,11 @@ public class MainFrame extends JFrame {
 
         this.loginPanel = new LoginPanel(null, this::fazerLoginSucesso);
 
+        if (utilizadorInicial != null) {
+            this.utilizadorLogado = utilizadorInicial;
+            SessaoUtilizador.iniciarSessao(utilizadorInicial);
+        }
+
         configurarJanela();
         construirInterface();
 
@@ -821,11 +826,7 @@ public class MainFrame extends JFrame {
             btnSalvar.setText("A salvar...");
 
             AsyncTask.executar(() -> {
-                String novoHash = utilizadorLogado.alterarSenha(senhaAtual, senhaNova);
-                if (novoHash == null) {
-                    throw new RuntimeException("Senha atual incorreta.");
-                }
-                utilizadorController.atualizar(utilizadorLogado);
+                utilizadorController.alterarSenha(utilizadorLogado.getIdUtilizador(), senhaAtual, senhaNova);
                 return true;
             }, ok -> {
                 JOptionPane.showMessageDialog(dialog, "Senha alterada com sucesso!", "Sucesso",

@@ -23,11 +23,13 @@ public class ClienteBO {
     }
 
     public void salvar(Cliente cliente) {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         validar(cliente, false);
         dao.salvar(cliente);
     }
 
     public void atualizar(Cliente cliente) {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         validar(cliente, true);
         Cliente atual = dao.buscarPorId(cliente.getIdCliente());
         if (atual != null && ehConsumidorFinal(atual.getNome())
@@ -38,6 +40,7 @@ public class ClienteBO {
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         validarId(id, "idCliente");
         Cliente atual = dao.buscarPorId(id);
         if (atual != null && ehConsumidorFinal(atual.getNome())) {

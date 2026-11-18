@@ -31,6 +31,7 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
         try (Connection resource = ConexaoDB.getConnection()) {
             conn = resource;
             conn.setAutoCommit(false);
+            try {
 
             Long idPessoa = null;
             try (PreparedStatement stmtPessoa = conn.prepareStatement(sqlPessoa, Statement.RETURN_GENERATED_KEYS)) {
@@ -105,9 +106,12 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
             }
 
             conn.commit();
+            } catch (SQLException | RuntimeException failure) {
+                try { conn.rollback(); } catch (SQLException rollback) { failure.addSuppressed(rollback); }
+                throw failure;
+            }
         } catch (SQLException e) {
             DBException failure = new DBException("Erro ao salvar funcionario.", e);
-            ConexaoDB.rollback(conn, failure);
             throw failure;
         }
     }
@@ -132,6 +136,7 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
         try (Connection resource = ConexaoDB.getConnection()) {
             conn = resource;
             conn.setAutoCommit(false);
+            try {
 
             try (PreparedStatement stmtP = conn.prepareStatement(sqlPessoa)) {
                 stmtP.setString(1, objecto.getNome());
@@ -207,9 +212,12 @@ public class FuncionarioDAO implements GenericoDAO<Funcionario, Long> {
             }
 
             conn.commit();
+            } catch (SQLException | RuntimeException failure) {
+                try { conn.rollback(); } catch (SQLException rollback) { failure.addSuppressed(rollback); }
+                throw failure;
+            }
         } catch (SQLException e) {
             DBException failure = new DBException("Erro ao atualizar funcionario.", e);
-            ConexaoDB.rollback(conn, failure);
             throw failure;
         }
     }

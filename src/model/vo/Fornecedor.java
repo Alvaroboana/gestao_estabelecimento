@@ -73,7 +73,7 @@ public class Fornecedor extends Pessoa {
     }
 
     public void setProduto(List<Produto> prods) {
-        this.produto = (Set<Produto>) prods;
+        this.produto = prods != null ? new HashSet<>(prods) : new HashSet<>();
     }
 
     @Override

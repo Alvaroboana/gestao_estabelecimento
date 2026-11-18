@@ -49,17 +49,19 @@ public final class GeradorRelatorioPDF {
         List<Map<String, Object>> reembolsos = null;
         List<Map<String, Object>> auditoria = null;
         try {
-            LocalDateTime inicio = LocalDateTime.now().minusDays(30);
-            LocalDateTime fim = LocalDateTime.now().plusDays(1);
+            LocalDateTime inicio = java.time.LocalDate.now().minusDays(30).atStartOfDay();
+            LocalDateTime fim = java.time.LocalDate.now().plusDays(1).atStartOfDay();
             kpis = dao.obterIndicadoresDashboard();
             resumoVendasEstado = dao.resumoVendasPorEstado(inicio, fim);
             maisVendidos = dao.produtosMaisVendidos();
             estoqueBaixo = dao.estoqueBaixo();
             reembolsos = dao.reembolsosPeriodo(inicio, fim);
             auditoria = dao.resumoAuditoria(inicio, fim);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            throw new IOException("Não foi possível consultar os dados do relatório.", e);
         }
 
+        List<Map<String,Object>> saldos = dao.vendasPeriodo(java.time.LocalDate.now().minusDays(30).atStartOfDay(), java.time.LocalDate.now().plusDays(1).atStartOfDay());
         Document document = new Document(PageSize.A4, 32f, 32f, 28f, 28f);
         try (FileOutputStream fos = new FileOutputStream(destino)) {
             PdfWriter.getInstance(document, fos);
@@ -71,10 +73,24 @@ public final class GeradorRelatorioPDF {
             adicionarGradeMenosVendidosEEstoqueBaixoDinamica(document, maisVendidos, estoqueBaixo);
             adicionarTabelaReembolsosDinamica(document, reembolsos);
             adicionarTabelaAuditoriaDinamica(document, auditoria);
+            adicionarSaldosVendas(document, saldos);
             adicionarRodape(document);
 
             document.close();
         }
+    }
+
+    private static void adicionarSaldosVendas(Document doc, List<Map<String,Object>> vendas) throws DocumentException {
+        double bruto = 0, devolvido = 0, liquido = 0;
+        for (Map<String,Object> v : vendas) {
+            bruto += ((Number)v.get("valor_bruto")).doubleValue();
+            devolvido += ((Number)v.get("valor_reembolsado")).doubleValue();
+            liquido += ((Number)v.get("valor_liquido")).doubleValue();
+        }
+        doc.add(new Paragraph("Saldo das vendas dos últimos 30 dias"));
+        doc.add(criarTabelaSecao(new String[]{"Bruto (MT)", "Reembolsos (MT)", "Líquido (MT)"},
+                new String[][]{{String.format(Locale.GERMANY,"%,.2f",bruto), String.format(Locale.GERMANY,"%,.2f",devolvido), String.format(Locale.GERMANY,"%,.2f",liquido)}}, null));
+        doc.add(new Paragraph("Bruto após descontos e antes de reembolsos. Devoluções atribuídas à data da venda original, incluindo vendas totalmente reembolsadas. Rankings: quantidades líquidas de todo o histórico."));
     }
 
     private static void adicionarCabecalho(Document doc) throws DocumentException {
@@ -148,8 +164,8 @@ public final class GeradorRelatorioPDF {
         int expCount = kpis != null ? kpis.getOrDefault("lotesAExpirar", 0) : 0;
         String[][] dados = {
             {"Vendas no período", String.valueOf(totalVendasPeriodo)},
-            {"Total concluído", String.format(Locale.GERMANY, "%,.2f MT", totalConcluido)},
-            {"Total reembolsado", String.format(Locale.GERMANY, "%,.2f MT", totalReembolsado)},
+            {"Concluídas (bruto)", String.format(Locale.GERMANY, "%,.2f MT", totalConcluido)},
+            {"Reembolsos no período", String.format(Locale.GERMANY, "%,.2f MT", totalReembolsado)},
             {"Estoque baixo", estBaixoCount + " produtos"},
             {"A expirar (7 dias)", expCount + " lotes"}
         };
@@ -203,7 +219,7 @@ public final class GeradorRelatorioPDF {
         }
 
         PdfPTable tMaisVendidos = criarTabelaSecao(
-                new String[] {"#", "Produto", "Qtd"},
+                new String[] {"#", "Produto", "Qtd líquida"},
                 linhasMais,
                 null
         );
@@ -239,7 +255,7 @@ public final class GeradorRelatorioPDF {
             linhasMenos[i][2] = String.valueOf(m.getOrDefault("quantidade_vendida", "0"));
         }
         PdfPTable tMenosVendidos = criarTabelaSecao(
-                new String[] {"#", "Produto", "Qtd"},
+                new String[] {"#", "Produto", "Qtd líquida"},
                 linhasMenos,
                 null
         );
@@ -327,8 +343,8 @@ public final class GeradorRelatorioPDF {
 
         String[][] dados = {
             {"Vendas no período", "4"},
-            {"Total concluído", "840,00 MT"},
-            {"Total reembolsado", "105,00 MT"},
+            {"Concluídas (bruto)", "840,00 MT"},
+            {"Reembolsos no período", "105,00 MT"},
             {"Estoque baixo", "4 produtos"},
             {"A expirar (7 dias)", "5 produtos"}
         };
@@ -361,7 +377,7 @@ public final class GeradorRelatorioPDF {
         );
 
         PdfPTable tMaisVendidos = criarTabelaSecao(
-                new String[] {"#", "Produto", "Qtd"},
+                new String[] {"#", "Produto", "Qtd líquida"},
                 new String[][] {
                     {"1", "Pão", "320"},
                     {"2", "Leite 1L", "210"},
@@ -383,7 +399,7 @@ public final class GeradorRelatorioPDF {
         grade.setSpacingAfter(10f);
 
         PdfPTable tMenosVendidos = criarTabelaSecao(
-                new String[] {"#", "Produto", "Qtd"},
+                new String[] {"#", "Produto", "Qtd líquida"},
                 new String[][] {
                     {"1", "Biscoito", "0"},
                     {"2", "Óleo 5L", "4"},

@@ -25,10 +25,14 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
 
     @Override
     public void salvar(Produto objecto) {
+        try (Connection conn = ConexaoDB.getConnection()) { salvar(conn, objecto); }
+        catch (SQLException e) { throw new DBException("Erro ao salvar produto.", e); }
+    }
+
+    public void salvar(Connection conn, Produto objecto) throws SQLException {
         String sql = "INSERT INTO produto (codigo_barras, nome, preco, descricao, unidade, estado, quantidade_minima, id_categoria) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = ConexaoDB.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             String cb = objecto.getCodigoBarras();
             if (cb != null) {
                 cb = cb.trim();
@@ -69,9 +73,22 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
                     objecto.setIdProduto(rs.getLong(1));
                 }
             }
-        } catch (SQLException e) {
-            throw new DBException("Erro ao salvar produto: " + e.getMessage(), e);
         }
+    }
+
+    public void salvarCompleto(Produto produto, Long fornecedor, Estoque lote) {
+        Long anterior = produto.getIdProduto();
+        try {
+            infra.Transacao.executar("Erro ao cadastrar produto e stock inicial.", conn -> {
+                salvar(conn, produto);
+                if (fornecedor != null) try (PreparedStatement st = conn.prepareStatement(
+                        "INSERT INTO fornecedor_produto (id_produto, id_fornecedor) VALUES (?, ?)")) {
+                    st.setLong(1, produto.getIdProduto()); st.setLong(2, fornecedor); st.executeUpdate();
+                }
+                if (lote != null) { lote.setProduto(produto); new EstoqueDAO().salvar(conn, lote); }
+                return null;
+            });
+        } catch (RuntimeException e) { produto.setIdProduto(anterior); if (lote != null) lote.setIdEstoque(null); throw e; }
     }
 
     @Override
@@ -255,10 +272,7 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
         cat.setIdCategoria(rs.getLong("id_categoria"));
         cat.setNome(rs.getString("nome_categoria"));
         p.setCategoria(cat);
-        try {
-            p.setCodigoBarras(rs.getString("codigo_barras"));
-        } catch (SQLException ignored) {
-        }
+        p.setCodigoBarras(rs.getString("codigo_barras"));
 
         return p;
     }
@@ -283,14 +297,10 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
                     return p;
                 }
             }
-        } catch (SQLException ignored) {
+        } catch (SQLException e) {
+            throw new DBException("Erro ao procurar o código de barras.", e);
         }
-        try {
-            Long id = Long.parseLong(codigoLimpo);
-            return buscarPorId(id);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return null;
     }
 
     public Map<Long, LocalDate> obterProximaValidadePorProduto() {
@@ -307,7 +317,8 @@ public class ProdutoDAO implements GenericoDAO<Produto, Long> {
                     mapa.put(rs.getLong("id_produto"), d.toLocalDate());
                 }
             }
-        } catch (SQLException ignored) {
+        } catch (SQLException e) {
+            throw new DBException("Erro ao consultar as validades dos produtos.", e);
         }
         return mapa;
     }

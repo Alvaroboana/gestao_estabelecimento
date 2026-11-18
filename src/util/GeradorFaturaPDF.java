@@ -137,8 +137,8 @@ public final class GeradorFaturaPDF {
             adicionarLinhaResumo(resumo, "Subtotal Bruto:", formatarMt(totalBruto), false);
             adicionarLinhaResumo(resumo, "Total de Descontos:", "- " + formatarMt(totalDescontos), false);
             adicionarLinhaResumo(resumo, "TOTAL LÍQUIDO A PAGAR:", formatarMt(totalLiquido), true);
-            adicionarLinhaResumo(resumo, "Valor Recebido:", formatarMt(recebidoEfetivo), false);
-            adicionarLinhaResumo(resumo, "Troco:", formatarMt(trocoEfetivo), false);
+            adicionarLinhaResumo(resumo, "Valor Recebido:", venda.getValorRecebido() == null ? "Não registado" : formatarMt(venda.getValorRecebido()), false);
+            adicionarLinhaResumo(resumo, "Troco:", venda.getTroco() == null ? "Não registado" : formatarMt(venda.getTroco()), false);
             document.add(resumo);
 
             Paragraph rodape = new Paragraph(

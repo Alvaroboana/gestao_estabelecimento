@@ -11,6 +11,11 @@ public class TesteFornecedorBO {
 
     public static void main(String[] args) {
         System.out.println("========== Teste FornecedorBO (Validacoes) ==========");
+        model.vo.Funcionario funcionario = new model.vo.Funcionario();
+        funcionario.setEstado(model.vo.EstadoFuncionario.ATIVO);
+        model.vo.Utilizador operador = new model.vo.Utilizador();
+        operador.setIdUtilizador(1L); operador.setPerfil(model.vo.Perfil.ADMIN); operador.setFuncionario(funcionario);
+        model.vo.SessaoUtilizador.iniciarSessao(operador);
         FornecedorBO bo = new FornecedorBO();
 
         try {
@@ -77,6 +82,8 @@ public class TesteFornecedorBO {
         System.out.println("\n-------------------------------------------");
         System.out.println("Resultados: " + passou + " passou, " + falhou + " falhou.");
         System.out.println("===========================================");
+        model.vo.SessaoUtilizador.encerrarSessao();
+        if (falhou > 0) throw new AssertionError("Falhas: " + falhou);
     }
 
     private static void sucesso(String msg) {

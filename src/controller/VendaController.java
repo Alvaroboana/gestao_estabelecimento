@@ -110,6 +110,10 @@ public class VendaController {
         return reembolsoBO.criarEGuardar(item, quantidade, motivo, funcionario);
     }
 
+    public Reembolso processarReembolso(ItemVendido item, int quantidade, String motivo, Funcionario funcionario, boolean repor) {
+        return reembolsoBO.criarEGuardar(item, quantidade, motivo, funcionario, repor);
+    }
+
     public ItemVendido adicionarItem(Venda venda, Produto produto, int quantidade, Double desconto) {
         return vendaBO.adicionarItem(venda, produto, quantidade, desconto);
     }
@@ -167,6 +171,6 @@ public class VendaController {
         if (utilizador != null && utilizador.getFuncionario() != null && venda != null && venda.getFuncionario() == null) {
             venda.setFuncionario(utilizador.getFuncionario());
         }
-        vendaBO.atualizar(venda);
+        vendaBO.atualizar(venda, utilizador);
     }
 }

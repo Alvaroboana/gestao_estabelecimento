@@ -22,6 +22,7 @@ public class ContactoBO {
     }
 
     public void salvarComPessoa(Contacto contacto, Long idPessoa) {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         ValidadorObjeto.validarNaoNulo(contacto, "Contacto");
         validarId(idPessoa, "idPessoa");
         ValidadorTexto.validarContacto(contacto.getContacto(), "Contacto");
@@ -29,6 +30,7 @@ public class ContactoBO {
     }
 
     public void atualizar(Contacto contacto) {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         ValidadorObjeto.validarNaoNulo(contacto, "Contacto");
         validarId(contacto.getIdContacto(), "idContacto");
         ValidadorTexto.validarContacto(contacto.getContacto(), "Contacto");
@@ -36,6 +38,7 @@ public class ContactoBO {
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         validarId(id, "idContacto");
         dao.eliminar(id);
     }

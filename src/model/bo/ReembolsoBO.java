@@ -36,27 +36,37 @@ public class ReembolsoBO {
     }
 
     public void salvar(Reembolso reembolso) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(reembolso);
         dao.salvar(reembolso);
     }
 
     public Reembolso criarEGuardar(ItemVendido item, int quantidade, String motivo, Funcionario funcionario) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
+        return criarEGuardar(item, quantidade, motivo, funcionario, false);
+    }
+
+    public Reembolso criarEGuardar(ItemVendido item, int quantidade, String motivo, Funcionario funcionario, boolean repor) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarContexto(item, quantidade, motivo, funcionario);
         double valor = calcularValor(item, quantidade);
         Reembolso reembolso = new Reembolso(
                 quantidade, valor, motivo, LocalDateTime.now(), item, funcionario);
+        reembolso.setReporEstoque(repor);
         dao.salvarReembolsoEReporEstoque(reembolso, estoqueDAO);
         anexarDepoisDePersistir(item, reembolso);
         return reembolso;
     }
 
     public void atualizar(Reembolso reembolso) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(reembolso);
         validarId(reembolso.getIdReembolso(), "idReembolso");
         dao.atualizar(reembolso);
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarId(id, "idReembolso");
         dao.eliminar(id);
     }

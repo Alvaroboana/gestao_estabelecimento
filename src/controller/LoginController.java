@@ -17,6 +17,10 @@ public class LoginController {
         this.loginBO = loginBO;
     }
 
+    public Utilizador alterarSenhaObrigatoria(String username, String actual, String nova) {
+        return new model.bo.UtilizadorBO().alterarSenhaAutenticada(username, actual, nova);
+    }
+
     public Utilizador autenticar(String username, String senha) {
         return loginBO.autenticar(username, senha);
     }

@@ -302,6 +302,10 @@ public class LoginPanel extends JPanel {
 
                 try {
                     Utilizador utilizador = get();
+                    if (utilizador.isTrocaSenhaObrigatoria()) {
+                        solicitarTrocaSenha(utilizador, senha);
+                        return;
+                    }
                     ocultarErro();
                     if (onLoginSucesso != null) {
                         onLoginSucesso.accept(utilizador);
@@ -320,6 +324,21 @@ public class LoginPanel extends JPanel {
         };
 
         worker.execute();
+    }
+
+    private void solicitarTrocaSenha(Utilizador utilizador, String actual) {
+        javax.swing.JPasswordField nova = new javax.swing.JPasswordField();
+        javax.swing.JPasswordField confirmar = new javax.swing.JPasswordField();
+        int escolha = javax.swing.JOptionPane.showConfirmDialog(this,
+                new Object[]{"É necessário alterar a palavra-passe antes de entrar.", "Nova palavra-passe:", nova, "Confirme:", confirmar},
+                "Alterar palavra-passe", javax.swing.JOptionPane.OK_CANCEL_OPTION);
+        if (escolha != javax.swing.JOptionPane.OK_OPTION) return;
+        String valor = new String(nova.getPassword());
+        if (!valor.equals(new String(confirmar.getPassword()))) { exibirErro("As palavras-passe não coincidem."); return; }
+        botaoEntrar.setEnabled(false);
+        util.AsyncTask.executar(() -> loginController.alterarSenhaObrigatoria(utilizador.getUsername(), actual, valor),
+                actualizado -> { botaoEntrar.setEnabled(true); ocultarErro(); if (onLoginSucesso != null) onLoginSucesso.accept(actualizado); },
+                erro -> { botaoEntrar.setEnabled(true); exibirErro(erro.getMessage()); });
     }
 
     private void exibirErro(String mensagem) {

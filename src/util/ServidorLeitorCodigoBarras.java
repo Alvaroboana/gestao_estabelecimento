@@ -104,13 +104,13 @@ public final class ServidorLeitorCodigoBarras {
      * "<p style='color:#A3ADC2;font-size:13px'>Aponte a câmera ou digite/leia o código abaixo para enviar à Venda ativa no computador.</p>"
      * + "<video id='v' autoplay playsinline muted></video>"
      * +
-     * "<form onsubmit='enviar(event)'><input id='c' placeholder='Código de barras ou ID...' autofocus>"
+     * "<form onsubmit='enviar(event)'><input id='c' placeholder='Código de barras...' autofocus>"
      * + "<button type='submit'>Enviar para o Caixa</button></form>"
      * +
      * "<p id='msg' style='color:#4ADE80;font-size:13px;min-height:20px'></p></div>"
      * + "<script>"
      * +
-     * "async function enviarCodigo(cod){if(!cod)return;await fetch('/scan?codigo='+encodeURIComponent(cod));"
+     * "async function enviarCodigo(cod){if(!cod)return;try{const r=await fetch('/scan?codigo='+encodeURIComponent(cod));if(!r.ok)throw new Error('Falha no envio');}catch(e){document.getElementById('msg').innerText='Não foi possível enviar. Tente novamente.';return;}"
      * +
      * "document.getElementById('msg').innerText='Enviado: '+cod;document.getElementById('c').value='';}"
      * +
@@ -154,18 +154,18 @@ public final class ServidorLeitorCodigoBarras {
      * "<p style='color:#A3ADC2;font-size:13px'>Aponte a câmera ou digite/leia o código abaixo para enviar à Venda ativa.</p>"
      * + "<video id='v' autoplay playsinline muted></video>"
      * +
-     * "<form onsubmit='enviar(event)'><input id='c' placeholder='Código de barras ou ID...' autofocus>"
+     * "<form onsubmit='enviar(event)'><input id='c' placeholder='Código de barras...' autofocus>"
      * + "<button type='submit'>Enviar para o Caixa</button></form>"
      * +
      * "<p id='msg' style='color:#4ADE80;font-size:13px;min-height:20px'></p></div>"
      * + "<script>"
      * +
-     * "async function enviarCodigo(cod){if(!cod)return;await fetch('/scan?codigo='+encodeURIComponent(cod));"
+     * "async function enviarCodigo(cod){if(!cod)return;try{const r=await fetch('/scan?codigo='+encodeURIComponent(cod));if(!r.ok)throw new Error('Falha no envio');}catch(e){document.getElementById('msg').innerText='Não foi possível enviar. Tente novamente.';return;}"
      * +
      * "document.getElementById('msg').innerText='Enviado: '+cod;document.getElementById('c').value='';}"
      * +
      * "function enviar(e){e.preventDefault();enviarCodigo(document.getElementById('c').value.trim());}"
-     * + "if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {"
+     * + "if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {"
      * +
      * "  alert('Erro: O navegador bloqueou a câmera porque a ligação não é segura (HTTP). Configure a flag no Chrome conforme instruído.');"
      * + "} else if (!('BarcodeDetector' in window)) {"
@@ -214,33 +214,26 @@ public final class ServidorLeitorCodigoBarras {
                 + "<div class='card'><h2>Leitor de Código de Barras</h2>"
                 + "<p style='color:#A3ADC2;font-size:13px'>Aponte a câmera ou digite/leia o código abaixo para enviar à Venda ativa.</p>"
                 + "<video id='v' autoplay playsinline muted></video>"
-                + "<form onsubmit='enviar(event)'><input id='c' placeholder='Código de barras ou ID...' autofocus>"
+                + "<form onsubmit='enviar(event)'><input id='c' placeholder='Código de barras...' autofocus>"
                 + "<button type='submit'>Enviar para o Caixa</button></form>"
                 + "<p id='msg' style='color:#4ADE80;font-size:13px;min-height:20px'></p></div>"
 
                 + "<div id='modalErro' class='modal'>"
                 + "<div class='modal-content'>"
                 + "<h3 style='margin-top:0'>Câmera Bloqueada</h3>"
-                + "<p style='font-size:14px;color:#A3ADC2'>O navegador bloqueou a câmera. Para liberar, siga estes passos (toque nos blocos verdes para copiar):</p>"
-                + "<ol style='padding-left:20px;font-size:14px;margin-bottom:20px;'>"
-                + "<li>Copie e cole na barra do navegador:<br><div class='code-block'>chrome://flags/#unsafely-treat-insecure-origin-as-secure</div></li>"
-                + "<li>Na caixa de texto da página que abrir, cole o seu IP exato:<br><div class='code-block' id='ipAtual'></div></li>"
-                + "<li>Mude o botão ao lado de <i>Disabled</i> para <b>Enabled</b>.</li>"
-                + "<li>Clique no botão azul <b>Relaunch</b> no fundo da tela.</li>"
-                + "</ol>"
+                + "<p>A câmara requer HTTPS com certificado de confiança e um navegador compatível. Nesta ligação, utilize o campo para digitar o código de barras ou um leitor externo.</p>"
                 + "<button onclick=\"document.getElementById('modalErro').style.display='none'\">OK, entendi</button>"
                 + "</div></div>"
 
                 + "<script>"
-                + "document.getElementById('ipAtual').innerText = window.location.origin;"
                 + "let ultimoCodigo = ''; let tempoUltimo = 0;"
-                + "async function enviarCodigo(cod){if(!cod)return;await fetch('/scan?codigo='+encodeURIComponent(cod));"
+                + "async function enviarCodigo(cod){if(!cod)return;try{const r=await fetch('/scan?codigo='+encodeURIComponent(cod));if(!r.ok)throw new Error('Falha no envio');}catch(e){document.getElementById('msg').innerText='Não foi possível enviar. Tente novamente.';return;}"
                 + "document.getElementById('msg').innerText='Enviado: '+cod;document.getElementById('c').value='';}"
                 + "function enviar(e){e.preventDefault();enviarCodigo(document.getElementById('c').value.trim());}"
-                + "if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {"
+                + "if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {"
                 + "  document.getElementById('modalErro').style.display='flex';"
                 + "} else if (!('BarcodeDetector' in window)) {"
-                + "  alert('Aviso: Este navegador não suporta leitura direta pela câmera. Use o Google Chrome.');"
+                + "  document.getElementById('modalErro').style.display='flex';"
                 + "} else {"
                 + "  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(s=>{"
                 + "    const v=document.getElementById('v');v.srcObject=s;"

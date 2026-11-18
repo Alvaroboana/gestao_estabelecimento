@@ -2572,7 +2572,10 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        AsyncTask.executar(
+        if (model.vo.SessaoUtilizador.getUtilizador() == null || model.vo.SessaoUtilizador.getUtilizador().isTrocaSenhaObrigatoria()) {
+            return;
+        }
+        AsyncTask.executarUltima(this, "recarregar1",
             () -> {
                 List<Cargo> cargos = utilizadorController.listarCargos();
                 List<Funcionario> funcs = new ArrayList<>();
@@ -2610,14 +2613,10 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
                 this.dadosCargosCarregados = linhas;
                 atualizarTabelaCargosFiltrada();
             },
-            erro -> {
-                this.dadosCargosCarregados = new ArrayList<>();
-                modeloTabelaCargos.setRowCount(0);
-                atualizarTabelaCargosFiltrada();
-            }
+            erro -> { util.AvisoCarregamento.mostrar(this, erro); }
         );
 
-        AsyncTask.executar(
+        AsyncTask.executarUltima(this, "recarregar2",
             () -> {
                 List<Cliente> clientes = new ArrayList<>();
                 List<Fornecedor> fornecedores = new ArrayList<>();
@@ -2693,12 +2692,9 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
                         seletorPessoaEditarContacto != null ? seletorPessoaEditarContacto.getText() : null);
                 atualizarTabelaContactosFiltrada();
             },
-            erro -> {
-                this.dadosContactosCarregados = new ArrayList<>();
-                atualizarTabelaContactosFiltrada();
-            }
+            erro -> { util.AvisoCarregamento.mostrar(this, erro); }
         );
-        AsyncTask.executar(
+        AsyncTask.executarUltima(this, "recarregar3",
             () -> {
                 List<Cidade> cids = utilizadorController.listarCidades();
                 List<Bairro> bairs = utilizadorController.listarBairros();
@@ -2727,16 +2723,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
                 atualizarTabelaCategoriasFiltrada();
                 atualizarTabelaUtilizadores();
             },
-            erro -> {
-                this.dadosCidadesCarregados = new ArrayList<>();
-                this.dadosBairrosCarregados = new ArrayList<>();
-                this.dadosCategoriasCarregadas = new ArrayList<>();
-                this.dadosUtilizadoresCarregados = new ArrayList<>();
-                atualizarTabelaCidadesFiltrada();
-                atualizarTabelaBairrosFiltrada();
-                atualizarTabelaCategoriasFiltrada();
-                atualizarTabelaUtilizadores();
-            }
+            erro -> { util.AvisoCarregamento.mostrar(this, erro); }
         );
     }
 
@@ -3459,13 +3446,7 @@ public class UtilizadoresPanel extends JPanel implements PainelRecarregavel {
             AsyncTask.executar(
                 () -> {
                     Utilizador operador = SessaoUtilizador.getUtilizador();
-                    if (operador != null && operador.getPerfil() == Perfil.ADMIN) {
-                        utilizadorController.alterarSenhaAdmin(idU, novaSenha, operador);
-                    } else {
-                        Utilizador u = utilizadorController.buscarPorId(idU);
-                        u.setPasswordHash(org.mindrot.jbcrypt.BCrypt.hashpw(novaSenha, org.mindrot.jbcrypt.BCrypt.gensalt()));
-                        utilizadorController.atualizar(u);
-                    }
+                    utilizadorController.alterarSenhaAdmin(idU, novaSenha, operador);
                     return true;
                 },
                 ok -> {

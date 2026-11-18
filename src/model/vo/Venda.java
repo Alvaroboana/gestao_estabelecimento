@@ -12,10 +12,25 @@ public class Venda implements Serializable {
     private Long idVenda;
     private LocalDateTime data;
     private Double total;
+    private Double valorRecebido;
+    private Double troco;
     private EstadoVenda estado;
     private Cliente cliente;
     private Funcionario funcionario;
     private List<ItemVendido> itemVendido;
+
+    public Double getValorRecebido() { return valorRecebido; }
+    public void setValorRecebido(Double valor) { valorRecebido = valor; }
+    public Double getTroco() { return troco; }
+    public void setTroco(Double valor) { troco = valor; }
+    public void validarPagamento() {
+        double devido = java.math.BigDecimal.valueOf(calcularTotal()).setScale(2, java.math.RoundingMode.HALF_UP).doubleValue();
+        if (valorRecebido == null || !Double.isFinite(valorRecebido) || !Double.isFinite(devido)
+                || valorRecebido < devido || valorRecebido < 0)
+            throw new VendaInvalidaException("Informe um valor recebido válido e suficiente para pagar a venda.");
+        troco = java.math.BigDecimal.valueOf(valorRecebido).subtract(java.math.BigDecimal.valueOf(devido))
+                .setScale(2, java.math.RoundingMode.HALF_UP).doubleValue();
+    }
 
     public Venda() {
     }
@@ -109,7 +124,7 @@ public class Venda implements Serializable {
 
         double valorDesconto = 0.0;
         if (desconto != null) {
-            if (desconto < 0) {
+            if (!Double.isFinite(desconto) || desconto < 0) {
                 throw new DadoInvalidoException("O desconto não pode ser negativo.");
             }
             valorDesconto = desconto;
@@ -140,10 +155,14 @@ public class Venda implements Serializable {
             }
         }
 
+        double precoValidado = repetido == null ? (produto.getPreco() == null ? 0.0 : produto.getPreco()) : repetido.getPreco();
+        int quantidadeValidada = repetido == null ? quantidade : Math.addExact(repetido.getQuantidade(), quantidade);
+        double descontoValidado = valorDesconto + (repetido == null || repetido.getDesconto() == null ? 0.0 : repetido.getDesconto());
+        new ItemVendido(quantidadeValidada, precoValidado, descontoValidado, this, produto).calcularSubtotal();
         if (repetido != null) {
             repetido.setQuantidade(repetido.getQuantidade() + quantidade);
             if (desconto != null) {
-                repetido.setDesconto(repetido.getDesconto() + valorDesconto);
+                repetido.setDesconto(descontoValidado);
             }
             this.total = calcularTotal();
             return repetido;
@@ -243,6 +262,7 @@ public class Venda implements Serializable {
                 ItemVendido item = this.itemVendido.get(i);
                 if (item != null) {
                     soma = soma + item.calcularSubtotal();
+                    util.ValidadorNumero.validarNaoNegativo(soma, "Total da venda");
                 }
             }
         }

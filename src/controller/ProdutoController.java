@@ -64,6 +64,10 @@ public class ProdutoController {
         produtoBO.salvar(produto, utilizador);
     }
 
+    public void salvarCompleto(Produto produto, Long fornecedor, model.vo.Estoque lote) {
+        produtoBO.salvarCompleto(produto, fornecedor, lote);
+    }
+
     public void atualizar(Produto produto) {
         produtoBO.atualizar(produto);
     }
