@@ -1704,3 +1704,4 @@ public class ClientesPanel extends JPanel implements PainelRecarregavel {
         UiStyle.atualizarComponentesTema(cardInformacoesCliente);
     }
 }
+
