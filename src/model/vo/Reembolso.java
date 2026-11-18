@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 
 public class Reembolso implements Serializable {
     private Long idReembolso;
+    private boolean reporEstoque;
+    public boolean isReporEstoque() { return reporEstoque; }
+    public void setReporEstoque(boolean repor) { reporEstoque = repor; }
     private Integer quantidade;
     private Double valor;
     private String motivo;

@@ -24,16 +24,19 @@ public class CidadeBO {
     }
 
     public void salvar(Cidade cidade) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(cidade, false);
         dao.salvar(cidade);
     }
 
     public void atualizar(Cidade cidade) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(cidade, true);
         dao.atualizar(cidade);
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarId(id, "idCidade");
         dao.eliminar(id);
     }

@@ -171,7 +171,6 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
         add(criarCorpoPrincipal(), BorderLayout.CENTER);
 
         definirModoPainelLateral(this.modoLateral);
-        recarregarDados();
     }
 
     public JTable getTabela() {
@@ -1848,7 +1847,10 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        AsyncTask.executar(
+        if (model.vo.SessaoUtilizador.getUtilizador() == null || model.vo.SessaoUtilizador.getUtilizador().isTrocaSenhaObrigatoria()) {
+            return;
+        }
+        AsyncTask.executarUltima(this, "recarregar1",
             () -> estoqueController.listarTodos(),
             estoques -> {
                 this.listaEstoqueEntidades = estoques != null ? estoques : new ArrayList<>();
@@ -1878,13 +1880,9 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                 this.dadosEstoqueCarregados = linhas;
                 atualizarTabelaFiltrada();
             },
-            erro -> {
-                this.listaEstoqueEntidades = new ArrayList<>();
-                this.dadosEstoqueCarregados = new ArrayList<>();
-                atualizarTabelaFiltrada();
-            }
+            erro -> { util.AvisoCarregamento.mostrar(this, erro); }
         );
-        AsyncTask.executar(
+        AsyncTask.executarUltima(this, "recarregar2",
             () -> estoqueController.listarProdutos(),
             produtos -> {
                 this.listaProdutosReais = produtos != null ? produtos : new ArrayList<>();
@@ -1901,13 +1899,13 @@ public class EstoquePanel extends JPanel implements PainelRecarregavel {
                     seletorProdutoEditarLote.setOpcoes(nomes);
                 }
             },
-            erro -> {}
+            erro -> { util.AvisoCarregamento.mostrar(this, erro); }
         );
     }
 
     @Override
     public void aplicarPermissoes(Utilizador utilizador) {
-        Perfil perfil = (utilizador != null) ? utilizador.getPerfil() : Perfil.ADMIN;
+        Perfil perfil = (utilizador != null && utilizador.podeEntrar()) ? utilizador.getPerfil() : Perfil.VENDEDOR;
         if (perfil == Perfil.VENDEDOR) {
             if (botaoDarEntrada != null) botaoDarEntrada.setVisible(false);
             if (botaoRepor != null) botaoRepor.setVisible(false);

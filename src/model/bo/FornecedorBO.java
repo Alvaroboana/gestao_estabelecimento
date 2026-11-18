@@ -23,16 +23,19 @@ public class FornecedorBO {
     }
 
     public void salvar(Fornecedor fornecedor) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(fornecedor, false);
         dao.salvar(fornecedor);
     }
 
     public void atualizar(Fornecedor fornecedor) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(fornecedor, true);
         dao.atualizar(fornecedor);
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarId(id, "idFornecedor");
         dao.eliminar(id);
     }

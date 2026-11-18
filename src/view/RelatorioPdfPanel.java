@@ -133,7 +133,6 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         this.scrollPagina.getVerticalScrollBar().setUnitIncrement(18);
         this.scrollPagina.putClientProperty("temaFixoClaro", Boolean.TRUE);
         add(this.scrollPagina, BorderLayout.CENTER);
-        recarregarDados();
     }
 
     private JPanel criarBarraTopo() {
@@ -212,7 +211,7 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         corpo.add(Box.createRigidArea(new Dimension(0, 14)));
 
         modeloVendasEstado = criarModelo(new String[] {"Estado", "Qtd", "Total"});
-        modeloMaisVendidos = criarModelo(new String[] {"#", "Produto", "Qtd"});
+        modeloMaisVendidos = criarModelo(new String[] {"#", "Produto", "Qtd líquida"});
         JPanel grade1 = new JPanel(new GridLayout(1, 2, 14, 0));
         grade1.setOpaque(false);
         grade1.add(criarSecaoTabela("Vendas por estado", modeloVendasEstado, true, true));
@@ -221,7 +220,7 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         corpo.add(grade1);
         corpo.add(Box.createRigidArea(new Dimension(0, 14)));
 
-        modeloMenosVendidos = criarModelo(new String[] {"#", "Produto", "Qtd"});
+        modeloMenosVendidos = criarModelo(new String[] {"#", "Produto", "Qtd líquida"});
         modeloEstoqueBaixo = criarModelo(new String[] {"Produto", "Actual", "Mínimo"});
         JPanel grade2 = new JPanel(new GridLayout(1, 2, 14, 0));
         grade2.setOpaque(false);
@@ -309,8 +308,8 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
         labelKpiAExpirar = new JLabel("0 lotes");
 
         kp.add(criarCardKpi("Vendas no período", labelKpiVendasPeriodo));
-        kp.add(criarCardKpi("Total concluído", labelKpiTotalConcluido));
-        kp.add(criarCardKpi("Total reembolsado", labelKpiTotalReembolsado));
+        kp.add(criarCardKpi("Concluídas (bruto)", labelKpiTotalConcluido));
+        kp.add(criarCardKpi("Reembolsos no período", labelKpiTotalReembolsado));
         kp.add(criarCardKpi("Estoque baixo", labelKpiEstoqueBaixo));
         kp.add(criarCardKpi("A expirar (7 dias)", labelKpiAExpirar));
         fixarDimensaoBloco(kp, largura, 56);
@@ -423,22 +422,10 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
             if (!destino.getName().toLowerCase().endsWith(".pdf")) {
                 destino = new File(destino.getParentFile(), destino.getName() + ".pdf");
             }
-            try {
-                GeradorRelatorioPDF.gerar(destino);
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Relatório PDF gerado com sucesso em:\n" + destino.getAbsolutePath(),
-                        "PDF Exportado",
-                        JOptionPane.INFORMATION_MESSAGE
-                );
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Não foi possível gerar o PDF: " + ex.getMessage(),
-                        "Erro ao exportar PDF",
-                        JOptionPane.ERROR_MESSAGE
-                );
-            }
+            final File ficheiro = destino;
+            AsyncTask.executar(() -> { GeradorRelatorioPDF.gerar(ficheiro); return ficheiro; },
+                    f -> JOptionPane.showMessageDialog(this, "Relatório PDF gerado em: " + f.getAbsolutePath()),
+                    erro -> util.AvisoCarregamento.mostrar(this, erro));
         }
     }
 
@@ -592,6 +579,9 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
+        if (SessaoUtilizador.getUtilizador() == null || SessaoUtilizador.getUtilizador().isTrocaSenhaObrigatoria()) {
+            return;
+        }
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         String hojeStr = LocalDate.now().format(dtf);
         String inicioStr = LocalDate.now().minusDays(30).format(dtf);
@@ -604,7 +594,7 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
 
         final LocalDateTime inicio = LocalDate.now().minusDays(30).atStartOfDay();
         final LocalDateTime fim = LocalDateTime.now().plusDays(1);
-        AsyncTask.executar(
+        AsyncTask.executarUltima(this, "recarregar1",
             () -> {
                 Map<String, Integer> kpis = relatorioController.obterIndicadoresDashboard();
                 List<Map<String, Object>> resumoEstado = relatorioController.obterResumoVendasPorEstadoRelatorio(inicio, fim);
@@ -755,7 +745,7 @@ public class RelatorioPdfPanel extends JPanel implements PainelRecarregavel {
                     labelKpiAExpirar.setText(exp + " lotes");
                 }
             },
-            erro -> {}
+            erro -> { util.AvisoCarregamento.mostrar(this, erro); }
         );
     }
 

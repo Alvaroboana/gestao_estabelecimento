@@ -25,6 +25,7 @@ public class RelatorioBO {
     public List<Map<String, Object>> consultarAuditoria(
             Utilizador utilizador, String tabela, Long idRegistro,
             LocalDateTime inicio, LocalDateTime fim, String operacao) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirPermissao(utilizador);
         validarIntervalo(inicio, fim);
         if (idRegistro != null && idRegistro <= 0) {
@@ -35,6 +36,7 @@ public class RelatorioBO {
 
     public List<Map<String, Object>> resumoAuditoria(
             Utilizador utilizador, LocalDateTime inicio, LocalDateTime fim) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirPermissao(utilizador);
         validarIntervalo(inicio, fim);
         return dao.resumoAuditoria(inicio, fim);
@@ -42,23 +44,27 @@ public class RelatorioBO {
 
     public List<Map<String, Object>> vendasPeriodo(
             Utilizador utilizador, LocalDateTime inicio, LocalDateTime fim) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirPermissao(utilizador);
         validarIntervaloObrigatorio(inicio, fim);
         return dao.vendasPeriodo(inicio, fim);
     }
 
     public List<Map<String, Object>> estoqueBaixo(Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirPermissao(utilizador);
         return dao.estoqueBaixo();
     }
 
     public List<Map<String, Object>> produtosMaisVendidos(Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirPermissao(utilizador);
         return dao.produtosMaisVendidos();
     }
 
     public List<Map<String, Object>> reembolsosPeriodo(
             Utilizador utilizador, LocalDateTime inicio, LocalDateTime fim) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirPermissao(utilizador);
         validarIntervaloObrigatorio(inicio, fim);
         return dao.reembolsosPeriodo(inicio, fim);
@@ -66,12 +72,14 @@ public class RelatorioBO {
 
     public List<Map<String, Object>> resumoVendasPorEstado(
             Utilizador utilizador, LocalDateTime inicio, LocalDateTime fim) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirPermissao(utilizador);
         validarIntervalo(inicio, fim);
         return dao.resumoVendasPorEstado(inicio, fim);
     }
 
     public List<Map<String, Object>> itensPorVenda(Utilizador utilizador, Long idVenda) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirPermissao(utilizador);
         if (idVenda == null || idVenda <= 0) {
             throw new DadoInvalidoException("idVenda deve ser positivo.");
@@ -84,49 +92,59 @@ public class RelatorioBO {
     }
 
     public List<Map<String, Object>> obterEstoqueBaixoDashboard() {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         return dao.estoqueBaixo();
     }
 
     public List<Map<String, Object>> obterProdutosMaisVendidosDashboard() {
+        infra.Autorizacao.exigir(model.vo.Perfil.VENDEDOR);
         return dao.produtosMaisVendidos();
     }
 
     public List<Map<String, Object>> vendasPorFuncionario(Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirPermissao(utilizador);
         return dao.vendasPorFuncionario();
     }
 
     public List<Map<String, Object>> resumoVendasDiario(Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirPermissao(utilizador);
         return dao.resumoVendasDiario();
     }
 
     public List<Map<String, Object>> lotesProximosValidade(Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirPermissao(utilizador);
         return dao.lotesProximosValidade();
     }
 
     public List<Map<String, Object>> lotesExpirados(Utilizador utilizador) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         exigirPermissao(utilizador);
         return dao.lotesExpirados();
     }
 
     public List<Map<String, Object>> obterResumoVendasPorEstadoRelatorio(LocalDateTime inicio, LocalDateTime fim) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarIntervalo(inicio, fim);
         return dao.resumoVendasPorEstado(inicio, fim);
     }
 
     public List<Map<String, Object>> obterReembolsosPeriodoRelatorio(LocalDateTime inicio, LocalDateTime fim) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarIntervaloObrigatorio(inicio, fim);
         return dao.reembolsosPeriodo(inicio, fim);
     }
 
     public List<Map<String, Object>> obterResumoAuditoriaRelatorio(LocalDateTime inicio, LocalDateTime fim) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarIntervalo(inicio, fim);
         return dao.resumoAuditoria(inicio, fim);
     }
 
     public double obterTotalVendasFuncionarioMes(Long idFuncionario) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         return dao.obterTotalVendasFuncionarioMes(idFuncionario);
     }
 

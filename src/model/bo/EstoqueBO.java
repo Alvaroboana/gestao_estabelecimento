@@ -27,16 +27,19 @@ public class EstoqueBO {
     }
 
     public void salvar(Estoque estoque) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(estoque, false);
         dao.salvar(estoque);
     }
 
     public void atualizar(Estoque estoque) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(estoque, true);
         dao.atualizar(estoque);
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarId(id, "idEstoque");
         dao.eliminar(id);
     }
@@ -60,41 +63,16 @@ public class EstoqueBO {
     }
 
     public void baixarEstoqueFEFO(Long idProduto, int quantidadeDesejada) {
-        if (quantidadeDesejada <= 0) {
-            return;
-        }
-        validarId(idProduto, "idProduto");
-        List<Estoque> lotes = dao.buscarPorProduto(idProduto);
-        int restante = quantidadeDesejada;
-        for (Estoque lote : lotes) {
-            if (restante <= 0) {
-                break;
-            }
-            int qtdLote = lote.getQuantidade() != null ? lote.getQuantidade() : 0;
-            if (qtdLote <= restante) {
-                restante -= qtdLote;
-                lote.setQuantidade(0);
-                dao.atualizar(lote);
-            } else {
-                lote.setQuantidade(qtdLote - restante);
-                restante = 0;
-                dao.atualizar(lote);
-            }
-        }
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
+        validarId(idProduto, "idProduto"); ValidadorNumero.validarPositivo(quantidadeDesejada, "Quantidade");
+        infra.Transacao.executar("Erro ao retirar stock.", conn -> {
+            dao.baixarEstoqueFEFO(conn, idProduto, quantidadeDesejada); return null;
+        });
     }
 
     public void reporEstoque(Long idProduto, int quantidade) {
-        if (quantidade <= 0) {
-            return;
-        }
-        validarId(idProduto, "idProduto");
-        List<Estoque> lotes = dao.buscarPorProduto(idProduto);
-        if (lotes != null && !lotes.isEmpty()) {
-            Estoque lote = lotes.get(0);
-            int qtdAtual = lote.getQuantidade() != null ? lote.getQuantidade() : 0;
-            lote.setQuantidade(qtdAtual + quantidade);
-            dao.atualizar(lote);
-        }
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
+        throw new DadoInvalidoException("Seleccione o lote para a reposição. As devoluções devem usar a operação de reembolso.");
     }
 
     private void validar(Estoque estoque, boolean exigirId) {

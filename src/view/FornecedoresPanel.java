@@ -181,7 +181,6 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
         add(criarCorpoPrincipal(), BorderLayout.CENTER);
 
         definirModoPainelLateral(this.modoLateral);
-        recarregarDados();
     }
 
     public JTable getTabela() {
@@ -674,6 +673,7 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
         botaoGuardarNovo.setIcon(UiStyle.icone(MaterialDesignC.CHECK, 15, UiStyle.ACCENT_TEXT));
         botaoGuardarNovo.setIconTextGap(6);
         botaoGuardarNovo.addActionListener(e -> {
+            if (!botaoGuardarNovo.isEnabled()) return;
             String nome = (campoNomeNovo != null) ? campoNomeNovo.getText().trim() : "";
             if (nome.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Informe o nome do fornecedor.", "Aviso", JOptionPane.WARNING_MESSAGE);
@@ -719,12 +719,14 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
             end.setNumeroCasa(numeroCasa);
             f.setEndereco(end);
 
+            botaoGuardarNovo.setEnabled(false);
             AsyncTask.executar(
                 () -> {
                     fornecedorController.salvar(f);
                     return null;
                 },
                 sucesso -> {
+                    botaoGuardarNovo.setEnabled(true);
                     JOptionPane.showMessageDialog(this, "Fornecedor cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
                     definirModoPainelLateral(ModoPainelLateral.NENHUM);
                     if (campoNomeNovo != null) campoNomeNovo.setText("");
@@ -738,6 +740,7 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
                     recarregarDados();
                 },
                 erro -> {
+                    botaoGuardarNovo.setEnabled(true);
                     JOptionPane.showMessageDialog(this, "Erro ao salvar fornecedor: " + erro.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
                 }
             );
@@ -1708,7 +1711,10 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
 
     @Override
     public void recarregarDados() {
-        AsyncTask.executar(
+        if (model.vo.SessaoUtilizador.getUtilizador() == null || model.vo.SessaoUtilizador.getUtilizador().isTrocaSenhaObrigatoria()) {
+            return;
+        }
+        AsyncTask.executarUltima(this, "recarregar1",
             () -> fornecedorController.listarTodos(),
             forns -> {
                 this.listaFornecedoresEntidades = forns != null ? forns : new ArrayList<>();
@@ -1756,13 +1762,9 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
                 this.dadosFornecedoresCarregados = linhas;
                 atualizarTabelaFiltrada();
             },
-            erro -> {
-                this.listaFornecedoresEntidades = new ArrayList<>();
-                this.dadosFornecedoresCarregados = new ArrayList<>();
-                atualizarTabelaFiltrada();
-            }
+            erro -> { util.AvisoCarregamento.mostrar(this, erro); }
         );
-        AsyncTask.executar(
+        AsyncTask.executarUltima(this, "recarregar2",
             () -> {
                 List<Cidade> cids = fornecedorController.listarCidades();
                 List<Bairro> bairs = fornecedorController.listarBairros();
@@ -1791,7 +1793,7 @@ public class FornecedoresPanel extends JPanel implements PainelRecarregavel {
                 atualizarBairrosPorCidade(seletorCidadeEditar, seletorBairroEditar,
                         seletorBairroEditar != null ? seletorBairroEditar.getText() : null);
             },
-            erro -> {}
+            erro -> { util.AvisoCarregamento.mostrar(this, erro); }
         );
     }
 

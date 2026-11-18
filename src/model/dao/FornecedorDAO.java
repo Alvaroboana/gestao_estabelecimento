@@ -30,6 +30,7 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
         try (Connection resource = ConexaoDB.getConnection()) {
             conn = resource;
             conn.setAutoCommit(false);
+            try {
 
             Long idPessoa = null;
             try (PreparedStatement stmtP = conn.prepareStatement(sqlPessoa, Statement.RETURN_GENERATED_KEYS)) {
@@ -90,9 +91,12 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
             }
 
             conn.commit();
+            } catch (SQLException | RuntimeException failure) {
+                try { conn.rollback(); } catch (SQLException rollback) { failure.addSuppressed(rollback); }
+                throw failure;
+            }
         } catch (SQLException e) {
             DBException failure = new DBException("Erro ao salvar fornecedor.", e);
-            ConexaoDB.rollback(conn, failure);
             throw failure;
         }
     }
@@ -116,6 +120,7 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
         try (Connection resource = ConexaoDB.getConnection()) {
             conn = resource;
             conn.setAutoCommit(false);
+            try {
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, objecto.getNome());
                 stmt.setLong(2, objecto.getIdFornecedor());
@@ -165,10 +170,13 @@ public class FornecedorDAO implements GenericoDAO<Fornecedor, Long> {
                 }
             }
             conn.commit();
+            } catch (SQLException | RuntimeException failure) {
+                try { conn.rollback(); } catch (SQLException rollback) { failure.addSuppressed(rollback); }
+                throw failure;
+            }
         } catch (SQLException e) {
             DBException failure = new DBException("Erro ao atualizar fornecedor: " + e.getMessage(), e);
-            ConexaoDB.rollback(conn, failure);
-            throw new DBException("Erro ao atualizar fornecedor: " + e.getMessage(), e);
+            throw failure;
         }
     }
 

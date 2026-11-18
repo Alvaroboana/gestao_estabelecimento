@@ -119,23 +119,22 @@ public class UtilizadorController {
     }
 
     public boolean alterarSenha(Long idUtilizador, String senhaAtual, String novaSenha) {
-        Utilizador u = utilizadorBO.buscarPorId(idUtilizador);
-        String novoHash = u.alterarSenha(senhaAtual, novaSenha);
-        if (novoHash != null) {
-            utilizadorBO.atualizar(u);
-            return true;
-        }
-        return false;
+        Utilizador actual = infra.Autorizacao.exigir(Perfil.VENDEDOR);
+        if (!actual.getIdUtilizador().equals(idUtilizador)) throw new AcessoNegadoException("Só pode alterar a sua palavra-passe.");
+        Utilizador actualizado = utilizadorBO.alterarSenhaAutenticada(actual.getUsername(), senhaAtual, novaSenha);
+        model.vo.SessaoUtilizador.iniciarSessao(actualizado);
+        return true;
     }
 
     public void alterarSenhaAdmin(Long idUtilizador, String novaSenha, Utilizador operador) {
-        ValidadorObjeto.validarNaoNulo(operador, "Operador");
+        infra.Autorizacao.conferirOperador(operador, Perfil.ADMIN);
         if (operador.getPerfil() != Perfil.ADMIN) {
             throw new AcessoNegadoException("Apenas administradores podem redefinir senhas diretamente.");
         }
-        ValidadorTexto.validarObrigatorio(novaSenha, "Nova senha");
+        Utilizador.validarNovaSenha(novaSenha);
         Utilizador u = utilizadorBO.buscarPorId(idUtilizador);
         u.setPasswordHash(BCrypt.hashpw(novaSenha, BCrypt.gensalt()));
+        u.setTrocaSenhaObrigatoria(true);
         utilizadorBO.atualizar(u);
     }
 

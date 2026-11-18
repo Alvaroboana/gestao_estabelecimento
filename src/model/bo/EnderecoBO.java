@@ -22,17 +22,20 @@ public class EnderecoBO {
     }
 
     public void salvarComPessoa(Endereco endereco, Long idPessoa) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(endereco, false);
         validarId(idPessoa, "idPessoa");
         dao.salvarComPessoa(endereco, idPessoa);
     }
 
     public void atualizar(Endereco endereco) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validar(endereco, true);
         dao.atualizar(endereco);
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         validarId(id, "idEndereco");
         dao.eliminar(id);
     }

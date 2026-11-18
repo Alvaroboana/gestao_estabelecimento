@@ -39,6 +39,7 @@ public class CategoriaBO {
     }
 
     public void salvar(Categoria categoria) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         ValidadorObjeto.validarNaoNulo(categoria, "Categoria");
         String nome = limparNome(categoria.getNome());
         if (nome.isEmpty()) {
@@ -52,6 +53,7 @@ public class CategoriaBO {
     }
 
     public void atualizar(Categoria categoria) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         ValidadorObjeto.validarNaoNulo(categoria, "Categoria");
         if (categoria.getIdCategoria() == null || categoria.getIdCategoria() <= 0) {
             throw new DadoInvalidoException("idCategoria deve ser um identificador positivo.");
@@ -68,6 +70,7 @@ public class CategoriaBO {
     }
 
     public void eliminar(Long id) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         if (id == null || id <= 0) {
             throw new DadoInvalidoException("idCategoria deve ser um identificador positivo.");
         }
@@ -75,6 +78,7 @@ public class CategoriaBO {
     }
 
     public Categoria criar(String nomeBruto) {
+        infra.Autorizacao.exigir(model.vo.Perfil.GERENTE);
         String nome = limparNome(nomeBruto);
         if (nome.isEmpty()) {
             throw new IllegalArgumentException("Nome é obrigatório(a).");
